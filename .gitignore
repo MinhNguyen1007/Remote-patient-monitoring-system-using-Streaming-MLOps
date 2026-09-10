@@ -26,7 +26,7 @@ ml/artifacts/
 *.joblib
 
 # Data (không commit dataset vào git - MIMIC-III Demo có license riêng + dung lượng lớn)
-data/
+/data/
 ml/data/
 mimic-iii-clinical-database-demo-*/
 

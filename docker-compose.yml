@@ -5,9 +5,16 @@
 # Chạy: docker compose up -d
 # Kiểm tra: docker compose ps
 
+x-airflow-env: &airflow-env
+  AIRFLOW__CORE__EXECUTOR: LocalExecutor
+  AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/airflow_db
+  AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+  # Mặc định REST API chỉ nhận session cookie; backend cần basic auth để trigger DAG retrain (UC10).
+  AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session
+
 services:
   postgres:
-    image: timescale/timescaledb:latest-pg16
+    image: timescale/timescaledb:2.30.0-pg16
     container_name: rpm_postgres
     restart: unless-stopped
     environment:
@@ -40,7 +47,9 @@ services:
     depends_on:
       - zookeeper
     ports:
-      - "9092:9092"
+      # Chỉ publish listener cho host. Listener nội bộ kafka:9092 quảng bá hostname "kafka",
+      # host không phân giải được nên không publish ra ngoài.
+      - "29092:29092"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -75,9 +84,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    environment:
-      AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/airflow_db
+    environment: *airflow-env
     entrypoint: /bin/bash
     command:
       - -c
@@ -88,10 +95,9 @@ services:
     container_name: rpm_airflow_webserver
     restart: unless-stopped
     depends_on:
-      - airflow-init
-    environment:
-      AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/airflow_db
+      airflow-init:
+        condition: service_completed_successfully
+    environment: *airflow-env
     ports:
       - "8080:8080"
     volumes:
@@ -104,10 +110,9 @@ services:
     container_name: rpm_airflow_scheduler
     restart: unless-stopped
     depends_on:
-      - airflow-init
-    environment:
-      AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/airflow_db
+      airflow-init:
+        condition: service_completed_successfully
+    environment: *airflow-env
     volumes:
       - ./infra/airflow/dags:/opt/airflow/dags
       - airflow_logs:/opt/airflow/logs

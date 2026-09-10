@@ -11,11 +11,11 @@ Sự phát triển của các nền tảng xử lý luồng dữ liệu thời g
 Xây dựng một **hệ thống giám sát bệnh nhân từ xa** có khả năng:
 
 1. Tiếp nhận dữ liệu chỉ số sinh tồn (nhịp tim - HR, độ bão hòa oxy - SpO2, huyết áp tâm thu/tâm trương, nhiệt độ cơ thể, nhịp thở) theo thời gian thực từ nhiều bệnh nhân song song, mô phỏng qua nền tảng streaming (Apache Kafka).
-2. Áp dụng mô hình học máy để **phân loại mức độ rủi ro** (bình thường / cảnh báo / nguy kịch) của bệnh nhân tại mỗi thời điểm.
+2. Áp dụng mô hình học máy để **dự báo sớm mức độ rủi ro** (bình thường / cảnh báo / nguy kịch) của bệnh nhân trong vài giờ tới, dựa trên lịch sử vitals đến thời điểm hiện tại — thay vì chỉ phân loại tình trạng tức thời.
 3. Áp dụng mô hình học sâu để **phát hiện bất thường** (anomaly detection) trong chuỗi thời gian vitals của từng bệnh nhân so với baseline của chính họ.
-4. Khi phát hiện rủi ro cao, hệ thống phải **cảnh báo tức thời** tới nhân viên y tế qua dashboard thời gian thực (WebSocket) và qua email.
-5. Cung cấp giao diện web cho bác sĩ/điều dưỡng theo dõi danh sách bệnh nhân, chi tiết vitals, lịch sử cảnh báo; và cho quản trị viên quản lý người dùng, theo dõi hoạt động và chất lượng mô hình.
-6. Vận hành theo vòng đời MLOps: theo dõi thực nghiệm và phiên bản mô hình (MLflow), phát hiện model/data drift, và tự động/hoặc theo lịch huấn luyện lại mô hình (Apache Airflow) khi chất lượng suy giảm.
+4. Khi phát hiện rủi ro cao, hệ thống phải **cảnh báo tức thời** tới bác sĩ/điều dưỡng được phân công qua dashboard thời gian thực (WebSocket) và qua email, đồng thời không gửi lặp lại cảnh báo trùng cho cùng một đợt nguy kịch.
+5. Cung cấp giao diện web cho bác sĩ/điều dưỡng theo dõi danh sách bệnh nhân được phân công, chi tiết vitals, lịch sử cảnh báo; và cho quản trị viên quản lý người dùng, phân công bệnh nhân, cấu hình ngưỡng cảnh báo và theo dõi chất lượng mô hình.
+6. Vận hành theo vòng đời MLOps: theo dõi thực nghiệm và phiên bản mô hình (MLflow), phát hiện data drift, tự động kích hoạt huấn luyện lại (Apache Airflow) hoặc để quản trị viên kích hoạt thủ công, và chỉ thay mô hình đang chạy khi mô hình mới vượt qua quality gate.
 
 ## 1.3. Phạm vi đề tài
 
@@ -26,9 +26,9 @@ Xây dựng một **hệ thống giám sát bệnh nhân từ xa** có khả nă
 
 | Vai trò | Mô tả |
 |---|---|
-| Quản trị viên (Admin) | Quản lý tài khoản người dùng, theo dõi tình trạng mô hình (drift report, phiên bản model), cấu hình hệ thống |
-| Bác sĩ | Theo dõi toàn bộ bệnh nhân được phân công, xem chi tiết vitals/rủi ro, xác nhận và xử lý cảnh báo |
-| Điều dưỡng | Theo dõi vitals thời gian thực, nhận cảnh báo, không có quyền cấu hình hệ thống/mô hình |
+| Quản trị viên (Admin) | Quản lý tài khoản người dùng, phân công bệnh nhân cho bác sĩ/điều dưỡng, cấu hình ngưỡng cảnh báo, theo dõi tình trạng mô hình (drift report, phiên bản model), kích hoạt huấn luyện lại |
+| Bác sĩ | Theo dõi bệnh nhân được phân công, xem chi tiết vitals/rủi ro, xác nhận và xử lý cảnh báo |
+| Điều dưỡng | Theo dõi vitals thời gian thực của bệnh nhân được phân công, nhận cảnh báo; không có quyền xử lý cảnh báo, cấu hình hệ thống hay mô hình |
 
 ## 1.5. Ý nghĩa thực tiễn
 

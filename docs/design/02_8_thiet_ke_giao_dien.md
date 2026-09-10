@@ -15,32 +15,50 @@ Giao diện áp dụng design system nền tảng dark-theme lấy cảm hứng 
 
 Bỏ hoàn toàn cơ chế "mở case"/spin reel ngẫu nhiên của theme gốc — chỉ giữ lại chất lượng polish, token màu, và motion cho các thao tác có ý nghĩa thật (cập nhật realtime, chuyển trạng thái alert).
 
+Mức rủi ro **không chỉ được thể hiện bằng màu**: mọi badge luôn kèm nhãn chữ (`Bình thường` / `Cảnh báo` / `Nguy kịch`) và icon riêng, để người mù màu đỏ–xanh vẫn đọc được.
+
 ## 2.8.2. Danh sách màn hình chính (ánh xạ theo Use Case ở mục 2.2)
 
 ### Màn hình Đăng nhập (UC01)
 - Form email/mật khẩu giữa màn hình trên nền dark theme, logo hệ thống, nút "Đăng nhập" dùng accent-neon.
 - Thông báo lỗi hiển thị dạng toast góc trên khi sai thông tin.
 
-### Dashboard danh sách bệnh nhân (UC04)
+### Dashboard danh sách bệnh nhân (UC04) — Bác sĩ, Điều dưỡng
 - Layout: sidebar điều hướng trái (Dashboard, Cảnh báo, Quản trị — hiện theo role) + khu vực chính dạng bảng/thẻ.
-- Mỗi bệnh nhân là 1 dòng/thẻ: tên, mã bệnh nhân, badge màu risk-level realtime (cập nhật qua WebSocket, có hiệu ứng transition khi đổi màu), chỉ số vitals mới nhất rút gọn (HR, SpO2), thời gian cập nhật cuối.
+- Chỉ hiển thị **bệnh nhân được phân công** cho người đang đăng nhập.
+- Mỗi bệnh nhân là 1 dòng/thẻ:
+  - tên hiển thị, mã bệnh nhân;
+  - badge **rủi ro dự báo 4 giờ tới**, cập nhật qua WebSocket, có transition khi đổi mức;
+  - điểm **NEWS2 hiện tại**;
+  - vitals mới nhất rút gọn (HR, SpO2);
+  - thời gian cập nhật cuối.
 - Thanh lọc theo mức rủi ro (tất cả/warning/critical), sắp xếp theo rủi ro cao nhất lên đầu.
-- Badge số lượng cảnh báo chưa xử lý (unread) trên sidebar mục "Cảnh báo".
+- Badge số lượng cảnh báo đang mở trên sidebar mục "Cảnh báo".
 
 ### Chi tiết bệnh nhân (UC05, UC06, UC07)
-- Header: thông tin bệnh nhân + risk-level hiện tại (badge lớn).
-- Biểu đồ vitals theo thời gian thực (line chart 5 chỉ số, có thể chọn hiển thị từng chỉ số), điểm bất thường được đánh dấu bằng `--anomaly-flag` trên biểu đồ (theo skill `dataviz`).
+- Header: thông tin bệnh nhân, badge lớn **rủi ro dự báo 4 giờ tới** kèm xác suất nguy kịch (`risk_score`), điểm **NEWS2 hiện tại**.
+- Biểu đồ vitals theo thời gian thực: line chart 5 loại chỉ số (huyết áp vẽ 2 đường tâm thu/tâm trương), có thể chọn hiển thị từng chỉ số. Điểm bất thường được đánh dấu bằng `--anomaly-flag` (theo skill `dataviz`). 12 giờ đầu chưa có điểm bất thường vì chưa đủ cửa sổ.
 - Biểu đồ risk-timeline: dải màu theo thời gian thể hiện risk_level đổi qua các mốc.
-- Danh sách lịch sử cảnh báo của bệnh nhân, mỗi cảnh báo có nút "Xác nhận đã xử lý" (chỉ Bác sĩ).
+- Danh sách lịch sử cảnh báo của bệnh nhân. Mỗi cảnh báo có 2 thao tác (chỉ Bác sĩ):
+  - **"Xác nhận"**: `OPEN → ACKNOWLEDGED`;
+  - **"Đã xử lý"**: `→ RESOLVED`, kèm ghi chú xử lý.
 
-### Panel/Trung tâm cảnh báo (UC06, UC07, UC11)
-- Danh sách toàn bộ cảnh báo toàn hệ thống, realtime, có filter theo trạng thái (Mở/Đã xác nhận/Đã xử lý) và theo loại (Risk/Anomaly).
+### Panel/Trung tâm cảnh báo (UC06, UC07)
+- Danh sách cảnh báo của **các bệnh nhân được phân công**, realtime, có filter theo trạng thái (Mở/Đã xác nhận/Đã xử lý) và theo loại (Risk/Anomaly).
 - Cảnh báo mới xuất hiện có hiệu ứng nhấn mạnh tạm thời (motion, không phải nhấp nháy liên tục gây khó chịu).
+- Email cảnh báo (UC11) không có màn hình riêng. Nội dung email có đường dẫn mở thẳng trang chi tiết bệnh nhân.
 
-### Trang quản trị (UC03, UC08, UC09, UC10) — chỉ Admin
-- Tab **Người dùng**: CRUD tài khoản, gán bác sĩ phụ trách bệnh nhân.
-- Tab **Cấu hình ngưỡng**: chỉnh ngưỡng risk_score/anomaly_score để tạo alert.
-- Tab **Giám sát mô hình**: danh sách `model_versions` (từ MLflow), biểu đồ Drift Report theo thời gian (theo skill `dataviz`), nút "Kích hoạt huấn luyện lại" (trigger Airflow DAG qua UC10) kèm trạng thái chạy realtime.
+### Trang quản trị (UC03, UC08, UC09, UC10, UC13) — chỉ Admin
+- Tab **Người dùng** (UC03): CRUD tài khoản, gán role, khóa/mở tài khoản.
+- Tab **Phân công** (UC13): chọn bệnh nhân → gán/bỏ gán bác sĩ và điều dưỡng phụ trách (nhiều người cho 1 bệnh nhân).
+- Tab **Cấu hình ngưỡng** (UC08) — xem mục 2.9.6:
+  - `τ_critical`: để trống = dùng ngưỡng khuyến nghị của model champion;
+  - `τ_anomaly`;
+  - thời gian cooldown cảnh báo.
+- Tab **Giám sát mô hình** (UC09, UC10):
+  - Danh sách `model_versions`: version nào đang là champion, các challenger bị từ chối kèm lý do, metric so với champion và baseline persistence.
+  - Biểu đồ Drift Report theo thời gian: max PSI mỗi lần chạy, xem chi tiết PSI/KS từng đặc trưng (theo skill `dataviz`).
+  - Nút "Kích hoạt huấn luyện lại": gọi API → nhận `dag_run_id` → hiển thị trạng thái chạy cập nhật định kỳ cho tới khi có kết quả promote/từ chối.
 
 ## 2.8.3. Ghi chú hiện thực
 

@@ -9,7 +9,7 @@ Mô tả chi tiết toàn bộ 26 file CSV trong dataset: file dùng để làm 
 | `row_id` | Số thứ tự dòng nội bộ của từng bảng, không mang ý nghĩa lâm sàng |
 | `subject_id` | Mã định danh **bệnh nhân**, xuyên suốt mọi lượt nhập viện của người đó |
 | `hadm_id` | Mã định danh **1 lượt nhập viện** (hospital admission) — 1 bệnh nhân có thể có nhiều `hadm_id` nếu nhập viện nhiều lần |
-| `icustay_id` | Mã định danh **1 đợt nằm ICU** trong 1 lượt nhập viện — 1 `hadm_id` có thể có nhiều `icustay_id` nếu chuyển ICU nhiều lần |
+| `icustay_id` | Mã định danh **1 đợt nằm ICU** trong 1 lượt nhập viện — các lần chuyển giữa các ICU cách nhau dưới 24 giờ được gộp vào cùng 1 đợt; 1 `hadm_id` có nhiều `icustay_id` khi bệnh nhân rời ICU rồi quay lại sau hơn 24 giờ |
 | `itemid` | Mã một loại chỉ số/xét nghiệm/thủ thuật cụ thể, tra nghĩa ở các bảng `D_*` tương ứng |
 | `cgid` | Mã nhân viên y tế ghi nhận dữ liệu (Caregiver ID), tra ở `CAREGIVERS.csv` |
 
@@ -27,7 +27,7 @@ Thông tin nhân khẩu học cố định, mỗi dòng 1 bệnh nhân.
 | `dod` | Ngày mất (tổng hợp từ nhiều nguồn), rỗng nếu còn sống tại thời điểm trích xuất dữ liệu |
 | `dod_hosp` | Ngày mất ghi nhận tại bệnh viện |
 | `dod_ssn` | Ngày mất theo dữ liệu an sinh xã hội (Social Security Death Index) |
-| `expire_flag` | 1 = đã mất, 0 = còn sống (tại thời điểm dữ liệu được trích xuất, không phải tại thời điểm nằm viện) |
+| `expire_flag` | 1 = đã mất, 0 = còn sống (tại thời điểm dữ liệu được trích xuất, không phải tại thời điểm nằm viện). **Trong bản Demo cả 100/100 bệnh nhân đều = 1** vì PhysioNet chọn mẫu từ nhóm bệnh nhân về sau đã tử vong |
 
 ### `ADMISSIONS.csv` (129 dòng) — ⭐ dùng trong project
 Mỗi dòng 1 lượt nhập viện.
@@ -42,15 +42,15 @@ Mỗi dòng 1 lượt nhập viện.
 | `insurance`, `language`, `religion`, `marital_status`, `ethnicity` | Thông tin hành chính/nhân khẩu học bổ sung |
 | `edregtime` / `edouttime` | Thời điểm vào/ra khoa Cấp cứu (Emergency Dept.) trước khi nhập viện chính thức |
 | `diagnosis` | Chẩn đoán sơ bộ dạng văn bản tự do lúc nhập viện (không phải mã ICD chuẩn) |
-| `hospital_expire_flag` | **1 nếu tử vong trong chính lượt nhập viện này, 0 nếu không** — dùng đối chiếu chéo với nhãn `risk_level` suy ra từ NEWS2-score (xem `docs/design/02_9_thiet_ke_giai_thuat.md`) |
+| `hospital_expire_flag` | **1 nếu tử vong trong chính lượt nhập viện này, 0 nếu không** (bản Demo: 40/129 lượt = 1) — dùng đối chiếu chéo với nhãn `risk_level` suy ra từ NEWS2-score (xem `docs/design/02_9_thiet_ke_giai_thuat.md`) |
 | `has_chartevents_data` | 1 nếu lượt nhập viện có dữ liệu vitals trong `CHARTEVENTS` |
 
-### `ICUSTAYS.csv` (137 dòng) — ⭐ dùng trong project
-Mỗi dòng 1 đợt nằm ICU (1 lượt nhập viện có thể có nhiều đợt nếu chuyển ICU).
+### `ICUSTAYS.csv` (136 dòng) — ⭐ dùng trong project
+Mỗi dòng 1 đợt nằm ICU (1 lượt nhập viện có nhiều đợt khi bệnh nhân quay lại ICU sau hơn 24 giờ). Trong bản Demo: 19 bệnh nhân có hơn 1 đợt ICU; thời gian nằm ICU trung vị 50,7 giờ, 22/136 đợt ngắn hơn 24 giờ.
 
 | Cột | Ý nghĩa |
 |---|---|
-| `dbsource` | Hệ nguồn dữ liệu ghi nhận đợt ICU này: `carevue`, `metavision`, hoặc `both` |
+| `dbsource` | Hệ nguồn dữ liệu ghi nhận đợt ICU này: `carevue`, `metavision`, hoặc `both` (bản Demo chỉ có `metavision` 77 đợt, `carevue` 59 đợt) |
 | `first_careunit` / `last_careunit` | Đơn vị điều trị đầu/cuối (vd `MICU`, `SICU`, `CCU`, `CSRU`) |
 | `first_wardid` / `last_wardid` | Mã phòng/khu vật lý đầu/cuối |
 | `intime` / `outtime` | Thời điểm vào/ra ICU — dùng để xác định khoảng thời gian replay streaming cho từng bệnh nhân |
@@ -163,8 +163,9 @@ Mỗi dòng là **1 lần đo 1 chỉ số** (vitals, thang điểm ý thức, c
 | `value` | Giá trị dạng văn bản gốc |
 | `valuenum` | Giá trị dạng số — **dùng để tính toán/feature engineering** |
 | `valueuom` | Đơn vị đo của giá trị này |
-| `warning` / `error` | Cờ hệ thống cảnh báo giá trị bất thường / lỗi nhập liệu |
-| `resultstatus` / `stopped` | Trạng thái kết quả / trạng thái dừng đo (chủ yếu có ở nguồn MetaVision) |
+| `warning` / `error` | **Chỉ có ở nguồn MetaVision** (CareVue để trống): cờ hệ thống cảnh báo giá trị bất thường / lỗi đo-nhập liệu — bỏ các dòng `error = 1` |
+| `resultstatus` / `stopped` | **Chỉ có ở nguồn CareVue** (MetaVision để trống): kiểu kết quả / trạng thái dừng (`NotStopd`, `D/C'd`) — bỏ các dòng `stopped = "D/C'd"`. Kiểm chứng: itemid 211 (CareVue) có `stopped = NotStopd` ở 100% dòng, itemid 220045 (MetaVision) có `warning`/`error` và để trống `stopped` |
+| `charttime` (lưu ý) | Mọi mốc thời gian trong MIMIC đã bị dịch sang khoảng năm 2100–2200 để ẩn danh — chỉ khoảng cách tương đối giữa các mốc là có ý nghĩa |
 
 ### `DATETIMEEVENTS.csv` (15.551 dòng) — không dùng trực tiếp
 Giống cấu trúc `CHARTEVENTS` nhưng dành cho các chỉ số mà **giá trị đo được là một mốc thời gian** (vd giờ đặt ống thông tiểu, giờ thay băng) thay vì một con số — do đó không có cột `valuenum`.
@@ -310,6 +311,6 @@ Trong bản đầy đủ, bảng này chứa ghi chú lâm sàng dạng văn b�
 | Bảng | Dùng ở module | Mục đích |
 |---|---|---|
 | `PATIENTS`, `ADMISSIONS`, `ICUSTAYS` | `ml/src/preprocess.py` | Tuổi, giới tính, outcome tử vong thật (đối chiếu nhãn proxy), mốc thời gian ICU |
-| `CHARTEVENTS` | `ml/src/preprocess.py`, `streaming/producer.py` | Nguồn vitals chính — huấn luyện model và replay streaming |
+| `CHARTEVENTS` | `ml/src/preprocess.py` | Nguồn vitals chính — được làm sạch và đưa về lưới 1 giờ; dữ liệu đã xử lý dùng cho huấn luyện, còn phần thuộc nhóm bệnh nhân "stream" được `streaming/producer.py` phát lại (producer không đọc CHARTEVENTS thô, để luồng streaming và huấn luyện dùng cùng một cách tiền xử lý) |
 | `D_ITEMS` | `ml/src/preprocess.py` | Tra cứu/gộp itemid CareVue+MetaVision về cùng tên feature |
 | Các bảng còn lại | không dùng trong scope hiện tại | Có thể tham khảo mở rộng ở "Hướng phát triển" (mục 4.2), ví dụ: dùng thêm `LABEVENTS` làm feature bổ sung, `DRGCODES`/`DIAGNOSES_ICD` để phân tầng bệnh nhân theo nhóm bệnh khi đánh giá mô hình |
