@@ -6,9 +6,11 @@ Tài liệu thiết kế đầy đủ (mục 1-2 theo khung báo cáo): xem [`do
 
 ## Trạng thái hiện tại
 
+> Xem `CLAUDE.md` mục "Trạng thái hiện tại" để biết chi tiết bước tiếp theo cần làm.
+
 - ✅ Giai đoạn A — Thiết kế (toàn bộ sơ đồ UML/DFD/ERD, thiết kế giải thuật, thiết kế test)
-- ✅ Giai đoạn B — Khung repo & hạ tầng nền (đang thực hiện)
-- ⬜ Giai đoạn C — Dữ liệu & huấn luyện model
+- ✅ Giai đoạn B — Khung repo & hạ tầng nền (đã test chạy thật: Postgres+TimescaleDB, Kafka, MLflow, Airflow, Prometheus, Grafana)
+- 🔶 Giai đoạn C — Dữ liệu & huấn luyện model (dataset MIMIC-III Demo đã tải & verify, chưa viết code preprocess/train)
 - ⬜ Giai đoạn D — Streaming (Kafka producer/consumer)
 - ⬜ Giai đoạn E — Backend (FastAPI)
 - ⬜ Giai đoạn F — Frontend (React)
@@ -46,4 +48,4 @@ Service `backend`, `frontend`, `kafka-producer`, `kafka-consumer` sẽ được 
 
 ## Dataset
 
-MIMIC-III Clinical Database Demo (PhysioNet, open license) — xem chi tiết cách tải và tiền xử lý ở `ml/README.md` (sẽ tạo ở Giai đoạn C).
+MIMIC-III Clinical Database Demo v1.4 (PhysioNet, open license). Đã tải về `mimic-iii-clinical-database-demo-1.4_data/` ở thư mục gốc repo (không nằm trong git, xem `.gitignore`) — 100 bệnh nhân, checksum đã verify khớp `SHA256SUMS.txt`. Chi tiết mapping itemid vitals: xem `CLAUDE.md` mục "Trạng thái hiện tại". Cách tải: đăng ký tài khoản miễn phí tại physionet.org, chấp nhận Data Use Agreement, tải và giải nén vào thư mục trên.
