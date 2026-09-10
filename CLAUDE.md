@@ -30,7 +30,12 @@
 
     - **Quality gate từ chối** vì Recall CRITICAL 0,730 < ngưỡng tuyệt đối 0,80. Trên MLflow, `risk_classifier` v1 mang alias `challenger`, tag `gate=rejected`; **chưa có `champion`**.
 - **Việc tiếp theo**:
-  1. **Chờ người dùng quyết định** cách xử lý gate: giữ ngưỡng 0,80 và cải thiện model/cách chọn τ, hay hiệu chỉnh ngưỡng tuyệt đối theo thực nghiệm như `02_10` đã dự liệu. Không tự đổi ngưỡng trong `ml/src/gate.py`.
+  1. **Làm ngay khi mở phiên mới** — người dùng đã chọn ngày 2026-09-10: *chọn τ bằng CV, giữ ngưỡng 0,80*.
+     - Sửa `train.py`: chọn `τ_critical` trên dự đoán out-of-fold của GroupKFold trên train ∪ validation (63 bệnh nhân), thay vì chỉ trên validation (15 bệnh nhân). Model cuối vẫn fit trên train.
+     - Cập nhật câu mô tả cách chọn τ ở `docs/design/02_9` mục 2.9.6 và `02_10` mục 2.10.3 cho khớp.
+     - Chạy lại `train.py` **đúng 1 lần**. Nếu Recall CRITICAL trên test vẫn < 0,80 thì **hỏi lại người dùng**, không tự hạ ngưỡng trong `ml/src/gate.py`.
+     - Ghi chú cho báo cáo mục 3.4: tập test đã được dùng 2 lần (lần chạy đầu + lần chạy lại).
+     - Cần hạ tầng: `docker compose up -d postgres mlflow`, rồi đặt `MLFLOW_TRACKING_URI=http://localhost:5000`.
   2. LSTM-Autoencoder (cửa sổ 12 giờ, 6 kênh z-score, chỉ cửa sổ NORMAL), đánh giá bằng tiêm bất thường; viết `evaluate.py`. Thêm tensorflow 2.21.0, shap 0.51.0 vào `ml/requirements.txt` (máy đã cài sẵn).
   3. Bám `docs/design/02_9_thiet_ke_giai_thuat.md` mục 2.9.2–2.9.3, 2.9.5 và `02_10` mục 2.10.3.
 - **Quyết định đã chốt sau rà soát 2026-09-10** (người dùng đã duyệt):
