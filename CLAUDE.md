@@ -9,7 +9,7 @@
 - **Đang ở đâu**:
   - Giai đoạn A (thiết kế, mục 2) và Giai đoạn B (khung repo + hạ tầng Docker) đã xong, nhánh `master`.
   - 2026-09-10: **rà soát toàn bộ** thiết kế + hạ tầng + dữ liệu thật và sửa lại (commit `d25a37b`).
-  - **Giai đoạn C — Dữ liệu & Model: phần dữ liệu đã xong, phần model chưa bắt đầu.**
+  - **Giai đoạn C — Dữ liệu & Model: phần dữ liệu đã xong; mô hình dự báo rủi ro đã train nhưng chưa qua gate; LSTM-AE chưa làm.**
     - `common/rpm_common`: mapping itemid, làm sạch, lưới 1 giờ, forward-fill, NEWS2 rút gọn, feature cửa sổ 6 giờ, baseline z-score, nhãn dự báo, hàm ghép `build_hourly_features`. 85 unit test qua, gồm test tính nhân quả (feature tại t không phụ thuộc dữ liệu sau t).
     - `ml/src/preprocess.py` + `ml/src/split.py`, 7 test qua. Đã chạy trên dữ liệu thật và sinh ra (trong `ml/data/processed/`, không nằm trong git):
       - `hourly.parquet`: 132 đợt ICU, 14.138 giờ;
@@ -17,15 +17,22 @@
       - `summary.json`.
     - File chia nhóm cố định `ml/splits/subject_split.json`: 48/15/15/20 bệnh nhân có vitals, seed 42 — **không tạo lại**.
     - Môi trường: `.venv` ở gốc repo (tạo bằng `--system-site-packages`, đã cài `-e common`).
-- **Việc tiếp theo (chưa làm)**:
-  1. `ml/src/train.py` — mô hình dự báo rủi ro h = 4:
-     - baseline persistence + Logistic Regression + XGBoost/Random Forest;
-     - GroupKFold theo `subject_id` trên train ∪ validation, trọng số lớp, chọn `τ_critical` trên validation;
-     - log MLflow: chạy `docker compose up -d postgres mlflow`, đặt `MLFLOW_TRACKING_URI=http://localhost:5000`;
-     - đăng ký model + alias `champion` nếu qua gate. Lần đầu chưa có champion: chỉ xét ngưỡng tuyệt đối + thắng persistence.
-  2. LSTM-Autoencoder (cửa sổ 12 giờ, 6 kênh z-score, chỉ cửa sổ NORMAL), đánh giá bằng tiêm bất thường; viết `evaluate.py`.
-  3. Thêm thư viện train vào `ml/requirements.txt`: xgboost 3.0.0, tensorflow 2.21.0, shap 0.51.0, mlflow 3.11.1 — máy đã cài sẵn.
-  4. Bám `docs/design/02_9_thiet_ke_giai_thuat.md` mục 2.9.2–2.9.3, 2.9.5 và `02_10` mục 2.10.3.
+  - **Mô hình dự báo rủi ro (h = 4): code xong, đã chạy thật**:
+    - Code: `ml/src/train.py` + `risk_models.py`, `metrics.py`, `gate.py`, `drift.py`; `rpm_common/risk.py`. 21 test ở `ml/`, 87 test ở `common/`.
+    - CV Macro F1: Random Forest 0,622 (được chọn), Logistic Regression 0,618, XGBoost 0,608, persistence 0,565.
+    - Trên tập test, với `τ_critical = 0,25` chọn trên validation:
+
+      | Metric | Model | Persistence |
+      |---|---|---|
+      | Macro F1 | 0,639 | 0,547 |
+      | Recall CRITICAL | 0,730 | 0,308 |
+      | AUROC | 0,836 | — |
+
+    - **Quality gate từ chối** vì Recall CRITICAL 0,730 < ngưỡng tuyệt đối 0,80. Trên MLflow, `risk_classifier` v1 mang alias `challenger`, tag `gate=rejected`; **chưa có `champion`**.
+- **Việc tiếp theo**:
+  1. **Chờ người dùng quyết định** cách xử lý gate: giữ ngưỡng 0,80 và cải thiện model/cách chọn τ, hay hiệu chỉnh ngưỡng tuyệt đối theo thực nghiệm như `02_10` đã dự liệu. Không tự đổi ngưỡng trong `ml/src/gate.py`.
+  2. LSTM-Autoencoder (cửa sổ 12 giờ, 6 kênh z-score, chỉ cửa sổ NORMAL), đánh giá bằng tiêm bất thường; viết `evaluate.py`. Thêm tensorflow 2.21.0, shap 0.51.0 vào `ml/requirements.txt` (máy đã cài sẵn).
+  3. Bám `docs/design/02_9_thiet_ke_giai_thuat.md` mục 2.9.2–2.9.3, 2.9.5 và `02_10` mục 2.10.3.
 - **Quyết định đã chốt sau rà soát 2026-09-10** (người dùng đã duyệt):
   - Model rủi ro là **dự báo** mức NEWS2 cao nhất trong 4 giờ tới, không phân loại tức thời. Phân loại tức thời bị rò rỉ nhãn vì nhãn là hàm tất định của đặc trưng. Model phải thắng baseline persistence.
   - Drift với PSI ≥ 0,25 → **tự động** kích hoạt retrain; quality gate chặn model kém; Admin vẫn retrain thủ công được.

@@ -9,7 +9,12 @@ src/
   preprocess.py     [đã có] Load MIMIC-III Demo → gọi rpm_common (làm sạch, lưới 1 giờ, NEWS2, feature, baseline),
                     tạo nhãn dự báo h=1/h=4, gắn nhóm chia dữ liệu, xuất dữ liệu cho train và cho producer
   split.py          [đã có] Chia 4 nhóm theo subject_id, phân tầng theo tử vong tại viện, đọc/ghi file cố định
-  train.py          Baseline persistence + LogisticRegression + XGBoost/RandomForest (dự báo rủi ro) và LSTM-Autoencoder
+  train.py          [đã có, phần rủi ro] CV chọn họ mô hình, chọn τ_critical, đánh giá test, gate, log/đăng ký MLflow
+  risk_models.py    [đã có] Ứng viên LogisticRegression/RandomForest/XGBoost, trọng số lớp, GroupKFold
+  metrics.py        [đã có] Metric phân loại + chọn τ_critical theo recall mục tiêu
+  gate.py           [đã có] Quality gate cho mô hình rủi ro
+  drift.py          [đã có] reference_stats (log kèm model), PSI, KS
+  (chưa có)         LSTM-Autoencoder
   evaluate.py       Metric theo docs/design/02_10_thiet_ke_test.md mục 2.10.3, luôn kèm baseline persistence
   drift_detect.py   PSI/KS theo 02_9 mục 2.9.4
   retrain.py        Entry point cho Airflow DAG retrain_pipeline, Champion–Challenger theo 02_9 mục 2.9.5
