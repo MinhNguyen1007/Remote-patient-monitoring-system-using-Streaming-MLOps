@@ -8,16 +8,7 @@
 
 - **Đang ở đâu**: Giai đoạn A (thiết kế, mục 2) và Giai đoạn B (khung repo + hạ tầng Docker) đã xong và đã commit (`bb43ab8`, nhánh `master`). Đang chuyển sang **Giai đoạn C — Dữ liệu & Model**.
 - **Việc tiếp theo (chưa làm)**: viết `ml/src/preprocess.py` để load MIMIC-III Demo, map itemid CareVue+MetaVision về cùng tên feature chuẩn (xem bảng itemid bên dưới), chuẩn hóa đơn vị nhiệt độ, tính feature theo `docs/design/02_9_thiet_ke_giai_thuat.md`.
-- **Dataset**: đã tải MIMIC-III Clinical Database Demo v1.4 tại `mimic-iii-clinical-database-demo-1.4_data/` (thư mục gốc repo, đã bị `.gitignore` loại, KHÔNG nằm trong git). Đã verify: checksum khớp `SHA256SUMS.txt`, đủ 100 bệnh nhân, đủ 5 vitals cần dùng (xem bảng itemid bên dưới). Thư mục này có thể chưa tồn tại trên máy khác/session khác — nếu không thấy, người dùng cần tải lại từ PhysioNet.
-- **itemid vitals trong CHARTEVENTS.csv** (phải gộp cả 2 hệ khi xử lý):
-  | Vital | itemid CareVue | itemid MetaVision |
-  |---|---|---|
-  | Heart Rate | 211 | 220045 |
-  | SpO2 | 646 | 220277 |
-  | Respiratory Rate | 618 | 220210 |
-  | Huyết áp tâm thu | 51, 455 | 220179 |
-  | Huyết áp tâm trương | 8368, 8441 | 220180 |
-  | Nhiệt độ | 678 (°F) | 223761 (°F)/223762 (°C) |
+- **Dataset**: đã tải MIMIC-III Clinical Database Demo v1.4 tại `mimic-iii-clinical-database-demo-1.4_data/` (thư mục gốc repo, đã bị `.gitignore` loại, KHÔNG nằm trong git). Mô tả đầy đủ dataset, lý do chọn, mapping itemid, trích dẫn bắt buộc: xem [`ml/README.md`](ml/README.md). Thư mục dataset có thể chưa tồn tại trên máy khác/session khác — nếu không thấy, người dùng cần tải lại từ PhysioNet theo hướng dẫn trong `ml/README.md`.
 - **Hạ tầng Docker**: đã test chạy thật thành công (postgres+timescaledb healthy, kafka/zookeeper/mlflow/prometheus/grafana up, airflow migrate+tạo user admin+webserver health OK) rồi `docker compose down` để giải phóng tài nguyên — cần `docker compose up -d ...` lại khi cần dùng tiếp.
 - **Còn phụ thuộc người dùng**: file mẫu báo cáo Word (.docx) của trường — chưa có, chỉ chặn bước cuối cùng (mục 6), không chặn code.
 

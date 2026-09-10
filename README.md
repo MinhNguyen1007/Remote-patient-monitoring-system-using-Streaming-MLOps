@@ -48,4 +48,4 @@ Service `backend`, `frontend`, `kafka-producer`, `kafka-consumer` sẽ được 
 
 ## Dataset
 
-MIMIC-III Clinical Database Demo v1.4 (PhysioNet, open license). Đã tải về `mimic-iii-clinical-database-demo-1.4_data/` ở thư mục gốc repo (không nằm trong git, xem `.gitignore`) — 100 bệnh nhân, checksum đã verify khớp `SHA256SUMS.txt`. Chi tiết mapping itemid vitals: xem `CLAUDE.md` mục "Trạng thái hiện tại". Cách tải: đăng ký tài khoản miễn phí tại physionet.org, chấp nhận Data Use Agreement, tải và giải nén vào thư mục trên.
+MIMIC-III Clinical Database Demo v1.4 (PhysioNet, open license) — xem mô tả đầy đủ, lý do lựa chọn, mapping itemid vitals và trích dẫn bắt buộc tại [`ml/README.md`](ml/README.md).
