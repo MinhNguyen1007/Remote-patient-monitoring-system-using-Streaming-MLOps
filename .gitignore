@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node / frontend
+node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+
+# ML artifacts
+ml/mlruns/
+ml/artifacts/
+*.h5
+*.pkl
+*.joblib
+
+# Data (không commit dataset vào git - MIMIC-III Demo có license riêng + dung lượng lớn)
+data/
+ml/data/
+mimic-iii-clinical-database-demo-*/
+
+# Docker / infra runtime
+infra/postgres_data/
+infra/airflow/logs/
+infra/airflow/plugins/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

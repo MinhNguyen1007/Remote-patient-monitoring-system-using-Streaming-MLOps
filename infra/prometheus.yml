@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+  # Backend FastAPI sẽ được thêm vào đây ở Giai đoạn E khi expose endpoint /metrics
+  # - job_name: backend
+  #   static_configs:
+  #     - targets: ["backend:8000"]
