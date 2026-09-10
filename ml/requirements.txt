@@ -1,0 +1,7 @@
+# Cài từ gốc repo: pip install -e common -r ml/requirements.txt
+# Phiên bản đã kiểm chứng chạy được trên máy phát triển; thư viện train (xgboost, tensorflow, mlflow==3.11.1, shap)
+# được thêm khi viết train.py.
+numpy==1.26.4
+pandas==2.1.4
+pyarrow==22.0.0
+pytest==7.4.4

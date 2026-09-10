@@ -21,16 +21,17 @@ Dữ liệu MIMIC là vitals do điều dưỡng ghi nhận, không phải tín 
 
 ### c) Chia dữ liệu theo bệnh nhân (`subject_id`)
 
-19 bệnh nhân có hơn 1 đợt ICU, nên đơn vị chia là `subject_id` (không phải `icustay_id`/`hadm_id`). 100 bệnh nhân được chia ngẫu nhiên (seed cố định, phân tầng theo việc có tử vong tại viện hay không) thành 4 nhóm cố định:
+19 bệnh nhân có hơn 1 đợt ICU, nên đơn vị chia là `subject_id` (không phải `icustay_id`/`hadm_id`). 98 bệnh nhân có dữ liệu vitals (2/100 bệnh nhân của bản Demo không có) được chia ngẫu nhiên (seed 42, phân tầng theo việc có tử vong tại viện hay không) thành 4 nhóm cố định. Số liệu thực tế sau khi chia:
 
-| Nhóm | Số bệnh nhân | Dùng để |
-|---|---|---|
-| `train` | 50 | Huấn luyện ban đầu |
-| `validation` | 15 | Chọn siêu tham số, chọn ngưỡng (τ), early stopping |
-| `test` | 15 | **Cố định tuyệt đối** — chỉ dùng cho quality gate và báo cáo kết quả cuối |
-| `stream` | 20 | Được producer phát lại qua Kafka như bệnh nhân "đang nằm viện"; dữ liệu tích lũy từ nhóm này là "dữ liệu mới" cho retrain |
+| Nhóm | Bệnh nhân | Đợt ICU | Giờ dữ liệu | Dùng để |
+|---|---|---|---|---|
+| `train` | 48 | 69 | 6.286 | Huấn luyện ban đầu |
+| `validation` | 15 | 17 | 2.251 | Chọn siêu tham số, chọn ngưỡng (τ), early stopping |
+| `test` | 15 | 21 | 3.476 | **Cố định tuyệt đối** — chỉ dùng cho quality gate và báo cáo kết quả cuối |
+| `stream` | 20 | 25 | 2.125 | Được producer phát lại qua Kafka như bệnh nhân "đang nằm viện" (20 đợt, 1.834 giờ); dữ liệu tích lũy từ nhóm này là "dữ liệu mới" cho retrain |
 
-- Danh sách `subject_id` của từng nhóm được lưu thành file cố định trong repo, mọi lần train/retrain dùng chung.
+- Danh sách `subject_id` của từng nhóm được lưu cố định trong `ml/splits/subject_split.json` (commit vào git), mọi lần train/retrain dùng chung.
+- Chia theo bệnh nhân nên số giờ mỗi nhóm không tỷ lệ với số bệnh nhân (độ dài đợt ICU chênh lệch rất lớn, từ vài giờ tới hơn 300 giờ). Tập `train` chỉ chiếm ~44% số giờ — chấp nhận đổi lấy việc không rò rỉ bệnh nhân; không chọn lại seed để "đẹp" số liệu.
 - Model không bao giờ thấy dữ liệu của nhóm `stream` trước khi nó được phát lại, và không bao giờ huấn luyện trên `test`.
 - Do tập test nhỏ, kết quả chọn model được báo thêm dạng mean ± std qua **GroupKFold 5 fold** (nhóm theo `subject_id`) trên `train ∪ validation`.
 
@@ -55,7 +56,7 @@ NEWS2 gốc (Royal College of Physicians, 2017) có 7 thông số. Dự án dùn
 | `WARNING` | Tổng 5–6, **hoặc** có ít nhất 1 thông số đạt 3 điểm (mức "low-medium" của NEWS2) |
 | `CRITICAL` | Tổng ≥ 7 |
 
-Nếu bỏ quy tắc "một thông số 3 điểm", 13,9% số giờ dữ liệu sẽ bị gán NORMAL sai về mặt lâm sàng. Phân bố mức theo giờ trên dữ liệu thật: NORMAL 61,6%, WARNING 31,8%, CRITICAL 6,6%; tổng điểm cao nhất quan sát được là 13.
+Nếu bỏ quy tắc "một thông số 3 điểm", 13,9% số giờ dữ liệu sẽ bị gán NORMAL sai về mặt lâm sàng. Phân bố mức theo giờ trên dữ liệu thật: NORMAL 61,6%, WARNING 31,8%, CRITICAL 6,7%; tổng điểm cao nhất quan sát được là 13.
 
 ### e) Đặc trưng thống kê theo cửa sổ trượt
 
@@ -73,7 +74,8 @@ Nếu bỏ quy tắc "một thông số 3 điểm", 13,9% số giờ dữ liệu
 
 ### g) Replay cho streaming
 
-- Producer phát lại **1 đợt ICU cho mỗi bệnh nhân nhóm `stream`** (đợt dài nhất có dữ liệu vitals). Như vậy mỗi bệnh nhân trên dashboard ứng với đúng 1 đợt điều trị.
+- Producer phát lại **1 đợt ICU cho mỗi bệnh nhân nhóm `stream`** (đợt dài nhất có dữ liệu vitals). Như vậy mỗi bệnh nhân trên dashboard ứng với đúng 1 đợt điều trị. 20 đợt được phát lại dài 12–365 giờ dữ liệu (trung vị 36,5 giờ); với tốc độ mặc định, đợt dài nhất phát trong khoảng 30 phút.
+- Producer gửi **giá trị đo theo giờ chưa điền** (`<vital>_obs`, kể cả các giờ không đo) lấy từ `stream_replay.parquet`. Consumer tự forward-fill và tính đặc trưng bằng `rpm_common`, giống hệt lúc huấn luyện.
 - Thời gian trong MIMIC đã bị dịch sang năm 2102–2202, nên producer bỏ mốc tuyệt đối và chỉ giữ thứ tự giờ.
 - `recorded_at` = thời điểm phát theo đồng hồ hệ thống. 1 giờ dữ liệu được phát trong `REPLAY_SECONDS_PER_DATA_HOUR` giây (mặc định 5).
 - Payload giữ thêm `hour_index` (giờ thứ mấy kể từ khi vào ICU) và `source_charttime` để truy vết.
@@ -84,7 +86,7 @@ Nếu bỏ quy tắc "một thông số 3 điểm", 13,9% số giờ dữ liệu
 - **Bài toán**: tại mỗi giờ t, dự báo mức rủi ro **cao nhất trong h giờ tới**: `y_t = max(risk_class(t+1), …, risk_class(t+h))`, với `risk_class` là mức NEWS2 ở mục 2.9.1(d). Mặc định **h = 4 giờ**; thực nghiệm ở mục 3.4 so sánh thêm h = 1.
 - **Lý do chọn bài toán dự báo** (thay vì phân loại tức thời):
   - Nếu nhãn là mức NEWS2 **tại chính thời điểm t**, nhãn sẽ là một hàm tất định của đặc trưng đầu vào: mô hình đạt độ chính xác ~100% nhưng chỉ học lại bảng NEWS2 (rò rỉ nhãn).
-  - Dự báo tương lai là bài toán có giá trị thật ("cảnh báo sớm"). Trên dữ liệu thật, 434/872 giờ CRITICAL là khởi phát mới (giờ trước chưa CRITICAL).
+  - Dự báo tương lai là bài toán có giá trị thật ("cảnh báo sớm"). Trên dữ liệu thật, 434/874 giờ CRITICAL là khởi phát mới (giờ trước chưa CRITICAL).
 - **Nhãn chỉ dùng mẫu có đủ h giờ phía sau** trong cùng đợt ICU, và cả h giờ đó đều tính được mức NEWS2 (đủ 5 thông số sau khi điền). Với dữ liệu streaming, nhãn của giờ t "chín" sau h giờ — đây là nguồn nhãn cho retrain.
 - **Đặc trưng đầu vào** (chỉ dùng dữ liệu ≤ t):
   - 6 vitals hiện tại.
@@ -92,15 +94,17 @@ Nếu bỏ quy tắc "một thông số 3 điểm", 13,9% số giờ dữ liệu
   - Các đặc trưng cửa sổ 6 giờ và Δ1h.
   - Ngữ cảnh (mục 2.9.1e).
 - **Mô hình**:
-  - **Baseline persistence** (bắt buộc so sánh): dự báo = mức NEWS2 hiện tại. Mô hình học máy chỉ có ý nghĩa khi thắng baseline này. Kết quả đo trên toàn bộ dữ liệu thật:
+  - **Baseline persistence** (bắt buộc so sánh): dự báo = mức NEWS2 hiện tại. Mô hình học máy chỉ có ý nghĩa khi thắng baseline này. Kết quả đo trên dữ liệu thật (đầu ra của `ml/src/preprocess.py`):
 
-    | Horizon | Accuracy | Macro F1 | Recall CRITICAL |
-    |---|---|---|---|
-    | h = 4 (mặc định) | 62,0% | 0,566 | 31,1% |
-    | h = 1 | 73,5% | 0,642 | 48,6% |
+    | Horizon | Tập | Accuracy | Macro F1 | Recall CRITICAL |
+    |---|---|---|---|---|
+    | h = 4 (mặc định) | toàn bộ | 62,1% | 0,567 | 31,3% |
+    | h = 4 (mặc định) | `test` | 59,7% | 0,547 | 30,8% |
+    | h = 1 | toàn bộ | 73,6% | 0,643 | 48,8% |
+    | h = 1 | `test` | 71,5% | 0,621 | 48,6% |
   - Logistic Regression (multinomial, L2).
   - **XGBoost** multi-class (`objective=multi:softprob`), so sánh thêm Random Forest; chọn mô hình theo GroupKFold.
-  - Mất cân bằng lớp xử lý bằng trọng số lớp (`sample_weight`), không sinh mẫu giả. CRITICAL chiếm 6,6% số giờ; với h = 4, nhãn CRITICAL chiếm 14,5%.
+  - Mất cân bằng lớp xử lý bằng trọng số lớp (`sample_weight`), không sinh mẫu giả. CRITICAL chiếm 6,7% số giờ; với h = 4, nhãn CRITICAL chiếm 14,5%.
 - **Đầu ra**: xác suất 3 lớp; `risk_score = P(CRITICAL)`; `risk_level` suy ra theo ngưỡng ở mục 2.9.6.
 - **Đánh giá** (trên tập `test` cố định):
   - Accuracy, Macro F1, **Recall lớp CRITICAL** (ưu tiên lâm sàng: bỏ sót ca nguy kịch nghiêm trọng hơn báo động giả).
@@ -207,7 +211,7 @@ Mức WARNING chỉ đổi màu badge, không tạo cảnh báo.
 **Chống bão cảnh báo (alarm fatigue)** — với mỗi cặp (bệnh nhân, loại cảnh báo):
 - Chỉ tạo cảnh báo mới khi **không còn cảnh báo cùng loại đang ở trạng thái OPEN**, **và** cảnh báo cùng loại gần nhất đã cách ít nhất `cooldown` giờ dữ liệu (mặc định 4).
 - Trong lúc cảnh báo đang OPEN, prediction mới vẫn được lưu và đẩy lên dashboard, nhưng không sinh thêm cảnh báo hay email.
-- Lý do: dữ liệu thật có 872 giờ CRITICAL. Nếu mỗi giờ sinh 1 cảnh báo, bác sĩ sẽ nhận hàng trăm email lặp lại cho cùng một đợt nguy kịch.
+- Lý do: dữ liệu thật có 874 giờ CRITICAL. Nếu mỗi giờ sinh 1 cảnh báo, bác sĩ sẽ nhận hàng trăm email lặp lại cho cùng một đợt nguy kịch.
 
 **Người nhận**: khi cảnh báo được tạo, email được gửi tới **mọi bác sĩ và điều dưỡng được phân công** cho bệnh nhân đó (bảng `patient_assignments`).
 

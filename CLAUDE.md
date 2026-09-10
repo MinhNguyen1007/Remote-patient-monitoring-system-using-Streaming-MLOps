@@ -8,12 +8,24 @@
 
 - **Đang ở đâu**:
   - Giai đoạn A (thiết kế, mục 2) và Giai đoạn B (khung repo + hạ tầng Docker) đã xong, nhánh `master`.
-  - Ngày 2026-09-10 đã **rà soát toàn bộ** thiết kế + hạ tầng + dữ liệu thật, rồi sửa lại toàn bộ `docs/design/`, `ml/README.md`, `ml/data_dictionary.md`, docker-compose.
-  - Đang ở **Giai đoạn C — Dữ liệu & Model**: tài liệu dataset và thiết kế giải thuật đã chốt, code chưa bắt đầu.
+  - 2026-09-10: **rà soát toàn bộ** thiết kế + hạ tầng + dữ liệu thật và sửa lại (commit `d25a37b`).
+  - **Giai đoạn C — Dữ liệu & Model: phần dữ liệu đã xong, phần model chưa bắt đầu.**
+    - `common/rpm_common`: mapping itemid, làm sạch, lưới 1 giờ, forward-fill, NEWS2 rút gọn, feature cửa sổ 6 giờ, baseline z-score, nhãn dự báo, hàm ghép `build_hourly_features`. 85 unit test qua, gồm test tính nhân quả (feature tại t không phụ thuộc dữ liệu sau t).
+    - `ml/src/preprocess.py` + `ml/src/split.py`, 7 test qua. Đã chạy trên dữ liệu thật và sinh ra (trong `ml/data/processed/`, không nằm trong git):
+      - `hourly.parquet`: 132 đợt ICU, 14.138 giờ;
+      - `stream_replay.parquet`: 20 bệnh nhân, 1.834 giờ;
+      - `summary.json`.
+    - File chia nhóm cố định `ml/splits/subject_split.json`: 48/15/15/20 bệnh nhân có vitals, seed 42 — **không tạo lại**.
+    - Môi trường: `.venv` ở gốc repo (tạo bằng `--system-site-packages`, đã cài `-e common`).
 - **Việc tiếp theo (chưa làm)**:
-  1. Tạo package dùng chung `common/rpm_common` (mapping itemid, làm sạch, lưới 1 giờ, forward-fill, NEWS2 rút gọn, feature cửa sổ, baseline) **kèm unit test**.
-  2. Viết `ml/src/preprocess.py`: tạo nhãn dự báo h = 4, chia 4 nhóm theo `subject_id` → `ml/splits/`.
-  3. Bám `docs/design/02_9_thiet_ke_giai_thuat.md` mục 2.9.1–2.9.2 và `ml/README.md` mục 4.
+  1. `ml/src/train.py` — mô hình dự báo rủi ro h = 4:
+     - baseline persistence + Logistic Regression + XGBoost/Random Forest;
+     - GroupKFold theo `subject_id` trên train ∪ validation, trọng số lớp, chọn `τ_critical` trên validation;
+     - log MLflow: chạy `docker compose up -d postgres mlflow`, đặt `MLFLOW_TRACKING_URI=http://localhost:5000`;
+     - đăng ký model + alias `champion` nếu qua gate. Lần đầu chưa có champion: chỉ xét ngưỡng tuyệt đối + thắng persistence.
+  2. LSTM-Autoencoder (cửa sổ 12 giờ, 6 kênh z-score, chỉ cửa sổ NORMAL), đánh giá bằng tiêm bất thường; viết `evaluate.py`.
+  3. Thêm thư viện train vào `ml/requirements.txt`: xgboost 3.0.0, tensorflow 2.21.0, shap 0.51.0, mlflow 3.11.1 — máy đã cài sẵn.
+  4. Bám `docs/design/02_9_thiet_ke_giai_thuat.md` mục 2.9.2–2.9.3, 2.9.5 và `02_10` mục 2.10.3.
 - **Quyết định đã chốt sau rà soát 2026-09-10** (người dùng đã duyệt):
   - Model rủi ro là **dự báo** mức NEWS2 cao nhất trong 4 giờ tới, không phân loại tức thời. Phân loại tức thời bị rò rỉ nhãn vì nhãn là hàm tất định của đặc trưng. Model phải thắng baseline persistence.
   - Drift với PSI ≥ 0,25 → **tự động** kích hoạt retrain; quality gate chặn model kém; Admin vẫn retrain thủ công được.
@@ -45,7 +57,7 @@ Chi tiết từng sơ đồ: `docs/design/02_1_so_do_chuc_nang.md` … `02_10_th
 - `backend/CLAUDE.md` — quy ước API, DB models, cách thêm endpoint/model mới
 - `frontend/CLAUDE.md` — quy ước component, design system (CS:GO theme tùy biến), state management
 - `ml/CLAUDE.md` — quy ước train/evaluate model, cách log vào MLflow
-- `common/` (tạo ở Giai đoạn C) — package `rpm_common` dùng chung cho `ml/` và `streaming/`
+- `common/` — package `rpm_common` dùng chung cho `ml/` và `streaming/` (quy ước ở `ml/CLAUDE.md`)
 - `streaming/` (tạo ở Giai đoạn D) — Kafka producer + stream consumer
 
 ## Nguyên tắc chung khi code phần này
@@ -75,6 +87,17 @@ cd frontend && npm run dev
 # Test backend
 cd backend && pytest
 
-# Train model (khi đã có code, Giai đoạn C) — chạy trên host cần MLFLOW_TRACKING_URI=http://localhost:5000
-cd ml && python src/train.py
+# Môi trường Python (một lần, từ gốc repo)
+python -m venv .venv
+.venv\Scripts\python -m pip install -e common -r ml/requirements.txt
+
+# Test phần dữ liệu (Giai đoạn C)
+cd common && ..\.venv\Scripts\python -m pytest -q && cd ..
+cd ml && ..\.venv\Scripts\python -m pytest -q && cd ..
+
+# Tiền xử lý dữ liệu → ml/data/processed/
+.venv\Scripts\python ml/src/preprocess.py
+
+# Train model (khi đã có code) — chạy trên host cần MLFLOW_TRACKING_URI=http://localhost:5000
+.venv\Scripts\python ml/src/train.py
 ```

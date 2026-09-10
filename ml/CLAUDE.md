@@ -6,8 +6,9 @@ Xem thiết kế giải thuật chi tiết ở `../docs/design/02_9_thiet_ke_gia
 
 ```
 src/
-  preprocess.py     Load MIMIC-III Demo → làm sạch, gộp itemid, lưới 1 giờ, forward-fill có giới hạn,
-                    tạo nhãn dự báo, chia 4 nhóm theo subject_id, xuất dữ liệu cho train và cho producer
+  preprocess.py     [đã có] Load MIMIC-III Demo → gọi rpm_common (làm sạch, lưới 1 giờ, NEWS2, feature, baseline),
+                    tạo nhãn dự báo h=1/h=4, gắn nhóm chia dữ liệu, xuất dữ liệu cho train và cho producer
+  split.py          [đã có] Chia 4 nhóm theo subject_id, phân tầng theo tử vong tại viện, đọc/ghi file cố định
   train.py          Baseline persistence + LogisticRegression + XGBoost/RandomForest (dự báo rủi ro) và LSTM-Autoencoder
   evaluate.py       Metric theo docs/design/02_10_thiet_ke_test.md mục 2.10.3, luôn kèm baseline persistence
   drift_detect.py   PSI/KS theo 02_9 mục 2.9.4
@@ -20,14 +21,14 @@ Code tính đặc trưng (NEWS2, cửa sổ, baseline, mapping itemid) **không 
 
 ## Quy ước bắt buộc
 
-- **Chia dữ liệu theo `subject_id`** (không phải `icustay_id`/`hadm_id` — 19 bệnh nhân có nhiều đợt ICU). Có 4 nhóm cố định (50/15/15/20) lưu ở `splits/`.
+- **Chia dữ liệu theo `subject_id`** (không phải `icustay_id`/`hadm_id` — 19 bệnh nhân có nhiều đợt ICU). Có 4 nhóm cố định (48/15/15/20 trên 98 bệnh nhân có vitals) lưu ở `splits/subject_split.json` — không tạo lại file này.
   - Nhóm `test` chỉ dùng cho quality gate và báo cáo cuối.
   - Nhóm `stream` chỉ dùng để replay, không dùng cho huấn luyện ban đầu.
 - **Nhãn rủi ro là nhãn dự báo**: `y_t` = mức NEWS2 rút gọn cao nhất trong `(t, t+h]`, mặc định h = 4. **Không bao giờ** lấy mức NEWS2 tại chính t làm nhãn, vì nhãn khi đó là hàm tất định của đặc trưng (rò rỉ nhãn).
   - NEWS2 dùng 5 thông số (0–15) kèm quy tắc "một thông số đạt 3 điểm → WARNING".
 - **Mọi cửa sổ tính theo giờ dữ liệu**: rolling 6 giờ, LSTM 12 bước, baseline lũy tiến ≤ 24 giờ (≥ 6 giờ mới dùng được). Vitals trong MIMIC đo trung vị 60 phút/lần, nhiệt độ 240 phút/lần.
 - **Chỉ forward-fill** (2 giờ với vitals, 6 giờ với nhiệt độ), **không nội suy** — nội suy dùng dữ liệu tương lai mà streaming không có.
-- **Luôn báo baseline persistence** (dự báo = mức hiện tại) cạnh model; model phải thắng baseline. Tham chiếu trên toàn bộ dữ liệu, h = 4: Macro F1 0,566, Recall CRITICAL 31,1%.
+- **Luôn báo baseline persistence** (dự báo = mức hiện tại) cạnh model; model phải thắng baseline. Tham chiếu h = 4 trên tập `test`: Macro F1 0,547, Recall CRITICAL 30,8%.
 - Đối chiếu nhãn proxy với `hospital_expire_flag` (không dùng "chuyển ICU" — mọi dữ liệu đã là ICU). Ghi kết quả vào báo cáo 3.5, kèm thiên lệch chọn mẫu: cả 100 bệnh nhân Demo đều về sau đã tử vong.
 - **LSTM-Autoencoder** chỉ train trên cửa sổ mà cả 12 giờ đều NORMAL, 6 kênh.
   - `anomaly_score` = hàm phân phối tích lũy thực nghiệm của MSE trên cửa sổ NORMAL tập validation, nằm trong [0, 1]. Hàm này được lưu kèm model.
@@ -42,9 +43,21 @@ Code tính đặc trưng (NEWS2, cửa sổ, baseline, mapping itemid) **không 
 ## Lệnh
 
 ```bash
+# Môi trường (từ gốc repo, một lần): venv + package dùng chung ở chế độ editable
+python -m venv .venv
+.venv\Scripts\python -m pip install -e common -r ml/requirements.txt
+
+# Test (từ gốc repo)
+cd common && ..\.venv\Scripts\python -m pytest -q && cd ..
+cd ml && ..\.venv\Scripts\python -m pytest -q && cd ..
+
+# Tiền xử lý → ml/data/processed/{hourly,stream_replay}.parquet + summary.json (không nằm trong git)
+.venv\Scripts\python ml/src/preprocess.py
+
 # Chạy trên host: MLFLOW_TRACKING_URI=http://localhost:5000 (không phải http://mlflow:5000)
-python src/preprocess.py
-python src/train.py
-python src/evaluate.py
-python src/drift_detect.py
+.venv\Scripts\python ml/src/train.py
+.venv\Scripts\python ml/src/evaluate.py
+.venv\Scripts\python ml/src/drift_detect.py
 ```
+
+Máy phát triển hiện tại tạo venv bằng `--system-site-packages` để dùng lại thư viện đã cài sẵn (mạng chậm); phiên bản trong `requirements.txt` là phiên bản đã kiểm chứng trên máy đó.

@@ -52,7 +52,7 @@ Chạy tự động trong DAG `retrain_pipeline` trước khi cho phép model m�
 | Dự báo rủi ro (h = 4) | 1. Macro F1 ≥ 0,60 **và** cao hơn baseline persistence trên cùng tập test.<br>2. Recall lớp CRITICAL ≥ 0,80 tại `τ_critical` đã chọn trên tập validation.<br>3. Không kém champion hiện tại ở cả Macro F1 và Recall CRITICAL. |
 | Phát hiện bất thường (LSTM-Autoencoder) | 1. Precision ≥ 0,7 và Recall ≥ 0,7 tại `τ_anomaly = 0,99` trên tập test có 10% cửa sổ bị tiêm bất thường (seed cố định, mục 2.9.3).<br>2. F1 không kém champion. |
 
-Tham chiếu: baseline persistence đo trên toàn bộ dữ liệu đạt Macro F1 0,566 và Recall CRITICAL 31,1% (h = 4). Nếu model mới không đạt, DAG gắn tag `gate=rejected` kèm lý do cho version đó và giữ nguyên champion.
+Tham chiếu: baseline persistence (h = 4) trên tập `test` đạt Macro F1 0,547 và Recall CRITICAL 30,8% (toàn bộ dữ liệu: 0,567 và 31,3%). Nếu model mới không đạt, DAG gắn tag `gate=rejected` kèm lý do cho version đó và giữ nguyên champion.
 
 ## 2.10.4. Kiểm thử phi chức năng
 

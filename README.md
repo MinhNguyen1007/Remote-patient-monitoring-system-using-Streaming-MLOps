@@ -11,7 +11,7 @@ Tài liệu thiết kế đầy đủ (mục 1-2 theo khung báo cáo): xem [`do
 - ✅ Giai đoạn A — Thiết kế (toàn bộ sơ đồ UML/DFD/ERD, thiết kế giải thuật, thiết kế test)
 - ✅ Giai đoạn B — Khung repo & hạ tầng nền (đã smoke test thật: Kafka từ host, MLflow log/tải model qua proxy artifact, Airflow REST API)
 - ✅ Rà soát toàn bộ thiết kế + dữ liệu thật (2026-09-10) — đã sửa thiết kế giải thuật, sơ đồ, ERD, hạ tầng
-- 🔶 Giai đoạn C — Dữ liệu & huấn luyện model (dataset và thiết kế đã chốt, chưa viết code `common/rpm_common` + preprocess/train)
+- 🔶 Giai đoạn C — Dữ liệu & huấn luyện model (đã xong `common/rpm_common` + `ml/src/preprocess.py` kèm test; chưa train model)
 - ⬜ Giai đoạn D — Streaming (Kafka producer/consumer)
 - ⬜ Giai đoạn E — Backend (FastAPI)
 - ⬜ Giai đoạn F — Frontend (React)
@@ -31,7 +31,7 @@ infra/          Docker, Prometheus/Grafana, Airflow DAGs (drift_check, retrain_p
 docs/design/    Toàn bộ tài liệu thiết kế (mục 1-2 báo cáo), sơ đồ Mermaid
 ```
 
-Các thư mục `common/`, `streaming/` được tạo khi bắt đầu viết code ở Giai đoạn C/D.
+Thư mục `streaming/` được tạo ở Giai đoạn D.
 
 ## Chạy hạ tầng nền (Giai đoạn B)
 
