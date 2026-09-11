@@ -50,7 +50,7 @@ Chạy tự động trong DAG `retrain_pipeline` trước khi cho phép model m�
 | Mô hình | Tiêu chí đạt (ngưỡng đề xuất, sẽ hiệu chỉnh theo kết quả thực nghiệm ở mục 3.4) |
 |---|---|
 | Dự báo rủi ro (h = 4) | 1. Macro F1 ≥ 0,60 **và** cao hơn baseline persistence trên cùng tập test.<br>2. Recall lớp CRITICAL ≥ 0,75 tại `τ_critical`. `τ_critical` được chọn trên dự đoán out-of-fold của GroupKFold trên `train ∪ validation` với **mục tiêu 0,80** (mục 2.9.6).<br>3. Không kém champion hiện tại ở cả Macro F1 và Recall CRITICAL. |
-| Phát hiện bất thường (LSTM-Autoencoder) | 1. Precision ≥ 0,7 và Recall ≥ 0,7 tại `τ_anomaly = 0,99` trên tập test có 10% cửa sổ bị tiêm bất thường (seed cố định, mục 2.9.3).<br>2. F1 không kém champion. |
+| Phát hiện bất thường (LSTM-Autoencoder) | 1. AUROC ≥ 0,75 trên tập test có 10% cửa sổ bị tiêm bất thường (seed cố định, mục 2.9.3).<br>2. AUROC không kém champion.<br>Precision/Recall/F1 tại `τ_anomaly = 0,99` và recall theo từng loại bất thường được báo cáo, không dùng để gate. |
 
 Tham chiếu: baseline persistence (h = 4) trên tập `test` đạt Macro F1 0,547 và Recall CRITICAL 30,8% (toàn bộ dữ liệu: 0,567 và 31,3%). Nếu model mới không đạt, DAG gắn tag `gate=rejected` kèm lý do cho version đó và giữ nguyên champion.
 
@@ -58,6 +58,12 @@ Tham chiếu: baseline persistence (h = 4) trên tập `test` đạt Macro F1 0,
 - Mục tiêu chọn τ bằng ngưỡng gate nghĩa là không có biên an toàn. Tập `test` chỉ có 15 bệnh nhân (315 giờ CRITICAL, tương quan mạnh trong cùng bệnh nhân), nên mỗi lần train/retrain có khoảng 50% khả năng trượt chỉ do nhiễu.
 - Lần chạy thứ 2 (τ chọn bằng out-of-fold) đạt Recall CRITICAL 0,807 trên out-of-fold, 0,849 trên validation, nhưng 0,790 trên test (249/315, thiếu 3 giờ so với 0,80).
 - Ngưỡng gate được hạ xuống 0,75, còn mục tiêu chọn τ giữ 0,80. Đây là hiệu chỉnh **sau khi đã xem kết quả trên tập test**; báo cáo mục 3.4/3.5 phải nêu rõ điều này, cùng với việc tập test đã được dùng 2 lần.
+
+**Hiệu chỉnh gate mô hình bất thường** (2026-09-11) — tiêu chí ban đầu là Precision ≥ 0,7 và Recall ≥ 0,7 tại `τ_anomaly = 0,99`, F1 không kém champion:
+- Lần train đầu (chưa căn giữa cửa sổ), trên test: Precision 0,23, Recall 0,15, AUROC 0,85; tỷ lệ gắn cờ nhầm 5,5%, so với 1% trên validation.
+- Chẩn đoán **chỉ trên `train ∪ validation`** (GroupKFold theo bệnh nhân, 3 cách tính điểm × 3 cách tiền xử lý): không phương án nào có recall vượt khoảng 0,15 tại ngưỡng p99. Tiêu chí 0,7/0,7 không đạt được với dữ liệu này (mục 2.9.3).
+- Người dùng chọn: thêm bước căn giữa cửa sổ (mục 2.9.3) và đổi gate sang AUROC ≥ 0,75, không kém champion. AUROC không phụ thuộc ngưỡng, nên phản ánh khả năng xếp hạng bất thường mà không gắn với một ngưỡng cảnh báo cụ thể.
+- Đây là hiệu chỉnh **sau khi đã xem kết quả test lần đầu**. Tập test của mô hình bất thường đã được dùng 2 lần; báo cáo 3.4/3.5 phải nêu rõ.
 
 ## 2.10.4. Kiểm thử phi chức năng
 

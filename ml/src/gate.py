@@ -8,6 +8,12 @@ MIN_RECALL_CRITICAL = 0.75
 # khiến mỗi lần train/retrain có khoảng 50% khả năng trượt chỉ do nhiễu. Hiệu chỉnh 2026-09-11 (trước đó gate = 0,80).
 TARGET_RECALL_CRITICAL = 0.80
 
+TAU_ANOMALY = 0.99
+# Gate của mô hình bất thường dùng AUROC (không phụ thuộc ngưỡng). Ngưỡng Precision/Recall ≥ 0,70 tại τ = 0,99 ban
+# đầu không đạt được với dữ liệu này: bất thường tiêm theo mục 2.9.3 nằm trong độ biến thiên tự nhiên của vitals
+# theo giờ (đo bằng GroupKFold trên train ∪ validation, 2026-09-11). Precision/Recall/F1 vẫn được báo cáo.
+MIN_AUROC_ANOMALY = 0.75
+
 
 @dataclass
 class GateResult:
@@ -33,4 +39,14 @@ def evaluate_risk_gate(challenger: dict, persistence: dict, champion: dict | Non
             reasons.append(
                 f"Recall CRITICAL {challenger['recall_critical']:.3f} < champion {champion['recall_critical']:.3f}"
             )
+    return GateResult(passed=not reasons, reasons=reasons)
+
+
+def evaluate_anomaly_gate(challenger: dict, champion: dict | None = None) -> GateResult:
+    """Gate độc lập của mô hình bất thường, đo trên cùng tập test đã tiêm bất thường (seed cố định)."""
+    reasons = []
+    if challenger["auroc"] < MIN_AUROC_ANOMALY:
+        reasons.append(f"AUROC {challenger['auroc']:.3f} < ngưỡng {MIN_AUROC_ANOMALY:.2f}")
+    if champion is not None and challenger["auroc"] < champion["auroc"]:
+        reasons.append(f"AUROC {challenger['auroc']:.3f} < champion {champion['auroc']:.3f}")
     return GateResult(passed=not reasons, reasons=reasons)

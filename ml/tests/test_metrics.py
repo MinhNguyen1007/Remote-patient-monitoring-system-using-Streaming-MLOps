@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from metrics import choose_tau_critical, classification_metrics
+from metrics import anomaly_metrics, choose_tau_critical, classification_metrics
 
 
 def test_tau_is_largest_threshold_keeping_target_recall():
@@ -27,6 +27,20 @@ def test_classification_metrics_values():
     assert metrics["precision_critical"] == pytest.approx(1.0)
     assert metrics["confusion_matrix"] == [[1, 1, 0], [0, 2, 0], [1, 0, 1]]
     assert "auroc_ovr" not in metrics
+
+
+def test_anomaly_metrics_at_threshold_with_per_kind_recall():
+    is_anomaly = [True, True, True, False, False, False, False]
+    score = [0.995, 0.999, 0.5, 0.2, 0.991, 0.1, 0.3]
+    kind = ["spike", "drift", "drift", "", "", "", ""]
+    metrics = anomaly_metrics(is_anomaly, score, tau=0.99, kind=kind)
+    assert metrics["precision"] == pytest.approx(2 / 3)
+    assert metrics["recall"] == pytest.approx(2 / 3)
+    assert metrics["false_positive_rate"] == pytest.approx(1 / 4)
+    assert metrics["recall_spike"] == pytest.approx(1.0)
+    assert metrics["recall_drift"] == pytest.approx(0.5)
+    assert metrics["n_anomalies"] == 3
+    assert 0 <= metrics["auroc"] <= 1
 
 
 def test_probability_metrics_are_added_when_proba_given():

@@ -122,18 +122,25 @@ Nếu bỏ quy tắc "một thông số 3 điểm", 13,9% số giờ dữ liệu
 - **Cửa sổ đầu vào**: **L = 12** bản ghi liên tiếp (12 giờ dữ liệu), **6 kênh** (HR, SpO2, RR, SBP, DBP, nhiệt độ), đã chuẩn hóa z-score theo baseline cá nhân (mục 2.9.1f).
   - Chỉ chấm điểm khi baseline đã dùng được và cửa sổ không còn giá trị trống sau khi điền.
   - Vì vậy mỗi bệnh nhân bắt đầu có `anomaly_score` từ giờ thứ 12; trước đó chỉ có dự báo rủi ro.
+  - **Căn giữa cửa sổ**: trước khi đưa vào autoencoder, mỗi kênh được trừ đi trung bình của chính nó trong cửa sổ. Autoencoder học **hình dạng** diễn biến 12 giờ (dao động, bước nhảy, xu hướng); độ lớn biến thiên vẫn tính theo độ lệch chuẩn baseline cá nhân. Mức lệch tuyệt đối so với baseline không đưa vào, vì NEWS2 và mô hình dự báo rủi ro đã xử lý phần này.
+  - Lý do (đo bằng GroupKFold 5 fold theo bệnh nhân trên `train ∪ validation`, 2026-09-11): không căn giữa thì MSE của cửa sổ bình thường có đuôi rất dày (p99 gấp 8 lần trung vị), do vài bệnh nhân lệch xa baseline dù NEWS2 vẫn NORMAL. Hệ quả là ngưỡng p99 không dùng lại được cho bệnh nhân mới: tỷ lệ gắn cờ nhầm dao động 0–24% giữa các fold. Căn giữa giảm con số này về 0–6% và nâng precision từ 0,19 lên 0,50 ở cùng ngưỡng.
+  - Phép căn giữa nằm trong `rpm_common.anomaly.center_windows` và được thực hiện bên trong wrapper model, nên consumer vẫn truyền cửa sổ z-score gốc.
 - **Huấn luyện**: chỉ dùng cửa sổ của nhóm `train` mà **cả 12 giờ đều ở mức NORMAL**, để mô hình học đúng "hình dạng bình thường" của tín hiệu.
 - **Điểm bất thường** chuẩn hóa về [0, 1]: `anomaly_score = F(MSE)`.
   - `F` là hàm phân phối tích lũy thực nghiệm của MSE trên các cửa sổ NORMAL của tập `validation` (lưu kèm model thành artifact).
   - Nghĩa là: `anomaly_score = 0,99` ⇔ lỗi tái tạo lớn hơn 99% cửa sổ bình thường.
   - Ngưỡng gắn cờ ở mục 2.9.6.
 - **Đánh giá** — do dataset không có nhãn "bất thường" thật, dùng **tiêm bất thường tổng hợp** vào cửa sổ NORMAL của tập `test`:
+  - **σ** của mỗi kênh = độ lệch chuẩn z-score của kênh đó trên các cửa sổ NORMAL của nhóm `train` cố định (đo được 1,26–1,91, không phải 1). σ không đổi giữa các lần retrain, nên challenger và champion luôn được chấm trên cùng một tập tiêm.
   - Tỷ lệ tiêm: **10%** số cửa sổ, seed cố định, 3 loại chia đều:
     - (1) *spike*: 1–2 bước liên tiếp lệch ±4σ ở 1 kênh;
     - (2) *level shift*: từ giữa cửa sổ, 1 kênh dịch +3σ;
     - (3) *drift dần*: 1 kênh tăng tuyến tính tới +3σ ở cuối cửa sổ.
   - Không dùng kiểu "mất tín hiệu": giá trị thiếu đã được xử lý ở bước tiền xử lý (cửa sổ thiếu dữ liệu không được chấm).
-  - Đo Precision/Recall/F1 tại ngưỡng mặc định và AUROC — nêu rõ đây là đánh giá bán thực nghiệm ở mục 3.5.
+  - Đo AUROC (tiêu chí gate, mục 2.10.3) và Precision/Recall/F1 tại ngưỡng mặc định, kèm recall theo từng loại bất thường — nêu rõ đây là đánh giá bán thực nghiệm ở mục 3.5.
+  - Kết quả cần nêu ở 3.4/3.5: tại `τ_anomaly = 0,99`, mô hình gắn cờ ít nhưng khá chính xác (precision cao, recall thấp).
+    - Bất thường tiêm ±3–4σ trên 1 kênh phần lớn nằm trong độ biến thiên tự nhiên của vitals theo giờ: trung vị |z| lớn nhất của một cửa sổ bình thường đã là 3,6.
+    - Riêng loại *drift dần* gần như không phân biệt được với xu hướng bình thường.
 
 ## 2.9.4. Drift Detection
 
@@ -181,7 +188,7 @@ Nếu bỏ quy tắc "một thông số 3 điểm", 13,9% số giờ dữ liệu
 2. Macro F1 **cao hơn baseline persistence** trên cùng tập test.
 3. Macro F1 ≥ champion **và** Recall CRITICAL ≥ champion (không được đánh đổi khả năng phát hiện ca nguy kịch lấy độ chính xác tổng thể). Lần huấn luyện đầu tiên chưa có champion thì bỏ qua điều kiện này.
 
-Mô hình phát hiện bất thường được gate **độc lập**: đạt ngưỡng Precision/Recall ở 2.10.3 trên tập tiêm bất thường (seed cố định) và F1 ≥ champion. Hai mô hình có thể được promote riêng rẽ.
+Mô hình phát hiện bất thường được gate **độc lập**: AUROC trên tập test tiêm bất thường (seed cố định) đạt ngưỡng ở 2.10.3 **và** AUROC ≥ champion. Hai mô hình có thể được promote riêng rẽ.
 
 **Promote/từ chối**:
 - Dùng **alias** của MLflow Model Registry. Khái niệm "stage Production" đã bị MLflow đánh dấu lỗi thời từ bản 2.9.

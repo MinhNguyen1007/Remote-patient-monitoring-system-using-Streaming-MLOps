@@ -45,6 +45,30 @@ def choose_tau_critical(y_true, p_critical, target_recall: float) -> float:
     return float(TAU_GRID[0])
 
 
+def anomaly_metrics(is_anomaly, score, tau: float, kind=None) -> dict:
+    """Metric phát hiện bất thường tại ngưỡng `score ≥ tau` — docs/design/02_9 mục 2.9.3.
+
+    `false_positive_rate` là tỷ lệ cửa sổ bình thường bị gắn cờ; `recall_<loại>` tính riêng từng loại bất thường.
+    """
+    is_anomaly = np.asarray(is_anomaly, dtype=bool)
+    score = np.asarray(score, dtype=float)
+    flagged = score >= tau
+    metrics = {
+        "precision": float(precision_score(is_anomaly, flagged, zero_division=0)),
+        "recall": float(recall_score(is_anomaly, flagged, zero_division=0)),
+        "f1": float(f1_score(is_anomaly, flagged, zero_division=0)),
+        "auroc": float(roc_auc_score(is_anomaly, score)),
+        "false_positive_rate": float(flagged[~is_anomaly].mean()),
+        "n_windows": int(len(score)),
+        "n_anomalies": int(is_anomaly.sum()),
+    }
+    if kind is not None:
+        kind = np.asarray(kind)
+        for name in sorted(set(kind[is_anomaly])):
+            metrics[f"recall_{name}"] = float(flagged[kind == name].mean())
+    return metrics
+
+
 def scalar_metrics(metrics: dict, prefix: str) -> dict:
     """Bỏ các metric không phải số (ma trận nhầm lẫn) và gắn tiền tố để log MLflow."""
     return {f"{prefix}_{k}": v for k, v in metrics.items() if isinstance(v, float)}

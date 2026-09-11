@@ -9,12 +9,16 @@ src/
   preprocess.py     [đã có] Load MIMIC-III Demo → gọi rpm_common (làm sạch, lưới 1 giờ, NEWS2, feature, baseline),
                     tạo nhãn dự báo h=1/h=4, gắn nhóm chia dữ liệu, xuất dữ liệu cho train và cho producer
   split.py          [đã có] Chia 4 nhóm theo subject_id, phân tầng theo tử vong tại viện, đọc/ghi file cố định
-  train.py          [đã có, phần rủi ro] CV chọn họ mô hình, chọn τ_critical, đánh giá test, gate, log/đăng ký MLflow
-  risk_models.py    [đã có] Ứng viên LogisticRegression/RandomForest/XGBoost, trọng số lớp, GroupKFold
-  metrics.py        [đã có] Metric phân loại + chọn τ_critical theo recall mục tiêu
-  gate.py           [đã có] Quality gate cho mô hình rủi ro
+  train.py          [đã có] Mô hình rủi ro: CV chọn họ mô hình, chọn τ_critical trên out-of-fold, đánh giá test, gate,
+                    log/đăng ký `risk_classifier`
+  risk_models.py    [đã có] Ứng viên LogisticRegression/RandomForest/XGBoost, trọng số lớp, GroupKFold (+ xác suất OOF)
+  train_anomaly.py  [đã có] LSTM-Autoencoder: train trên cửa sổ NORMAL, đánh giá bằng tiêm bất thường, gate AUROC,
+                    log/đăng ký `anomaly_detector`
+  anomaly_model.py  [đã có] Kiến trúc LSTM-AE + wrapper MLflow pyfunc (cửa sổ z-score gốc → anomaly_score)
+  injection.py      [đã có] Tiêm bất thường spike / level shift / drift, σ theo kênh từ nhóm train
+  metrics.py        [đã có] Metric phân loại, chọn τ_critical, metric bất thường
+  gate.py           [đã có] Quality gate cho cả 2 mô hình
   drift.py          [đã có] reference_stats (log kèm model), PSI, KS
-  (chưa có)         LSTM-Autoencoder
   evaluate.py       Metric theo docs/design/02_10_thiet_ke_test.md mục 2.10.3, luôn kèm baseline persistence
   drift_detect.py   PSI/KS theo 02_9 mục 2.9.4
   retrain.py        Entry point cho Airflow DAG retrain_pipeline, Champion–Challenger theo 02_9 mục 2.9.5
@@ -36,8 +40,10 @@ Code tính đặc trưng (NEWS2, cửa sổ, baseline, mapping itemid) **không 
 - **Luôn báo baseline persistence** (dự báo = mức hiện tại) cạnh model; model phải thắng baseline. Tham chiếu h = 4 trên tập `test`: Macro F1 0,547, Recall CRITICAL 30,8%.
 - Đối chiếu nhãn proxy với `hospital_expire_flag` (không dùng "chuyển ICU" — mọi dữ liệu đã là ICU). Ghi kết quả vào báo cáo 3.5, kèm thiên lệch chọn mẫu: cả 100 bệnh nhân Demo đều về sau đã tử vong.
 - **LSTM-Autoencoder** chỉ train trên cửa sổ mà cả 12 giờ đều NORMAL, 6 kênh.
-  - `anomaly_score` = hàm phân phối tích lũy thực nghiệm của MSE trên cửa sổ NORMAL tập validation, nằm trong [0, 1]. Hàm này được lưu kèm model.
-- Đánh giá anomaly bằng synthetic injection: 10% cửa sổ, 3 loại spike / level shift / drift dần, seed cố định — xem 02_9 mục 2.9.3.
+  - Cửa sổ được **căn giữa theo từng kênh** (`rpm_common.anomaly.center_windows`) trước khi vào autoencoder; việc này làm bên trong `fit_autoencoder`/`window_mse`/wrapper, nên nơi gọi luôn truyền cửa sổ z-score gốc của `make_windows`.
+  - `anomaly_score` = hàm phân phối tích lũy thực nghiệm của MSE trên cửa sổ NORMAL tập validation, nằm trong [0, 1]. Được lưu kèm model (`mse_reference.npy` trong model pyfunc).
+- Đánh giá anomaly bằng synthetic injection: 10% cửa sổ, 3 loại spike / level shift / drift dần, seed cố định, σ theo kênh từ nhóm train — xem 02_9 mục 2.9.3. Gate dùng **AUROC** (02_10 mục 2.10.3); P/R/F1 tại τ = 0,99 chỉ báo cáo.
+- Script tạm dùng TensorFlow trên Windows: nếu gặp lỗi DLL `_pywrap_tensorflow_internal`, `import tensorflow` trước sklearn/scipy.
 - Mọi lần train phải log vào MLflow (params, metrics, artifact, `reference_stats.json` cho drift) — không train "chui" ngoài tracking.
 - **Promote bằng alias `champion`**, không dùng stage `Production` (đã lỗi thời từ MLflow 2.9). Mỗi challenger đều được đăng ký version; chỉ chuyển alias khi đạt quality gate:
   - ngưỡng tuyệt đối ở 02_10 mục 2.10.3;
@@ -61,6 +67,7 @@ cd ml && ..\.venv\Scripts\python -m pytest -q && cd ..
 
 # Chạy trên host: MLFLOW_TRACKING_URI=http://localhost:5000 (không phải http://mlflow:5000)
 .venv\Scripts\python ml/src/train.py
+.venv\Scripts\python ml/src/train_anomaly.py
 .venv\Scripts\python ml/src/evaluate.py
 .venv\Scripts\python ml/src/drift_detect.py
 ```
