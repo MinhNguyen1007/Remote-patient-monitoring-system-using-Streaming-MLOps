@@ -251,7 +251,7 @@
     "stay_auroc": 0.7182334710743801
   },
   "anomaly": {
-    "champion_version": 2,
+    "champion_version": 3,
     "test_injected": {
       "precision": 0.7272727272727273,
       "recall": 0.16666666666666666,

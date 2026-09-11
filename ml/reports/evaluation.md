@@ -70,7 +70,7 @@ Toàn bộ dữ liệu, mức đợt ICU. Cả 100 bệnh nhân của bản Demo
 
 AUROC mức đợt ICU của tỷ lệ giờ CRITICAL khi phân biệt tử vong/sống sót: 0,718.
 
-## 3. Phát hiện bất thường — `anomaly_detector` v2, τ_anomaly = 0,99
+## 3. Phát hiện bất thường — `anomaly_detector` v3, τ_anomaly = 0,99
 
 ![anomaly_score](fig_anomaly_scores.png)
 

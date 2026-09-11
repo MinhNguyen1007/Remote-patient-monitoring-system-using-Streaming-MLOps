@@ -75,14 +75,23 @@ def window_mse(model, windows: np.ndarray) -> np.ndarray:
     return reconstruction_mse(centered, model.predict(centered, verbose=0))
 
 
+def artifact_path(context, name: str) -> str:
+    """Đường dẫn artifact dùng được trên mọi hệ điều hành.
+
+    MLflow ghi đường dẫn tương đối của artifact theo dấu phân cách của máy log model (`artifacts\\x.keras` trên
+    Windows), nên container Linux không mở được. Dấu `/` hợp lệ trên cả Windows lẫn Linux.
+    """
+    return context.artifacts[name].replace("\\", "/")
+
+
 class AnomalyDetector(PythonModel):
     """Artifact: `autoencoder` (file .keras) và `mse_reference` (file .npy, MSE cửa sổ NORMAL của validation)."""
 
     def load_context(self, context):
         import keras
 
-        self.autoencoder = keras.models.load_model(context.artifacts["autoencoder"], compile=False)
-        self.mse_reference = np.load(context.artifacts["mse_reference"])
+        self.autoencoder = keras.models.load_model(artifact_path(context, "autoencoder"), compile=False)
+        self.mse_reference = np.load(artifact_path(context, "mse_reference"))
 
     def predict(self, context, model_input, params=None):
         windows = np.asarray(model_input, dtype=np.float32)

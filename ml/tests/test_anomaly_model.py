@@ -3,7 +3,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from anomaly_model import AnomalyDetector, build_lstm_autoencoder
+from anomaly_model import AnomalyDetector, artifact_path, build_lstm_autoencoder
 from rpm_common.anomaly import N_CHANNELS, WINDOW_HOURS
 
 
@@ -67,3 +67,15 @@ def test_autoencoder_reconstructs_same_shape():
     model = build_lstm_autoencoder()
     x = np.random.default_rng(0).normal(size=(4, WINDOW_HOURS, N_CHANNELS)).astype(np.float32)
     assert model.predict(x, verbose=0).shape == x.shape
+
+
+def test_artifact_path_accepts_windows_separators_logged_by_mlflow(tmp_path):
+    """Model log từ Windows ghi `artifacts\\x.keras`; wrapper phải mở được trên mọi hệ điều hành."""
+    (tmp_path / "artifacts").mkdir()
+    reference = tmp_path / "artifacts" / "mse_reference.npy"
+    np.save(reference, np.array([0.1, 0.2]))
+    windows_style = "\\".join([str(tmp_path).replace("/", "\\"), "artifacts", "mse_reference.npy"])
+    context = SimpleNamespace(artifacts={"mse_reference": windows_style})
+    path = artifact_path(context, "mse_reference")
+    assert "\\" not in path
+    np.testing.assert_allclose(np.load(path), [0.1, 0.2])

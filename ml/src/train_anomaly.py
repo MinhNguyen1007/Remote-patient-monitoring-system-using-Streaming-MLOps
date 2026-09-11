@@ -53,6 +53,40 @@ def evaluate_champion(client: MlflowClient, windows: np.ndarray, is_anomaly: np.
     return anomaly_metrics(is_anomaly, champion.predict(windows), TAU_ANOMALY, kind), version.version
 
 
+def log_detector(keras_path: Path, reference_path: Path, example: np.ndarray, example_scores: np.ndarray) -> str:
+    """Log wrapper pyfunc (autoencoder + MSE tham chiếu + code anomaly_model.py) vào run hiện tại và đăng ký version."""
+    info = mlflow.pyfunc.log_model(
+        name="model",
+        python_model=AnomalyDetector(),
+        artifacts={"autoencoder": str(keras_path), "mse_reference": str(reference_path)},
+        code_paths=[anomaly_model.__file__],
+        registered_model_name=REGISTERED_MODEL,
+        signature=infer_signature(example, example_scores),
+        input_example=example,
+        # rpm_common không có trên PyPI: môi trường suy luận phải tự cài `pip install -e common`
+        pip_requirements=[f"{name}=={package_version(name)}" for name in ("mlflow", "tensorflow", "keras", "numpy")],
+    )
+    return info.registered_model_version
+
+
+def tag_and_promote(client: MlflowClient, version: str, gate, trigger: str, extra_tags: dict | None = None) -> None:
+    """Gắn tag cho version, luôn trỏ alias challenger; chỉ chuyển alias champion khi đạt gate."""
+    tags = {
+        "tau_anomaly": str(TAU_ANOMALY),
+        "window_hours": str(WINDOW_HOURS),
+        "n_channels": str(N_CHANNELS),
+        "model_family": "lstm_autoencoder",
+        "gate": "passed" if gate.passed else "rejected",
+        "gate_reasons": "; ".join(gate.reasons),
+        "trigger": trigger,
+    } | (extra_tags or {})
+    for key, value in tags.items():
+        client.set_model_version_tag(REGISTERED_MODEL, version, key, value)
+    client.set_registered_model_alias(REGISTERED_MODEL, "challenger", version)
+    if gate.passed:
+        client.set_registered_model_alias(REGISTERED_MODEL, "champion", version)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--data", type=Path, default=DEFAULT_DATA)
@@ -138,34 +172,8 @@ def main() -> None:
             model.save(keras_path)
             np.save(reference_path, mse_reference)
             example = windows["train"][:5]
-            info = mlflow.pyfunc.log_model(
-                name="model",
-                python_model=AnomalyDetector(),
-                artifacts={"autoencoder": str(keras_path), "mse_reference": str(reference_path)},
-                code_paths=[anomaly_model.__file__],
-                registered_model_name=REGISTERED_MODEL,
-                signature=infer_signature(example, score(example)),
-                input_example=example,
-                # rpm_common không có trên PyPI: môi trường suy luận phải tự cài `pip install -e common`
-                pip_requirements=[
-                    f"{name}=={package_version(name)}" for name in ("mlflow", "tensorflow", "keras", "numpy")
-                ],
-            )
-        version = info.registered_model_version
-        tags = {
-            "tau_anomaly": str(TAU_ANOMALY),
-            "window_hours": str(WINDOW_HOURS),
-            "n_channels": str(N_CHANNELS),
-            "model_family": "lstm_autoencoder",
-            "gate": "passed" if gate.passed else "rejected",
-            "gate_reasons": "; ".join(gate.reasons),
-            "trigger": "INITIAL" if champion is None else "MANUAL",
-        }
-        for key, value in tags.items():
-            client.set_model_version_tag(REGISTERED_MODEL, version, key, value)
-        client.set_registered_model_alias(REGISTERED_MODEL, "challenger", version)
-        if gate.passed:
-            client.set_registered_model_alias(REGISTERED_MODEL, "champion", version)
+            version = log_detector(keras_path, reference_path, example, score(example))
+        tag_and_promote(client, version, gate, trigger="INITIAL" if champion is None else "MANUAL")
 
     def rounded(metrics: dict) -> dict:
         return {k: round(v, 3) for k, v in metrics.items() if isinstance(v, float)}

@@ -15,6 +15,8 @@ src/
   train_anomaly.py  [đã có] LSTM-Autoencoder: train trên cửa sổ NORMAL, đánh giá bằng tiêm bất thường, gate AUROC,
                     log/đăng ký `anomaly_detector`
   anomaly_model.py  [đã có] Kiến trúc LSTM-AE + wrapper MLflow pyfunc (cửa sổ z-score gốc → anomaly_score)
+  repackage_anomaly.py [đã có] Đóng gói lại 1 version với code wrapper mới, giữ nguyên trọng số; chỉ promote khi
+                    điểm trùng khít version nguồn và qua gate
   injection.py      [đã có] Tiêm bất thường spike / level shift / drift, σ theo kênh từ nhóm train
   metrics.py        [đã có] Metric phân loại, chọn τ_critical, metric bất thường
   gate.py           [đã có] Quality gate cho cả 2 mô hình
@@ -48,6 +50,10 @@ Code tính đặc trưng (NEWS2, cửa sổ, baseline, mapping itemid) **không 
   - `anomaly_score` = hàm phân phối tích lũy thực nghiệm của MSE trên cửa sổ NORMAL tập validation, nằm trong [0, 1]. Được lưu kèm model (`mse_reference.npy` trong model pyfunc).
 - Đánh giá anomaly bằng synthetic injection: 10% cửa sổ, 3 loại spike / level shift / drift dần, seed cố định, σ theo kênh từ nhóm train — xem 02_9 mục 2.9.3. Gate dùng **AUROC** (02_10 mục 2.10.3); P/R/F1 tại τ = 0,99 chỉ báo cáo.
 - Script tạm dùng TensorFlow trên Windows: nếu gặp lỗi DLL `_pywrap_tensorflow_internal`, `import tensorflow` trước sklearn/scipy.
+- **Model pyfunc log từ Windows**: MLflow ghi đường dẫn artifact với dấu `\` (`artifactsutoencoder.keras`), container Linux không mở được.
+  - Wrapper luôn đọc artifact qua `artifact_path()` (đổi `\` → `/`).
+  - Code wrapper được chụp kèm model (`code_paths`), nên sửa `anomaly_model.py` **không** tác động tới version đã đăng ký. Muốn áp dụng cho version cũ thì chạy `repackage_anomaly.py`.
+  - Sau mỗi lần train cần kiểm tra nạp model trong container (`docker compose --profile app up -d stream-consumer`).
 - Mọi lần train phải log vào MLflow (params, metrics, artifact, `reference_stats.json` cho drift) — không train "chui" ngoài tracking.
 - **Promote bằng alias `champion`**, không dùng stage `Production` (đã lỗi thời từ MLflow 2.9). Mỗi challenger đều được đăng ký version; chỉ chuyển alias khi đạt quality gate:
   - ngưỡng tuyệt đối ở 02_10 mục 2.10.3;
