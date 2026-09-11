@@ -141,6 +141,20 @@ services:
     ports:
       - "8000:8000"
 
+  # --- Giai đoạn F: frontend React (nginx phục vụ bản build, /api → backend) ---
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    image: rpm-frontend:latest
+    container_name: rpm_frontend
+    profiles: ["app"]
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+
   # --- Giai đoạn D: streaming (profile "app", không chạy cùng `docker compose up -d` hạ tầng) ---
   # Trước khi chạy consumer lần đầu: tạo schema bằng Alembic (cd backend && alembic upgrade head).
   stream-consumer:

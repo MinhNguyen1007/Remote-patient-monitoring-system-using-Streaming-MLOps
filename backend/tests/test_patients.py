@@ -47,3 +47,41 @@ def test_timeline_returns_last_hours_in_time_order_with_missing_vitals(client, m
     assert [p["hour_index"] for p in body] == [2, 3, 4]
     assert body[1]["heart_rate"] is None and body[2]["anomaly_score"] == 0.5
     assert client.get(f"/patients/{patient.id}/timeline?hours=0", headers=make.headers(nurse)).status_code == 422
+
+
+def test_latest_vitals_are_forward_filled_within_limits(client, make):
+    nurse = make.user("NURSE")
+    patient = make.patient(1)
+    make.assign(patient, nurse)
+    make.record(patient, 0, heart_rate=90.0)
+    make.record(patient, 1, heart_rate=None)
+    make.record(patient, 2, heart_rate=None)
+    latest = client.get(f"/patients/{patient.id}", headers=make.headers(nurse)).json()["latest"]
+    assert latest["hour_index"] == 2 and latest["heart_rate"] == 90.0  # đo 2 giờ trước: vẫn hiện hành
+    make.record(patient, 3, heart_rate=None)
+    latest = client.get(f"/patients/{patient.id}", headers=make.headers(nurse)).json()["latest"]
+    assert latest["heart_rate"] is None  # quá giới hạn forward-fill 2 giờ
+    timeline = client.get(f"/patients/{patient.id}/timeline", headers=make.headers(nurse)).json()
+    assert [p["heart_rate"] for p in timeline] == [90.0, None, None, None]  # timeline giữ giá trị đo gốc
+
+
+def test_backend_ffill_limits_match_feature_pipeline():
+    from rpm_common.grid import FFILL_LIMIT_HOURS as PIPELINE_LIMITS
+
+    from app.db.queries import FFILL_LIMIT_HOURS
+
+    assert FFILL_LIMIT_HOURS == PIPELINE_LIMITS
+
+
+def test_recent_risk_levels_and_news2_components(client, make):
+    nurse = make.user("NURSE")
+    patient = make.patient(1)
+    make.assign(patient, nurse)
+    levels = ["NORMAL"] * 3 + ["WARNING"] * 8 + ["CRITICAL"] * 3
+    for hour, level in enumerate(levels):
+        make.record(patient, hour, level)
+    summary = client.get("/patients", headers=make.headers(nurse)).json()[0]
+    assert summary["recent_risk_levels"] == levels[-12:]  # 12 giờ gần nhất, cũ → mới
+    detail = client.get(f"/patients/{patient.id}", headers=make.headers(nurse)).json()
+    # Vitals mẫu của Factory: HR 80, SpO2 97, RR 16, SBP 120, nhiệt độ 37 → 0 điểm; chỉ SpO2 97 cũng 0
+    assert detail["news2_components"] == {"respiratory_rate": 0, "spo2": 0, "systolic_bp": 0, "heart_rate": 0, "temperature": 0}

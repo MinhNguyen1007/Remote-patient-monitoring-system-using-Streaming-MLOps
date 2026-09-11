@@ -38,6 +38,13 @@ class PatientOut(ORMModel):
 class PatientSummary(PatientOut):
     latest: LatestState | None
     open_alerts: int
+    # Mức rủi ro dự báo của tối đa 12 giờ gần nhất, cũ → mới (dải "rủi ro 12 giờ qua" trên dashboard)
+    recent_risk_levels: list[RiskLevelEnum] = []
+
+
+class PatientDetail(PatientSummary):
+    # Điểm NEWS2 (0–3) từng thông số tại giờ mới nhất, tính bằng rpm_common.news2 trên vitals hiện hành
+    news2_components: dict[str, int | None] | None = None
 
 
 class TimelinePoint(LatestState):

@@ -9,6 +9,7 @@ ml/data
 ml/mlruns
 ml/reports
 frontend/node_modules
+frontend/dist
 infra/postgres_data
 *.log
 .env

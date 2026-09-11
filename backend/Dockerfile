@@ -7,6 +7,10 @@ ENV PYTHONUNBUFFERED=1 PYTHONIOENCODING=utf-8
 COPY backend/requirements.txt requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
+# rpm_common: bảng điểm NEWS2 dùng chung với pipeline (không cài lại logic trong backend)
+COPY common /app/common
+RUN pip install --no-cache-dir /app/common
+
 COPY backend/alembic.ini alembic.ini
 COPY backend/app app
 

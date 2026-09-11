@@ -29,8 +29,8 @@ Backend **không chạy model và không chạy job định kỳ**: suy luận n
 | `POST /auth/login` `{email, password}` | — | → `{access_token, token_type, expires_in, user}`; sai thông tin/khóa → 401 |
 | `GET /auth/me` | mọi role | UC02 đăng xuất = client xóa token (JWT không lưu phía server) |
 | `GET/POST /users`, `GET/PATCH /users/{id}` | ADMIN | UC03; khóa bằng `is_active`, không xóa cứng; tự khóa/tự bỏ quyền → 409 |
-| `GET /patients` | DOCTOR, NURSE | UC04: chỉ bệnh nhân được phân công, kèm `latest` + `open_alerts`, sắp theo rủi ro |
-| `GET /patients/{id}`, `/timeline?hours=48`, `/alerts` | DOCTOR, NURSE | UC05–06; không được phân công → 403 |
+| `GET /patients` | DOCTOR, NURSE | UC04: chỉ bệnh nhân được phân công, kèm `latest` (vitals **sau forward-fill** có giới hạn), `open_alerts`, `recent_risk_levels` (12 giờ), sắp theo rủi ro |
+| `GET /patients/{id}`, `/timeline?hours=48`, `/alerts` | DOCTOR, NURSE | UC05–06; chi tiết kèm `news2_components` (tính bằng `rpm_common.news2`); `timeline` giữ vitals đo gốc; không được phân công → 403 |
 | `GET /alerts?status=&type=&patient_id=`, `GET /alerts/open-count` | DOCTOR, NURSE | UC06, badge sidebar |
 | `POST /alerts/{id}/acknowledge`, `POST /alerts/{id}/resolve {note}` | DOCTOR | UC07: OPEN → ACKNOWLEDGED → RESOLVED, sai thứ tự → 409 |
 | `GET /admin/patients`, `POST /admin/assignments`, `DELETE /admin/assignments/{id}` | ADMIN | UC13; chỉ gán cho DOCTOR/NURSE (422), trùng → 409 |
@@ -48,6 +48,7 @@ Backend **không chạy model và không chạy job định kỳ**: suy luận n
 - `alembic.ini` phải giữ **chỉ ký tự ASCII** (Alembic đọc bằng encoding của hệ điều hành, cp1252 trên Windows). `alembic check` bỏ qua 2 index TimescaleDB tự tạo (`app/alembic/env.py`).
 - Mọi endpoint phải khai báo rõ role được phép (`Depends(require_...)`) theo `docs/design/02_2_usecase.md`. Admin **không** xem bệnh nhân qua `/patients` (chỉ quản lý phân công qua `/admin/patients`).
 - **Phân quyền theo phân công**: Bác sĩ/Điều dưỡng chỉ đọc bệnh nhân trong `patient_assignments` của mình (khác → 403, không tồn tại → 404). WebSocket cũng chỉ đẩy sự kiện của bệnh nhân được phân công (`EventDispatcher.assigned_staff`, đọc lại mỗi sự kiện nên phân công mới có hiệu lực ngay).
+- `FFILL_LIMIT_HOURS` trong `db/queries.py` phải trùng `rpm_common.grid` (có test); NEWS2 từng thông số gọi `rpm_common.news2.score_parameter`, không cài lại bảng ngưỡng.
 - Email dùng kiểu `Email` riêng (`schemas/users.py`), không dùng `EmailStr`: email-validator từ chối tên miền `.local` của hệ thống nội bộ/tài khoản demo.
 - JWT của WebSocket nằm trong query string → `RedactTokenFilter` (main.py) che `token=` trong log uvicorn. Không bỏ bộ lọc này.
 - **Backend là nơi duy nhất gửi email.** `EMAIL_DELIVERY=log` (mặc định) chỉ ghi log; `smtp` mới gửi thật. Email gửi trong thread riêng; đã có `notification_logs` SENT cho (alert, người nhận) thì không gửi lại.

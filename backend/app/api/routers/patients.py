@@ -9,7 +9,7 @@ from app.db import queries
 from app.db.models import Patient, User
 from app.db.session import get_db
 from app.schemas.alerts import AlertOut
-from app.schemas.patients import PatientOut, PatientSummary, TimelinePoint
+from app.schemas.patients import PatientDetail, PatientOut, PatientSummary, TimelinePoint
 
 router = APIRouter(prefix="/patients", tags=["patients"])
 
@@ -17,9 +17,11 @@ router = APIRouter(prefix="/patients", tags=["patients"])
 def summaries(db: Session, patients: list[Patient]) -> list[PatientSummary]:
     ids = [p.id for p in patients]
     latest, open_counts = queries.latest_states(db, ids), queries.open_alert_counts(db, ids)
+    recent = queries.recent_risk_levels(db, ids)
     items = [
         PatientSummary(
-            **PatientOut.model_validate(p).model_dump(), latest=latest.get(p.id), open_alerts=open_counts.get(p.id, 0)
+            **PatientOut.model_validate(p).model_dump(), latest=latest.get(p.id), open_alerts=open_counts.get(p.id, 0),
+            recent_risk_levels=recent.get(p.id, []),
         )
         for p in patients
     ]
@@ -41,9 +43,10 @@ def list_patients(db: Session = Depends(get_db), user: User = Depends(require_st
     return summaries(db, list(patients))
 
 
-@router.get("/{patient_id}", response_model=PatientSummary)
+@router.get("/{patient_id}", response_model=PatientDetail)
 def get_patient(patient: Patient = Depends(get_assigned_patient), db: Session = Depends(get_db)):
-    return summaries(db, [patient])[0]
+    summary = summaries(db, [patient])[0]
+    return PatientDetail(**summary.model_dump(), news2_components=queries.news2_components(summary.latest))
 
 
 @router.get("/{patient_id}/timeline", response_model=list[TimelinePoint])

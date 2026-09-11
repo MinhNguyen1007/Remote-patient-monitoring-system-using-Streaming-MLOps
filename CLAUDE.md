@@ -90,20 +90,23 @@
       - bs.an, bs.binh — mỗi người phụ trách nửa số bệnh nhân;
       - dd.cuong — phụ trách tất cả.
       - Admin mặc định `admin@rpm.local` / `admin12345` khi `.env` chưa có `ADMIN_*` — đổi khi triển khai.
-- **Giai đoạn F — Frontend: đang làm.** Bước 1 xong (2026-09-11): mockup Claude Design canvas https://claude.ai/code/artifact/06619c98-443f-4157-be37-cef16741dc5d, nguồn `docs/design/mockups/` (8 màn hình + bảng thành phần + ghi chú phân tích). Đã soát bằng trình duyệt và sửa lỗi bố cục, số liệu khớp giữa các màn hình.
-  - Người dùng yêu cầu **góc vuông** → `--radius: 0` (đã áp dụng lên canvas bản 2).
-  - Tài liệu `02_8` đã viết lại có cấu trúc (design system, kiến trúc điều hướng, phân tích từng màn hình) kèm 9 ảnh `docs/design/mockups/png/*.png`, dùng được cho báo cáo Word.
-  - **Chờ người dùng góp ý mockup trước khi code React.**
-- **Việc tiếp theo**: **Giai đoạn F — Frontend React** (bám `frontend/CLAUDE.md`, `02_8_thiet_ke_giao_dien.md`, skill `csgo-case-opening-design` + `dataviz`):
-  1. ~~Dựng mockup~~ (xong). Áp dụng góp ý của người dùng lên mockup nếu có (sửa `docs/design/mockups/build_mockups.py`, ghép lại canvas, cập nhật cùng URL).
-  2. Màn hình theo 02_8.2:
-     - đăng nhập;
-     - dashboard bệnh nhân (badge rủi ro 4 giờ tới + NEWS2, realtime qua WebSocket);
-     - chi tiết bệnh nhân (biểu đồ vitals + điểm bất thường, risk-timeline, cảnh báo + xác nhận/xử lý);
-     - trung tâm cảnh báo;
-     - trang quản trị gồm các tab người dùng, phân công, ngưỡng, giám sát mô hình.
-  3. Test Vitest theo `02_10` mục 2.10.5 (badge theo mức rủi ro, chặn route theo role, hiển thị theo phân công).
-  4. Chạy cùng: hạ tầng + consumer + producer + backend (hoặc `docker compose --profile app up -d`), rồi `python -m app.seed --demo`.
+- **Giai đoạn F — Frontend React: XONG phần code (2026-09-11)**; người dùng tạm chấp nhận mockup (sẽ nâng cấp giao diện sau).
+  - Mockup: https://claude.ai/code/artifact/06619c98-443f-4157-be37-cef16741dc5d (bản góc vuông), phân tích ở `02_8`, ảnh `docs/design/mockups/png/`.
+  - `frontend/`: Vite 8 + React 19 + TS 7 + Tailwind v4 + Base UI/CVA (template skill), đủ 8 màn hình theo mockup, route chặn theo vai trò, WebSocket tự nối lại, cập nhật realtime bằng hàm thuần (`lib/realtime.ts`). Quy ước ở `frontend/CLAUDE.md`.
+  - 23 test Vitest; `npm run typecheck` và `npm run build` sạch. Đã chạy thật với backend + streaming (20 bệnh nhân): API và WebSocket qua proxy `/api` của Vite đều hoạt động.
+  - Bổ sung backend để khớp mockup:
+    - `latest` trả vitals sau forward-fill (trùng `vitals_filled`);
+    - `recent_risk_levels` (12 giờ) cho dải trên thẻ;
+    - `news2_components` tính bằng `rpm_common.news2` (backend giờ cài `rpm_common`);
+    - consumer đồng bộ thêm metric `persistence_test_*` vào `model_versions`.
+    - Backend 30 test.
+  - Docker: `frontend/Dockerfile` + `nginx.conf` (proxy `/api` + WebSocket tới backend), service `frontend` cổng 3000 (profile `app`).
+  - **Chưa soát trực quan các màn hình cần đăng nhập trên trình duyệt**: quy tắc an toàn không cho Claude tự nhập mật khẩu vào trang web. Người dùng đăng nhập ở tab trình duyệt, hoặc tự xem ở http://127.0.0.1:5173.
+- **Việc tiếp theo**: **Giai đoạn G — MLOps vận hành** (bám `02_9` mục 2.9.4–2.9.5, `02_3` mục 2.3.3):
+  1. DAG Airflow `drift_check` (PSI/KS trên 24 giờ dữ liệu streaming gần nhất so với `reference_stats.json` của champion, ghi `drift_reports`, PSI ≥ 0,25 → trigger `retrain_pipeline`, chống vòng lặp 1 giờ, thông báo Admin).
+  2. DAG `retrain_pipeline` (train challenger 2 mô hình trên train + dữ liệu stream đã có nhãn, gate trên cùng test cố định, chuyển alias, ghi `model_versions` kể cả bị từ chối). Image Airflow cần thêm thư viện ML (cùng phiên bản MLflow 3.11.1).
+  3. Kiểm chứng: producer `--drift` → drift được phát hiện → retrain tự động; nút retrain trên giao diện (UC10) chạy được.
+  4. Sau G: Giai đoạn H (integration/E2E tự động, kiểm thử phi chức năng p95 < 2 giây, soát giao diện), rồi I (báo cáo).
 - **Quyết định đã chốt sau rà soát 2026-09-10** (người dùng đã duyệt):
   - Model rủi ro là **dự báo** mức NEWS2 cao nhất trong 4 giờ tới, không phân loại tức thời. Phân loại tức thời bị rò rỉ nhãn vì nhãn là hàm tất định của đặc trưng. Model phải thắng baseline persistence.
   - Drift với PSI ≥ 0,25 → **tự động** kích hoạt retrain; quality gate chặn model kém; Admin vẫn retrain thủ công được.

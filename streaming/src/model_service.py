@@ -96,7 +96,8 @@ class ModelService:
 
         uri = f"models:/{name}/{version.version}"
         run = self.client.get_run(version.run_id)
-        metrics = {k: v for k, v in run.data.metrics.items() if k.startswith("test_")}
+        # Metric trên test của model + baseline persistence cùng tập (hiển thị ở tab Giám sát mô hình)
+        metrics = {k: v for k, v in run.data.metrics.items() if k.startswith(("test_", "persistence_test_"))}
         trained_at = datetime.fromtimestamp(run.info.start_time / 1000, tz=timezone.utc)
         db_id = self.sync_champion(
             model_name=name,
