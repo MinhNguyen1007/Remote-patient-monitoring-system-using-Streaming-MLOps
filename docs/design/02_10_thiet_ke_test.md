@@ -20,12 +20,15 @@ Giai đoạn H chạy integration/E2E toàn hệ thống, kiểm thử phi chứ
 |---|---|---|
 | Tiền xử lý (`common/rpm_common`) | • Gộp đúng mọi itemid (kể cả 220050/220051, 676, 615/224690); loại 677/679.<br>• Đổi °F → °C; lọc `error = 1`, `stopped = "D/C'd"`, giá trị ngoài khoảng hợp lệ.<br>• Lưới 1 giờ lấy trung vị; forward-fill đúng giới hạn 2 giờ/6 giờ. | pytest |
 | Tính nhân quả của đặc trưng | Thay đổi dữ liệu **sau** thời điểm t không được làm đổi bất kỳ đặc trưng nào tại t — chống rò rỉ thông tin tương lai | pytest |
+| Đồng nhất train/serving (`streaming/`) | Consumer nhận từng giờ của đợt ICU nhóm `stream` → đặc trưng, NEWS2, z-score tại mỗi giờ trùng với dòng tương ứng trong `hourly.parquet` lúc huấn luyện | pytest (dữ liệu thật) |
 | NEWS2 rút gọn (`compute_news2`) | • Từng ngưỡng ở giá trị biên (vd RR 8/9, 11/12, 20/21, 24/25; SpO2 91/92, 93/94, 95/96) và giá trị thập phân (HR 90,5 → 1 điểm).<br>• Tổng ≤ 15.<br>• Quy tắc "một thông số đạt 3 điểm" → `WARNING`. | pytest |
 | Nhãn dự báo (`make_forecast_label`) | `y_t = max` mức rủi ro trong `(t, t+h]`; bỏ mẫu không đủ h giờ phía sau; không lấy nhãn vượt sang đợt ICU khác | pytest |
 | Chia dữ liệu | Không `subject_id` nào xuất hiện ở 2 nhóm; mọi đợt ICU của 1 bệnh nhân cùng 1 nhóm; file split cố định cho kết quả giống nhau giữa các lần chạy | pytest |
 | Baseline cá nhân | Lũy tiến tối đa 24 giờ, chỉ dùng được khi ≥ 6 giờ dữ liệu, áp sàn độ lệch chuẩn | pytest |
 | Model wrapper (`predict_risk`, `predict_anomaly`) | • Input đúng/sai hình dạng.<br>• `risk_level` suy đúng theo `τ_critical`; `anomaly_score` ∈ [0, 1].<br>• `anomaly_score` trả rỗng khi chưa đủ cửa sổ 12 giờ. | pytest |
-| Alert evaluator | • Vượt ngưỡng → tạo alert.<br>• Đang có alert cùng loại OPEN → không tạo thêm; hết cooldown → được tạo lại.<br>• WARNING không tạo alert; RISK và ANOMALY cùng lúc → 2 alert. | pytest |
+| Alert evaluator | • Vượt ngưỡng → tạo alert.<br>• Đang có alert cùng loại OPEN → không tạo thêm; hết cooldown → được tạo lại.<br>• WARNING không tạo alert; RISK và ANOMALY cùng lúc → 2 alert.<br>• Ngưỡng Admin ghi đè τ_critical của champion. | pytest |
+| Stream processor (`streaming/`, repo/model giả) | • Mọi bản ghi đều được lưu và publish prediction.<br>• 2 bản ghi CRITICAL liên tiếp chỉ tạo 1 alert.<br>• Bản ghi giờ đã có bị bỏ qua; khởi động lại dựng state từ DB.<br>• Ghi DB lỗi thì state không lệch với DB. | pytest |
+| Producer | Giờ thứ k của mọi bệnh nhân phát ở nhịp k, key = mã bệnh nhân; `--drift` chỉ áp lên nhóm được chọn (seed cố định), SpO2 không vượt 100 | pytest |
 | Auth & phân quyền | • Mật khẩu đúng/sai, token hết hạn.<br>• Role không đủ quyền → 403.<br>• Bác sĩ/Điều dưỡng truy cập bệnh nhân **không được phân công** → 403. | pytest |
 | CRUD API (users, patient_assignments, alerts, alert_settings) | • Validate input, lỗi 404/422, quyền theo role (UC03, UC07, UC08, UC13).<br>• Chuyển trạng thái alert hợp lệ: `OPEN → ACKNOWLEDGED → RESOLVED`. | pytest + httpx TestClient |
 | Drift (`compute_psi`, `compute_ks`) | • So khớp giá trị PSI tính tay trên dữ liệu mẫu nhỏ (sai số ≤ 1e-4).<br>• Bin rỗng dùng ε, không lỗi chia 0.<br>• Hai phân phối giống nhau cho PSI ≈ 0. | pytest |

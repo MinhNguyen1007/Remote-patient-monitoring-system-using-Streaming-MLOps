@@ -1,6 +1,6 @@
 # Docker Compose - hạ tầng nền (Giai đoạn B).
-# Các service ứng dụng (backend, frontend, kafka-producer, kafka-consumer) sẽ được
-# thêm vào file này ở các giai đoạn tương ứng (D, E, F) khi đã có Dockerfile + code.
+# Service ứng dụng nằm trong profile "app" (Giai đoạn D: stream-consumer, stream-producer;
+# backend/frontend thêm ở Giai đoạn E, F).
 #
 # Chạy: docker compose up -d
 # Kiểm tra: docker compose ps
@@ -117,6 +117,44 @@ services:
       - ./infra/airflow/dags:/opt/airflow/dags
       - airflow_logs:/opt/airflow/logs
     command: scheduler
+
+  # --- Giai đoạn D: streaming (profile "app", không chạy cùng `docker compose up -d` hạ tầng) ---
+  # Trước khi chạy consumer lần đầu: tạo schema bằng Alembic (cd backend && alembic upgrade head).
+  stream-consumer:
+    build:
+      context: .
+      dockerfile: streaming/Dockerfile
+    image: rpm-streaming:latest
+    container_name: rpm_stream_consumer
+    profiles: ["app"]
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      mlflow:
+        condition: service_started
+    env_file: .env
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      POSTGRES_HOST: postgres
+    command: ["consumer.py"]
+
+  stream-producer:
+    image: rpm-streaming:latest
+    container_name: rpm_stream_producer
+    profiles: ["app"]
+    depends_on:
+      - kafka
+    env_file: .env
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    volumes:
+      # Dữ liệu phát lại sinh bởi ml/src/preprocess.py (không nằm trong git/image)
+      - ./ml/data/processed:/app/ml/data/processed:ro
+    entrypoint: ["python", "producer.py"]
 
   prometheus:
     image: prom/prometheus:v2.54.1

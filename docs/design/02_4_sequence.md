@@ -41,7 +41,10 @@ Ghi chú hiện thực:
 - **Model Service** là module chạy bên trong consumer, không phải service riêng.
   - Khi khởi động, nó nạp `models:/risk_classifier@champion` và `models:/anomaly_detector@champion` từ MLflow.
   - Sau đó định kỳ kiểm tra alias để nạp lại khi có model mới (mục 2.4.3).
-- **Consumer giữ state theo từng bệnh nhân**: cửa sổ 6 giờ, baseline, cửa sổ 12 giờ. Khi khởi động lại, state được dựng lại từ 24 bản ghi gần nhất của mỗi bệnh nhân trong DB.
+- **Consumer giữ state theo từng bệnh nhân**: toàn bộ giá trị đo theo giờ của đợt ICU đang phát lại (tối đa vài trăm giờ). Mỗi giờ mới, đặc trưng được tính lại bằng đúng hàm của `rpm_common` như lúc huấn luyện, rồi lấy giờ mới nhất.
+  - Khi khởi động lại, state được dựng lại từ **toàn bộ** `vital_records` của bệnh nhân trong DB, không chỉ 24 bản ghi gần nhất. Lý do: baseline cá nhân tính trên 24 giờ đầu của đợt (mục 2.9.1f), nên thiếu các giờ đầu thì z-score sai.
+  - Offset Kafka chỉ được commit sau khi đã ghi DB (at-least-once). Bản ghi giờ đã có trong DB được bỏ qua khi nhận lại, nên không có bản ghi hay cảnh báo trùng.
+  - Kiểm thử thật (2026-09-11): kill cứng consumer giữa lúc phát lại rồi bật lại → đủ 229/229 bản ghi, 0 bản ghi trùng, 0 cảnh báo OPEN trùng.
 - **Consumer không gọi trực tiếp backend**. Nó publish kết quả lên Kafka và backend tự consume. Hai tiến trình tách rời nhau: backend dừng thì consumer vẫn chạy, chỉ trễ phần đẩy thông báo.
 - **Backend là nơi duy nhất gửi email và đẩy WebSocket.**
 - Topic `vitals-stream` dùng key = mã bệnh nhân, nên các bản ghi của cùng 1 bệnh nhân luôn nằm cùng partition và đúng thứ tự.

@@ -37,7 +37,7 @@ Mức rủi ro **không chỉ được thể hiện bằng màu**: mọi badge l
 
 ### Chi tiết bệnh nhân (UC05, UC06, UC07)
 - Header: thông tin bệnh nhân, badge lớn **rủi ro dự báo 4 giờ tới** kèm xác suất nguy kịch (`risk_score`), điểm **NEWS2 hiện tại**.
-- Biểu đồ vitals theo thời gian thực: line chart 5 loại chỉ số (huyết áp vẽ 2 đường tâm thu/tâm trương), có thể chọn hiển thị từng chỉ số. Điểm bất thường được đánh dấu bằng `--anomaly-flag` (theo skill `dataviz`). 12 giờ đầu chưa có điểm bất thường vì chưa đủ cửa sổ.
+- Biểu đồ vitals theo thời gian thực: line chart 5 loại chỉ số (huyết áp vẽ 2 đường tâm thu/tâm trương), có thể chọn hiển thị từng chỉ số. Điểm bất thường được đánh dấu bằng `--anomaly-flag` (theo skill `dataviz`). 16 giờ đầu chưa có điểm bất thường: baseline cần 6 giờ, cộng thêm cửa sổ 12 giờ (mục 2.9.3).
 - Biểu đồ risk-timeline: dải màu theo thời gian thể hiện risk_level đổi qua các mốc.
 - Danh sách lịch sử cảnh báo của bệnh nhân. Mỗi cảnh báo có 2 thao tác (chỉ Bác sĩ):
   - **"Xác nhận"**: `OPEN → ACKNOWLEDGED`;

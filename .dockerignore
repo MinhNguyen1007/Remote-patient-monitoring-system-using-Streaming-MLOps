@@ -1,0 +1,14 @@
+# Build context là gốc repo: loại dữ liệu lớn, môi trường ảo và file sinh ra khi chạy.
+.git
+.venv
+venv
+**/__pycache__
+**/.pytest_cache
+mimic-iii-clinical-database-demo-*
+ml/data
+ml/mlruns
+ml/reports
+frontend/node_modules
+infra/postgres_data
+*.log
+.env

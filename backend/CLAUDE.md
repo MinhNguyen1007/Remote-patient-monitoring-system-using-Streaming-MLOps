@@ -14,6 +14,11 @@ app/
 tests/          pytest (unit + integration), xem docs/design/02_10_thiet_ke_test.md
 ```
 
+**Đã có từ Giai đoạn D** (vì consumer cần bảng để ghi): `app/db/models.py` (toàn bộ bảng theo ERD), `app/db/url.py`, `alembic.ini`, migration `0001` (tạo hypertable `vital_records`, `predictions`). Phần API, WebSocket, email làm ở Giai đoạn E.
+- `alembic.ini` phải giữ **chỉ ký tự ASCII**: Alembic đọc file bằng encoding của hệ điều hành (cp1252 trên Windows).
+- `alembic check` bỏ qua 2 index TimescaleDB tự tạo (`*_recorded_at_idx`), cấu hình trong `app/alembic/env.py`.
+- Consumer (`../streaming/`) ghi trực tiếp bằng SQL vào patients, vital_records, predictions, alerts, model_versions và seed alert_settings — đổi tên cột phải sửa cả `streaming/src/repository.py`.
+
 Backend **không chạy model và không chạy job định kỳ**:
 - Suy luận realtime nằm trong stream consumer (`../streaming/`).
 - Kiểm tra drift và retrain nằm trong Airflow DAG.
@@ -39,6 +44,8 @@ Backend **không chạy model và không chạy job định kỳ**:
 ```bash
 uvicorn app.main:app --reload --port 8000
 pytest
-alembic revision --autogenerate -m "..."
-alembic upgrade head
+# Trên host cần POSTGRES_HOST=localhost (mặc định .env là hostname docker "postgres")
+POSTGRES_HOST=localhost ../.venv/Scripts/python -m alembic revision --autogenerate -m "..."
+POSTGRES_HOST=localhost ../.venv/Scripts/python -m alembic upgrade head
+POSTGRES_HOST=localhost ../.venv/Scripts/python -m alembic check
 ```

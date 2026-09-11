@@ -121,7 +121,7 @@ Nếu bỏ quy tắc "một thông số 3 điểm", 13,9% số giờ dữ liệu
   - Hàm mất mát: MSE giữa chuỗi vào và chuỗi tái tạo. Optimizer: Adam, early stopping theo tập validation.
 - **Cửa sổ đầu vào**: **L = 12** bản ghi liên tiếp (12 giờ dữ liệu), **6 kênh** (HR, SpO2, RR, SBP, DBP, nhiệt độ), đã chuẩn hóa z-score theo baseline cá nhân (mục 2.9.1f).
   - Chỉ chấm điểm khi baseline đã dùng được và cửa sổ không còn giá trị trống sau khi điền.
-  - Vì vậy mỗi bệnh nhân bắt đầu có `anomaly_score` từ giờ thứ 12; trước đó chỉ có dự báo rủi ro.
+  - Baseline dùng được từ `hour_index` 5 (đủ 6 giờ), cửa sổ cần 12 giờ z-score liên tiếp, nên mỗi bệnh nhân sớm nhất có `anomaly_score` ở `hour_index` **16** (giờ thứ 17); trước đó chỉ có dự báo rủi ro.
   - **Căn giữa cửa sổ**: trước khi đưa vào autoencoder, mỗi kênh được trừ đi trung bình của chính nó trong cửa sổ. Autoencoder học **hình dạng** diễn biến 12 giờ (dao động, bước nhảy, xu hướng); độ lớn biến thiên vẫn tính theo độ lệch chuẩn baseline cá nhân. Mức lệch tuyệt đối so với baseline không đưa vào, vì NEWS2 và mô hình dự báo rủi ro đã xử lý phần này.
   - Lý do (đo bằng GroupKFold 5 fold theo bệnh nhân trên `train ∪ validation`, 2026-09-11): không căn giữa thì MSE của cửa sổ bình thường có đuôi rất dày (p99 gấp 8 lần trung vị), do vài bệnh nhân lệch xa baseline dù NEWS2 vẫn NORMAL. Hệ quả là ngưỡng p99 không dùng lại được cho bệnh nhân mới: tỷ lệ gắn cờ nhầm dao động 0–24% giữa các fold. Căn giữa giảm con số này về 0–6% và nâng precision từ 0,19 lên 0,50 ở cùng ngưỡng.
   - Phép căn giữa nằm trong `rpm_common.anomaly.center_windows` và được thực hiện bên trong wrapper model, nên consumer vẫn truyền cửa sổ z-score gốc.
