@@ -47,6 +47,9 @@ Ghi chú hiện thực:
   - Kiểm thử thật (2026-09-11): kill cứng consumer giữa lúc phát lại rồi bật lại → đủ 229/229 bản ghi, 0 bản ghi trùng, 0 cảnh báo OPEN trùng.
 - **Consumer không gọi trực tiếp backend**. Nó publish kết quả lên Kafka và backend tự consume. Hai tiến trình tách rời nhau: backend dừng thì consumer vẫn chạy, chỉ trễ phần đẩy thông báo.
 - **Backend là nơi duy nhất gửi email và đẩy WebSocket.**
+  - Event Listener của backend dùng consumer group riêng, commit offset sau khi xử lý: backend tắt rồi bật lại sẽ đọc tiếp từ offset cũ. Lần chạy đầu tiên (chưa có offset) bắt đầu từ sự kiện mới nhất, để không gửi email cho cảnh báo cũ.
+  - Email gửi trong thread riêng, không chặn luồng đẩy WebSocket. Nếu `notification_logs` đã có `SENT` cho cặp (cảnh báo, người nhận) thì không gửi lại.
+  - Khi bác sĩ xác nhận/xử lý cảnh báo (UC07), backend đẩy sự kiện `alert_update` tới mọi người cùng phụ trách bệnh nhân.
 - Topic `vitals-stream` dùng key = mã bệnh nhân, nên các bản ghi của cùng 1 bệnh nhân luôn nằm cùng partition và đúng thứ tự.
 
 ## 2.4.2. Đăng nhập hệ thống và mở kết nối realtime
@@ -67,7 +70,7 @@ sequenceDiagram
         BE->>BE: tạo JWT (sub=user_id, role)
         BE-->>FE: 200 OK {access_token, role}
         FE->>FE: lưu token, điều hướng theo role
-        FE->>BE: mở WebSocket /ws kèm access_token
+        FE->>BE: mở WebSocket /ws?token=access_token
         BE->>BE: xác thực JWT
         BE->>DB: SELECT bệnh nhân được phân công cho user
         BE-->>FE: kết nối được chấp nhận, chỉ nhận sự kiện của bệnh nhân được phân công
@@ -76,6 +79,10 @@ sequenceDiagram
         FE->>U: hiển thị lỗi đăng nhập
     end
 ```
+
+Ghi chú hiện thực:
+- Trình duyệt không đặt được header `Authorization` cho WebSocket, nên token đi qua query string. Backend che `token=` trong log truy cập để token không lộ ra log.
+- Token sai, hết hạn hoặc tài khoản đã bị khóa → server đóng kết nối với mã 1008 (policy violation).
 
 ## 2.4.3. Kích hoạt huấn luyện lại mô hình (thủ công bởi Admin — UC10)
 

@@ -67,12 +67,39 @@
     - **Lỗi thật tìm ra khi smoke test Docker**: `anomaly_detector` v2 log từ Windows lưu đường dẫn artifact dạng `artifactsutoencoder.keras`, Linux không mở được.
       - Đã sửa wrapper (`artifact_path`) và đóng gói lại thành **v3** bằng `ml/src/repackage_anomaly.py`: cùng trọng số, điểm trùng khít v2 trên tập test, qua gate → champion.
       - Consumer tự chuyển cờ champion v2 → v3 trong `model_versions`.
-- **Việc tiếp theo**: **Giai đoạn E — Backend FastAPI** (bám `backend/CLAUDE.md`, `02_2` use case, `02_4` mục 2.4.1–2.4.3):
-  1. Auth JWT 3 role, seed Admin, CRUD users / patient_assignments (UC13) / alert_settings (UC08), đọc patients / vitals / predictions / alerts theo phân công (403 nếu không được phân công).
-  2. Event listener: consume `predictions-stream`/`alerts-stream` → WebSocket tới người được phân công; email bất đồng bộ + `notification_logs`.
-  3. `POST/GET /admin/models/retrain` gọi Airflow REST (202 + `dag_run_id`); đọc `model_versions`, `drift_reports`.
-  4. Integration test tự động với Kafka/Postgres thật (`02_10` mục 2.10.2) — Giai đoạn D mới kiểm thử E2E thủ công; chưa cài `testcontainers`.
-  5. Hạ tầng: `docker compose up -d postgres zookeeper kafka mlflow`; chạy consumer + producer để có dữ liệu cho API.
+  - **Giai đoạn E — Backend FastAPI: XONG (2026-09-11)**. API, quy ước và lệnh ở `backend/CLAUDE.md`.
+    - 25 route theo UC01–UC13:
+      - JWT 3 role, phân quyền theo phân công (403);
+      - chuyển trạng thái cảnh báo OPEN → ACKNOWLEDGED → RESOLVED (409 nếu sai thứ tự);
+      - `alert-settings` hiển thị τ của champion đọc từ MLflow;
+      - retrain gọi Airflow (202, lỗi → 502).
+    - Realtime:
+      - Kafka listener (group `rpm-backend`) → WebSocket chỉ tới người được phân công;
+      - email trong thread riêng, không gửi trùng nhờ `notification_logs`; `EMAIL_DELIVERY=log` mặc định;
+      - `alert_update` khi bác sĩ đổi trạng thái cảnh báo.
+    - 27 test trên DB `rpm_test` thật (TimescaleDB, migration Alembic).
+    - Tích hợp thật với streaming (4 bệnh nhân, 3 tài khoản demo):
+      - mỗi người chỉ nhận WebSocket của bệnh nhân mình phụ trách;
+      - email tới đúng bác sĩ + điều dưỡng được phân công;
+      - xác nhận/xử lý cảnh báo đẩy `alert_update` tức thì.
+    - Sửa trong lúc làm:
+      - JWT lộ trong log uvicorn (`/ws?token=`) → `RedactTokenFilter`;
+      - `EmailStr` từ chối tên miền `.local` → kiểu `Email` riêng.
+    - Docker: `backend/Dockerfile` (tự chạy `alembic upgrade head`), service `backend` (profile `app`, cổng 8000), Prometheus scrape `backend:8000/metrics`. Smoke test container đạt.
+    - Tài khoản demo (`python -m app.seed --demo`, mật khẩu `demo12345`):
+      - bs.an, bs.binh — mỗi người phụ trách nửa số bệnh nhân;
+      - dd.cuong — phụ trách tất cả.
+      - Admin mặc định `admin@rpm.local` / `admin12345` khi `.env` chưa có `ADMIN_*` — đổi khi triển khai.
+- **Việc tiếp theo**: **Giai đoạn F — Frontend React** (bám `frontend/CLAUDE.md`, `02_8_thiet_ke_giao_dien.md`, skill `csgo-case-opening-design` + `dataviz`):
+  1. Theo `02_8` mục 2.8.3: dựng mockup trực quan bằng skill `design` trước khi code React.
+  2. Màn hình theo 02_8.2:
+     - đăng nhập;
+     - dashboard bệnh nhân (badge rủi ro 4 giờ tới + NEWS2, realtime qua WebSocket);
+     - chi tiết bệnh nhân (biểu đồ vitals + điểm bất thường, risk-timeline, cảnh báo + xác nhận/xử lý);
+     - trung tâm cảnh báo;
+     - trang quản trị gồm các tab người dùng, phân công, ngưỡng, giám sát mô hình.
+  3. Test Vitest theo `02_10` mục 2.10.5 (badge theo mức rủi ro, chặn route theo role, hiển thị theo phân công).
+  4. Chạy cùng: hạ tầng + consumer + producer + backend (hoặc `docker compose --profile app up -d`), rồi `python -m app.seed --demo`.
 - **Quyết định đã chốt sau rà soát 2026-09-10** (người dùng đã duyệt):
   - Model rủi ro là **dự báo** mức NEWS2 cao nhất trong 4 giờ tới, không phân loại tức thời. Phân loại tức thời bị rò rỉ nhãn vì nhãn là hàm tất định của đặc trưng. Model phải thắng baseline persistence.
   - Drift với PSI ≥ 0,25 → **tự động** kích hoạt retrain; quality gate chặn model kém; Admin vẫn retrain thủ công được.
@@ -125,14 +152,14 @@ Chi tiết từng sơ đồ: `docs/design/02_1_so_do_chuc_nang.md` … `02_10_th
 docker compose up -d postgres zookeeper kafka mlflow prometheus grafana
 docker compose up -d airflow-webserver airflow-scheduler   # tự chạy airflow-init trước
 
-# Backend (khi đã có code, Giai đoạn E)
-cd backend && uvicorn app.main:app --reload
+# Backend (chi tiết ở backend/CLAUDE.md; trên host cần POSTGRES_HOST=localhost KAFKA_BOOTSTRAP_SERVERS=localhost:29092)
+cd backend && ../.venv/Scripts/python -m uvicorn app.main:app --reload --port 8000
 
 # Frontend (khi đã có code, Giai đoạn F)
 cd frontend && npm run dev
 
-# Test backend
-cd backend && pytest
+# Test backend (cần postgres đang chạy; tự tạo DB rpm_test)
+cd backend && ../.venv/Scripts/python -m pytest -q
 
 # Môi trường Python (một lần, từ gốc repo)
 python -m venv .venv

@@ -118,6 +118,29 @@ services:
       - airflow_logs:/opt/airflow/logs
     command: scheduler
 
+  # --- Giai đoạn E: backend FastAPI (profile "app"); tự chạy `alembic upgrade head` khi khởi động ---
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: rpm-backend:latest
+    container_name: rpm_backend
+    profiles: ["app"]
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    env_file: .env
+    environment:
+      POSTGRES_HOST: postgres
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      AIRFLOW_API_URL: http://airflow-webserver:8080/api/v1
+    ports:
+      - "8000:8000"
+
   # --- Giai đoạn D: streaming (profile "app", không chạy cùng `docker compose up -d` hạ tầng) ---
   # Trước khi chạy consumer lần đầu: tạo schema bằng Alembic (cd backend && alembic upgrade head).
   stream-consumer:
