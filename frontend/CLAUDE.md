@@ -6,6 +6,7 @@ React + Vite. Xem kiến trúc tổng thể ở `../CLAUDE.md` và thiết kế 
 
 Nền tảng: skill `csgo-case-opening-design` (dark theme, token màu OKLCH, component polish, motion mượt) — **có chủ đích, đã xác nhận với người dùng dù không phải theme y tế truyền thống**. Tùy biến bắt buộc giữ:
 - Bỏ cơ chế mở case/spin reel ngẫu nhiên.
+- **Góc vuông** (người dùng yêu cầu 2026-09-11): `--radius: 0`, không bo góc thẻ/nút/badge/input/tooltip. Ngoại lệ duy nhất: nút radio giữ hình tròn.
 - Thêm token màu ngữ nghĩa lâm sàng: `--risk-normal` (xanh), `--risk-warning` (vàng/cam), `--risk-critical` (đỏ), `--anomaly-flag` (tím/xanh dương, dùng riêng cho điểm bất thường trên chart, không trùng màu risk-level).
 - Mức rủi ro luôn hiển thị **màu + nhãn chữ + icon**, không chỉ màu.
 - Badge chính là **rủi ro dự báo 4 giờ tới** (model). Hiển thị kèm **NEWS2 hiện tại** (luật) — không gộp 2 khái niệm này làm một.

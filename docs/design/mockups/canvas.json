@@ -38,7 +38,7 @@
       "x": 0,
       "y": 1100,
       "w": 1440,
-      "h": 1300,
+      "h": 1400,
       "page": "page-1"
     },
     {
@@ -144,6 +144,14 @@
       "w": 420,
       "page": "page-2",
       "text": "Biểu đồ drift: đường max PSI mỗi lần chạy drift_check, 2 đường ngưỡng 0,10 / 0,25. Điểm vượt 0,25 tô đỏ = đã tự động kích hoạt retrain. Phần drift_check chưa hiện thực (Giai đoạn G) nên số liệu chỉ để minh họa.\n\nBảng version hiện đúng lịch sử thật: v1 bị từ chối kèm lý do gate."
+    },
+    {
+      "id": "note-square",
+      "x": 1520,
+      "y": 0,
+      "w": 420,
+      "page": "page-3",
+      "text": "Góc vuông theo yêu cầu người dùng (2026-09-11): design system chỉ đổi một biến gốc --radius: 0, cả thang bo góc về 0. Ngoại lệ duy nhất: nút radio giữ hình tròn để phân biệt với checkbox."
     }
   ],
   "launch": {

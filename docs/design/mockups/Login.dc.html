@@ -14,7 +14,9 @@
   --background: #101113; --foreground: #f3f3ef; --card: #191a1e; --popover: #24252a;
   --primary: #d2f65b; --primary-foreground: #15180c; --secondary: #25272c;
   --muted: #24252b; --muted-foreground: #999ba3; --accent: #33362c; --accent-foreground: #e4ff99;
-  --border: #303137; --input: #3d3f46; --ring: #d2f65b; --radius: .4rem;
+  --border: #303137; --input: #3d3f46; --ring: #d2f65b;
+  /* Góc vuông theo yêu cầu người dùng (2026-09-11): chỉ đổi biến gốc, cả thang --radius-* về 0 */
+  --radius: 0;
   --radius-sm: calc(var(--radius) * .6); --radius-md: calc(var(--radius) * .8); --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) * 1.4); --radius-2xl: calc(var(--radius) * 1.8);
   --risk-normal: #0ca30c; --risk-warning: #fab219; --risk-critical: #d03b3b;
@@ -28,7 +30,7 @@ a { color: var(--primary); text-decoration: none; } a:hover { color: #e4ff99; }
 .mono { font-family: "JetBrains Mono", ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; }
 .eyebrow { font-family: "JetBrains Mono", ui-monospace, Consolas, monospace; font-size: 12px; letter-spacing: 2px;
   text-transform: uppercase; color: var(--muted-foreground); display: flex; align-items: center; gap: 8px; }
-.eyebrow::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--primary); }
+.eyebrow::before { content: ""; width: 6px; height: 6px; border-radius: 0; background: var(--primary); }
 h1 { margin: 0; font-size: 34px; font-weight: 800; letter-spacing: -1.2px; line-height: 1.15; }
 h2 { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -.4px; }
 .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-xl); }
@@ -38,7 +40,7 @@ h2 { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -.4px; }
 .btn-primary { background: var(--primary); color: var(--primary-foreground); }
 .btn-outline { background: transparent; color: var(--foreground); border-color: var(--border); }
 .btn-ghost { background: transparent; color: var(--muted-foreground); }
-.chip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 999px;
+.chip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 0;
   font-size: 12px; font-weight: 600; border: 1px solid var(--border); background: var(--secondary); }
 table { border-collapse: collapse; width: 100%; }
 th { text-align: left; font: 500 11px "JetBrains Mono", ui-monospace, monospace; letter-spacing: 1.5px;
@@ -60,7 +62,7 @@ td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-align:
       <p class="muted" style="margin: 0; font-size: 15px; text-wrap: pretty">Vitals ICU được phát theo thời gian thực, dự báo rủi ro bằng mô hình học máy và phát hiện diễn biến bất thường so với baseline của chính bệnh nhân.</p>
     </div>
     <div style="display: flex; gap: 10px; flex-wrap: wrap">
-      <span style="display: inline-flex; align-items: center; gap: 7px; height: 28px; padding: 0 10px; border-radius: 999px; background: rgba(12, 163, 12, 0.14); border: 1px solid rgba(12, 163, 12, 0.45); font-size: 12.5px; font-weight: 700; color: #f3f3ef; white-space: nowrap"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0ca30c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><circle cx="12" cy="12" r="9"></circle><path d="m8.5 12.5 2.5 2.5 4.5-5"></path></svg><span>Bình thường</span></span><span style="display: inline-flex; align-items: center; gap: 7px; height: 28px; padding: 0 10px; border-radius: 999px; background: rgba(250, 178, 25, 0.14); border: 1px solid rgba(250, 178, 25, 0.45); font-size: 12.5px; font-weight: 700; color: #f3f3ef; white-space: nowrap"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fab219" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M12 3.5 2.8 19.5h18.4z"></path><path d="M12 10v4.5"></path><path d="M12 17.2v.1"></path></svg><span>Cảnh báo</span></span><span style="display: inline-flex; align-items: center; gap: 7px; height: 28px; padding: 0 10px; border-radius: 999px; background: rgba(208, 59, 59, 0.14); border: 1px solid rgba(208, 59, 59, 0.45); font-size: 12.5px; font-weight: 700; color: #f3f3ef; white-space: nowrap"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#d03b3b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M8.2 3h7.6L21 8.2v7.6L15.8 21H8.2L3 15.8V8.2z"></path><path d="M12 7.5v5.5"></path><path d="M12 16.3v.1"></path></svg><span>Nguy kịch</span></span>
+      <span style="display: inline-flex; align-items: center; gap: 7px; height: 28px; padding: 0 10px; border-radius: 0; background: rgba(12, 163, 12, 0.14); border: 1px solid rgba(12, 163, 12, 0.45); font-size: 12.5px; font-weight: 700; color: #f3f3ef; white-space: nowrap"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0ca30c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><circle cx="12" cy="12" r="9"></circle><path d="m8.5 12.5 2.5 2.5 4.5-5"></path></svg><span>Bình thường</span></span><span style="display: inline-flex; align-items: center; gap: 7px; height: 28px; padding: 0 10px; border-radius: 0; background: rgba(250, 178, 25, 0.14); border: 1px solid rgba(250, 178, 25, 0.45); font-size: 12.5px; font-weight: 700; color: #f3f3ef; white-space: nowrap"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fab219" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M12 3.5 2.8 19.5h18.4z"></path><path d="M12 10v4.5"></path><path d="M12 17.2v.1"></path></svg><span>Cảnh báo</span></span><span style="display: inline-flex; align-items: center; gap: 7px; height: 28px; padding: 0 10px; border-radius: 0; background: rgba(208, 59, 59, 0.14); border: 1px solid rgba(208, 59, 59, 0.45); font-size: 12.5px; font-weight: 700; color: #f3f3ef; white-space: nowrap"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#d03b3b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M8.2 3h7.6L21 8.2v7.6L15.8 21H8.2L3 15.8V8.2z"></path><path d="M12 7.5v5.5"></path><path d="M12 16.3v.1"></path></svg><span>Nguy kịch</span></span>
     </div>
   </section>
   <section style="display: flex; align-items: center; justify-content: center">
@@ -71,11 +73,11 @@ td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-align:
       </div>
       <label style="display: flex; flex-direction: column; gap: 8px">
         <span style="font-size: 13px; font-weight: 600">Email</span>
-        <div class="input focus"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999ba3" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="m3.5 6.5 8.5 6.5 8.5-6.5"></path></svg><span>bs.an@rpm.local</span></div>
+        <div class="input focus"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999ba3" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><rect x="3" y="5" width="18" height="14"></rect><path d="m3.5 6.5 8.5 6.5 8.5-6.5"></path></svg><span>bs.an@rpm.local</span></div>
       </label>
       <label style="display: flex; flex-direction: column; gap: 8px">
         <span style="font-size: 13px; font-weight: 600">Mật khẩu</span>
-        <div class="input"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999ba3" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><rect x="5" y="10.5" width="14" height="10" rx="2"></rect><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"></path></svg><span class="mono" style="letter-spacing: 3px">••••••••••</span>
+        <div class="input"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999ba3" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><rect x="5" y="10.5" width="14" height="10"></rect><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"></path></svg><span class="mono" style="letter-spacing: 3px">••••••••••</span>
           <span style="margin-left: auto; color: #999ba3; display: flex"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"></path><circle cx="12" cy="12" r="2.8"></circle></svg></span></div>
       </label>
       <div class="btn btn-primary" style="height: 42px; font-size: 14px">Đăng nhập</div>

@@ -3,12 +3,17 @@
 Design system: skill `csgo-case-opening-design` (token lấy nguyên từ reference/DESIGN_DNA.md), màu trạng thái theo
 skill `dataviz` (luôn kèm icon + nhãn chữ). Mọi số liệu là số liệu mẫu, định dạng giống hệt response của backend.
 
-Chạy: python docs/design/mockups/build_mockups.py  → ghi *.dc.html + canvas.json cạnh file này.
+Chạy: python docs/design/mockups/build_mockups.py         → ghi *.dc.html + canvas.json cạnh file này
+     python docs/design/mockups/build_mockups.py --png   → thêm ảnh png/*.png (Chrome headless) cho tài liệu 02_8
 """
 
 import json
 import math
 import random
+import shutil
+import subprocess
+import sys
+import tempfile
 from pathlib import Path
 
 OUT = Path(__file__).resolve().parent
@@ -37,7 +42,9 @@ BASE_CSS = f"""
   --background: {BG}; --foreground: {FG}; --card: {CARD}; --popover: {POPOVER};
   --primary: {PRIMARY}; --primary-foreground: {PRIMARY_FG}; --secondary: {SECONDARY};
   --muted: {MUTED}; --muted-foreground: {MUTED_FG}; --accent: {ACCENT}; --accent-foreground: {ACCENT_FG};
-  --border: {BORDER}; --input: {INPUT}; --ring: {PRIMARY}; --radius: .4rem;
+  --border: {BORDER}; --input: {INPUT}; --ring: {PRIMARY};
+  /* Góc vuông theo yêu cầu người dùng (2026-09-11): chỉ đổi biến gốc, cả thang --radius-* về 0 */
+  --radius: 0;
   --radius-sm: calc(var(--radius) * .6); --radius-md: calc(var(--radius) * .8); --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) * 1.4); --radius-2xl: calc(var(--radius) * 1.8);
   --risk-normal: {RISK['NORMAL'][0]}; --risk-warning: {RISK['WARNING'][0]}; --risk-critical: {RISK['CRITICAL'][0]};
@@ -51,7 +58,7 @@ a {{ color: var(--primary); text-decoration: none; }} a:hover {{ color: {ACCENT_
 .mono {{ font-family: "JetBrains Mono", ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; }}
 .eyebrow {{ font-family: "JetBrains Mono", ui-monospace, Consolas, monospace; font-size: 12px; letter-spacing: 2px;
   text-transform: uppercase; color: var(--muted-foreground); display: flex; align-items: center; gap: 8px; }}
-.eyebrow::before {{ content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--primary); }}
+.eyebrow::before {{ content: ""; width: 6px; height: 6px; border-radius: 0; background: var(--primary); }}
 h1 {{ margin: 0; font-size: 34px; font-weight: 800; letter-spacing: -1.2px; line-height: 1.15; }}
 h2 {{ margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -.4px; }}
 .card {{ background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-xl); }}
@@ -61,7 +68,7 @@ h2 {{ margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -.4px; }}
 .btn-primary {{ background: var(--primary); color: var(--primary-foreground); }}
 .btn-outline {{ background: transparent; color: var(--foreground); border-color: var(--border); }}
 .btn-ghost {{ background: transparent; color: var(--muted-foreground); }}
-.chip {{ display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 999px;
+.chip {{ display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 0;
   font-size: 12px; font-weight: 600; border: 1px solid var(--border); background: var(--secondary); }}
 table {{ border-collapse: collapse; width: 100%; }}
 th {{ text-align: left; font: 500 11px "JetBrains Mono", ui-monospace, monospace; letter-spacing: 1.5px;
@@ -79,11 +86,11 @@ ICON_PATHS = {
     "octagon": '<path d="M8.2 3h7.6L21 8.2v7.6L15.8 21H8.2L3 15.8V8.2z"></path><path d="M12 7.5v5.5"></path><path d="M12 16.3v.1"></path>',
     "pulse": '<path d="M3 12h4l2.5-6 5 12 2.5-6h4"></path>',
     "bell": '<path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15z"></path><path d="M10 20.5a2 2 0 0 0 4 0"></path>',
-    "grid": '<rect x="3.5" y="3.5" width="7" height="7" rx="1.5"></rect><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"></rect><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"></rect><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"></rect>',
+    "grid": '<rect x="3.5" y="3.5" width="7" height="7"></rect><rect x="13.5" y="3.5" width="7" height="7"></rect><rect x="3.5" y="13.5" width="7" height="7"></rect><rect x="13.5" y="13.5" width="7" height="7"></rect>',
     "users": '<circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20a6.5 6.5 0 0 1 13 0"></path><path d="M16 4.5a3.5 3.5 0 0 1 0 7"></path><path d="M18 14.5a6.5 6.5 0 0 1 3.5 5.5"></path>',
     "link": '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"></path><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"></path>',
     "sliders": '<path d="M4 7h9"></path><path d="M17 7h3"></path><circle cx="15" cy="7" r="2"></circle><path d="M4 17h3"></path><path d="M11 17h9"></path><circle cx="9" cy="17" r="2"></circle>',
-    "cpu": '<rect x="6" y="6" width="12" height="12" rx="2"></rect><path d="M9 2.5v3M15 2.5v3M9 18.5v3M15 18.5v3M2.5 9h3M2.5 15h3M18.5 9h3M18.5 15h3"></path>',
+    "cpu": '<rect x="6" y="6" width="12" height="12"></rect><path d="M9 2.5v3M15 2.5v3M9 18.5v3M15 18.5v3M2.5 9h3M2.5 15h3M18.5 9h3M18.5 15h3"></path>',
     "logout": '<path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"></path><path d="m9 16-4-4 4-4"></path><path d="M5 12h11"></path>',
     "chevron-left": '<path d="m14.5 6-6 6 6 6"></path>',
     "chevron-down": '<path d="m6 9.5 6 6 6-6"></path>',
@@ -92,8 +99,8 @@ ICON_PATHS = {
     "x": '<path d="M6 6l12 12M18 6 6 18"></path>',
     "tick": '<path d="m5 12.5 4.5 4.5L19 7.5"></path>',
     "refresh": '<path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"></path><path d="M4 3.5V8h4.5"></path><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"></path><path d="M20 20.5V16h-4.5"></path>',
-    "lock": '<rect x="5" y="10.5" width="14" height="10" rx="2"></rect><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"></path>',
-    "mail": '<rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="m3.5 6.5 8.5 6.5 8.5-6.5"></path>',
+    "lock": '<rect x="5" y="10.5" width="14" height="10"></rect><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"></path>',
+    "mail": '<rect x="3" y="5" width="18" height="14"></rect><path d="m3.5 6.5 8.5 6.5 8.5-6.5"></path>',
     "eye": '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"></path><circle cx="12" cy="12" r="2.8"></circle>',
     "pencil": '<path d="M4 20h4L19.5 8.5a2.8 2.8 0 0 0-4-4L4 16z"></path>',
     "clock": '<circle cx="12" cy="12" r="9"></circle><path d="M12 7.5V12l3 2"></path>',
@@ -123,7 +130,7 @@ def risk_badge(level: str, score: float | None = None, large: bool = False) -> s
     score_html = (f'<span class="mono" style="color: {MUTED_FG}; font-weight: 500; font-size: {font - 1}px">'
                   f'{vn(score)}</span>') if score is not None else ""
     return (f'<span style="display: inline-flex; align-items: center; gap: 7px; height: {height}px; padding: 0 {pad}px; '
-            f'border-radius: 999px; background: {rgba(color, .14)}; border: 1px solid {rgba(color, .45)}; '
+            f'border-radius: 0; background: {rgba(color, .14)}; border: 1px solid {rgba(color, .45)}; '
             f'font-size: {font}px; font-weight: 700; color: {FG}; white-space: nowrap">'
             f'{icon(ico, isz, color, 2)}<span>{label}</span>{score_html}</span>')
 
@@ -146,7 +153,7 @@ def anomaly_chip(score: float | None, threshold: float = 0.99) -> str:
     border = rgba(ANOMALY, .5) if flagged else BORDER
     bg = rgba(ANOMALY, .14) if flagged else "transparent"
     return (f'<span style="display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 9px; '
-            f'border-radius: 999px; border: 1px solid {border}; background: {bg}; font-size: 12px; font-weight: 600">'
+            f'border-radius: 0; border: 1px solid {border}; background: {bg}; font-size: 12px; font-weight: 600">'
             f'{icon("pulse", 14, color, 2)}<span style="color: {FG}">{label}</span>'
             f'<span class="mono" style="color: {MUTED_FG}; font-weight: 500">{vn(score, 3)}</span></span>')
 
@@ -158,8 +165,8 @@ STATUS = {"OPEN": ("Mở", PRIMARY, PRIMARY_FG), "ACKNOWLEDGED": ("Đã xác nh�
 def status_pill(status: str) -> str:
     label, color, _ = STATUS[status]
     return (f'<span style="display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 9px; '
-            f'border-radius: 999px; border: 1px solid {rgba(color, .5)}; font-size: 12px; font-weight: 600; color: {FG}">'
-            f'<span style="width: 6px; height: 6px; border-radius: 50%; background: {color}"></span>{label}</span>')
+            f'border-radius: 0; border: 1px solid {rgba(color, .5)}; font-size: 12px; font-weight: 600; color: {FG}">'
+            f'<span style="width: 6px; height: 6px; border-radius: 0; background: {color}"></span>{label}</span>')
 
 
 def alert_type(kind: str) -> str:
@@ -176,7 +183,7 @@ def alert_type(kind: str) -> str:
 def realtime_indicator(connected: bool = True) -> str:
     color, text = (PRIMARY, "Realtime · đã kết nối") if connected else ("#fab219", "Đang kết nối lại…")
     return (f'<span class="mono" style="display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: {MUTED_FG}">'
-            f'<span style="width: 8px; height: 8px; border-radius: 50%; background: {color}; '
+            f'<span style="width: 8px; height: 8px; border-radius: 0; background: {color}; '
             f'box-shadow: 0 0 0 4px {rgba(color, .15)}"></span>{text}</span>')
 
 
@@ -194,7 +201,7 @@ def nav_item(ico: str, label: str, active: bool = False, badge: int | None = Non
     bg = ACCENT if active else "transparent"
     color = ACCENT_FG if active else MUTED_FG
     badge_html = (f'<span class="mono" style="margin-left: auto; min-width: 22px; height: 20px; padding: 0 6px; '
-                  f'border-radius: 999px; background: {RISK["CRITICAL"][0]}; color: {FG}; font-size: 11.5px; '
+                  f'border-radius: 0; background: {RISK["CRITICAL"][0]}; color: {FG}; font-size: 11.5px; '
                   f'font-weight: 600; display: flex; align-items: center; justify-content: center">{badge}</span>'
                   if badge else "")
     return (f'<div style="display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; '
@@ -219,7 +226,7 @@ def sidebar(role: str, active: str, name: str, open_alerts: int = 3) -> str:
             f'<nav style="display: flex; flex-direction: column; gap: 4px">{nav}</nav>'
             f'<div style="margin-top: auto; display: flex; align-items: center; gap: 10px; padding: 12px; '
             f'border-radius: var(--radius-xl); border: 1px solid {BORDER}; background: {BG}">'
-            f'<div style="width: 34px; height: 34px; border-radius: 50%; background: {SECONDARY}; display: flex; '
+            f'<div style="width: 34px; height: 34px; border-radius: 0; background: {SECONDARY}; display: flex; '
             f'align-items: center; justify-content: center; font-weight: 700; font-size: 13px">{initials}</div>'
             f'<div style="display: flex; flex-direction: column; line-height: 1.25; min-width: 0">'
             f'<span style="font-weight: 600; font-size: 13px; white-space: nowrap">{name}</span>'
@@ -332,11 +339,11 @@ def login() -> str:
 def patient_card(p: dict) -> str:
     color = RISK[p["level"]][0]
     cells = "".join(
-        f'<span style="flex-grow: 1; height: 8px; border-radius: 2px; background: {rgba(RISK[STRIP_LEVEL[c]][0], .85)}"></span>'
+        f'<span style="flex-grow: 1; height: 8px; border-radius: 0; background: {rgba(RISK[STRIP_LEVEL[c]][0], .85)}"></span>'
         for c in p["strip"].rjust(12, "-") if c != "-"
     )
     missing = 12 - len(p["strip"])
-    pad = "".join(f'<span style="flex-grow: 1; height: 8px; border-radius: 2px; background: {SECONDARY}"></span>' for _ in range(missing))
+    pad = "".join(f'<span style="flex-grow: 1; height: 8px; border-radius: 0; background: {SECONDARY}"></span>' for _ in range(missing))
     open_html = (f'<span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600">'
                  f'{icon("bell", 15, RISK["CRITICAL"][0], 2)}{p["open"]} cảnh báo mở</span>'
                  if p["open"] else f'<span class="muted" style="font-size: 12.5px">Không có cảnh báo mở</span>')
@@ -429,7 +436,7 @@ def vitals_chart() -> str:
         ("Huyết áp", "mmHg", [("sbp", SERIES, ""), ("dbp", SERIES_2, "5 4")], 40, 140, (111, 140)),
         ("Nhiệt độ", "°C", [("temp", SERIES, "")], 36, 39.5, (36.1, 38.0)),
     ]
-    cross_i = hours.index(63)
+    cross_i = hours.index(58)  # giờ chuyển sang Nguy kịch; tooltip nằm trên đoạn dữ liệu ổn định
     flagged = [i for i, a in enumerate(anomaly) if a >= .99]
     parts, y0 = [], 8
     for name, unit, lines, lo, hi, band in strips:
@@ -479,7 +486,7 @@ def vitals_chart() -> str:
     for i, a in enumerate(anomaly):
         h_bar = a * a_h
         color = ANOMALY if a >= .99 else "#4a4b52"
-        parts.append(f'<rect x="{x(i) - bar_w / 2:.1f}" y="{a_top + a_h - h_bar:.1f}" width="{bar_w:.1f}" height="{h_bar:.1f}" rx="1.5" fill="{color}"></rect>')
+        parts.append(f'<rect x="{x(i) - bar_w / 2:.1f}" y="{a_top + a_h - h_bar:.1f}" width="{bar_w:.1f}" height="{h_bar:.1f}" fill="{color}"></rect>')
     t_y = a_top + a_h - .99 * a_h
     parts.append(f'<line x1="{left}" x2="{left + plot_w}" y1="{t_y:.1f}" y2="{t_y:.1f}" stroke="{ANOMALY}" stroke-dasharray="3 3" stroke-width="1"></line>')
     parts.append(f'<text x="{left + plot_w + 8}" y="{t_y + 4:.1f}" fill="{MUTED_FG}" font-size="11">τ 0,99</text>')
@@ -488,7 +495,7 @@ def vitals_chart() -> str:
     # Risk-timeline: mức rủi ro dự báo mỗi giờ
     parts.append(f'<text x="0" y="{y0 + 13}" fill="{MUTED_FG}" font-family="JetBrains Mono, monospace" font-size="11" letter-spacing="1">RỦI RO 4 GIỜ TỚI</text>')
     for i, lvl in enumerate(level):
-        parts.append(f'<rect x="{x(i) - step / 2 + 1:.1f}" y="{y0}" width="{step - 2:.1f}" height="18" rx="2" fill="{RISK[lvl][0]}" fill-opacity=".8"></rect>')
+        parts.append(f'<rect x="{x(i) - step / 2 + 1:.1f}" y="{y0}" width="{step - 2:.1f}" height="18" fill="{RISK[lvl][0]}" fill-opacity=".8"></rect>')
     y0 += 30
 
     # Trục x (giờ dữ liệu) + crosshair tại giờ 63
@@ -512,11 +519,11 @@ def vitals_chart() -> str:
     tooltip = (f'<div style="position: absolute; left: {cx - 250:.0f}px; top: 36px; width: 214px; padding: 12px 14px; '
                f'border-radius: var(--radius-xl); background: {POPOVER}; border: 1px solid {BORDER}; '
                f'box-shadow: 0 12px 32px rgba(0, 0, 0, .45); display: flex; flex-direction: column; gap: 6px; font-size: 12.5px">'
-               f'<span class="mono muted" style="font-size: 11px">GIỜ 63 · 05:31:25</span>'
+               f'<span class="mono muted" style="font-size: 11px">GIỜ 58 · 05:31:00</span>'
                f'{row("Nhịp tim", hr_text)}{row("SpO₂", spo2_text)}{row("Nhịp thở", rr_text)}{row("Huyết áp", bp_text)}'
                f'<div style="height: 1px; background: {BORDER}; margin: 2px 0"></div>'
-               f'<div style="display: flex; justify-content: space-between; align-items: center">{risk_badge("CRITICAL", 0.68)}</div>'
-               f'{row("NEWS2", "9")}{row("Bất thường", vn(anomaly[cross_i], 3))}</div>')
+               f'<div style="display: flex; justify-content: space-between; align-items: center">{risk_badge("CRITICAL", 0.61)}</div>'
+               f'{row("NEWS2", "8")}{row("Bất thường", vn(anomaly[cross_i], 3))}</div>')
     return f'<div style="position: relative">{svg}{tooltip}</div>'
 
 
@@ -525,7 +532,7 @@ def news2_breakdown() -> str:
     rows = "".join(
         f'<div style="display: flex; align-items: center; gap: 10px"><span style="flex-grow: 1" class="muted">{label}</span>'
         f'<div style="display: flex; gap: 3px">'
-        + "".join(f'<span style="width: 14px; height: 8px; border-radius: 2px; background: {FG if k < pts else SECONDARY}; opacity: {.85 if k < pts else 1}"></span>' for k in range(3))
+        + "".join(f'<span style="width: 14px; height: 8px; border-radius: 0; background: {FG if k < pts else SECONDARY}; opacity: {.85 if k < pts else 1}"></span>' for k in range(3))
         + f'</div><span class="mono" style="width: 14px; text-align: right; font-weight: 600">{pts}</span></div>'
         for label, pts in items)
     return rows
@@ -595,7 +602,7 @@ def patient_detail() -> str:
     <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: start">{alerts}</div>
   </div>
 </section>"""
-    return document("Chi tiết bệnh nhân", shell("DOCTOR", "Bệnh nhân", "BS. Trần Thị Bình", body, 1300, open_alerts=2))
+    return document("Chi tiết bệnh nhân", shell("DOCTOR", "Bệnh nhân", "BS. Trần Thị Bình", body, 1400, open_alerts=2))
 
 
 # ---------------------------------------------------------------------------------------- Trung tâm cảnh báo
@@ -618,7 +625,7 @@ def alerts_center() -> str:
     rows = []
     for kind, patient, status, hour, time, score, news2, new in ALERTS:
         highlight = f'background: {rgba(PRIMARY, .06)}' if new else ""
-        new_tag = (f'<span class="mono" style="font-size: 10.5px; letter-spacing: 1px; padding: 2px 6px; border-radius: 4px; '
+        new_tag = (f'<span class="mono" style="font-size: 10.5px; letter-spacing: 1px; padding: 2px 6px; border-radius: 0; '
                    f'background: {PRIMARY}; color: {PRIMARY_FG}; font-weight: 600">MỚI</span>' if new else "")
         score_label = "Điểm bất thường" if kind == "ANOMALY" else "Xác suất nguy kịch"
         if status == "OPEN":
@@ -658,9 +665,9 @@ def role_pill(role: str) -> str:
 
 
 def switch(on: bool) -> str:
-    return (f'<span style="display: inline-flex; width: 36px; height: 20px; border-radius: 999px; padding: 2px; '
+    return (f'<span style="display: inline-flex; width: 36px; height: 20px; border-radius: 0; padding: 2px; '
             f'background: {PRIMARY if on else INPUT}; justify-content: {"flex-end" if on else "flex-start"}">'
-            f'<span style="width: 16px; height: 16px; border-radius: 50%; background: {PRIMARY_FG if on else MUTED_FG}"></span></span>')
+            f'<span style="width: 16px; height: 16px; border-radius: 0; background: {PRIMARY_FG if on else MUTED_FG}"></span></span>')
 
 
 def admin_users() -> str:
@@ -697,7 +704,7 @@ def admin_assignments() -> str:
     staff = [("BS. Trần Thị Bình", "bs.binh@rpm.local", "DOCTOR", "10/09 12:28"), ("ĐD. Lê Văn Cường", "dd.cuong@rpm.local", "NURSE", "10/09 12:28")]
     staff_rows = "".join(
         f'<div style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: var(--radius-xl); border: 1px solid {BORDER}; background: {BG}">'
-        f'<div style="width: 34px; height: 34px; border-radius: 50%; background: {SECONDARY}; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px">'
+        f'<div style="width: 34px; height: 34px; border-radius: 0; background: {SECONDARY}; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px">'
         f'{"".join(w[0] for w in n.replace(".", "").split()[-2:]).upper()}</div>'
         f'<div style="display: flex; flex-direction: column; line-height: 1.3"><span style="font-weight: 600">{n}</span>'
         f'<span class="mono muted" style="font-size: 12px">{e}</span></div>{role_pill(r)}'
@@ -811,7 +818,7 @@ def admin_models() -> str:
         return (f'<div style="display: flex; flex-direction: column; gap: 2px"><span class="mono muted" style="font-size: 10.5px; letter-spacing: 1.2px">{label}</span>'
                 f'<span class="mono" style="font-size: 22px; font-weight: 600; letter-spacing: -.5px">{value}</span>{ref_html}</div>')
 
-    champion_tag = (f'<span class="mono" style="font-size: 11px; letter-spacing: 1px; padding: 3px 8px; border-radius: 4px; '
+    champion_tag = (f'<span class="mono" style="font-size: 11px; letter-spacing: 1px; padding: 3px 8px; border-radius: 0; '
                     f'background: {PRIMARY}; color: {PRIMARY_FG}; font-weight: 600">CHAMPION</span>')
     cards = f"""
 <section style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
@@ -893,6 +900,44 @@ def kit() -> str:
     return document("Thành phần giao diện", body)
 
 
+
+# ------------------------------------------------------------------------------------------- xuất PNG
+CHROME_CANDIDATES = (
+    r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+    r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+    "google-chrome", "chromium", "chrome",
+)
+
+
+def to_standalone(dc_html: str) -> str:
+    """Bản HTML thường của một artboard (bỏ lớp <x-dc>/<helmet> của canvas) để trình duyệt headless chụp."""
+    head = dc_html.split("<helmet>")[1].split("</helmet>")[0]
+    body = dc_html.split("</helmet>")[1].split("</x-dc>")[0]
+    return f'<!doctype html>\n<html lang="vi">\n<head>\n<meta charset="utf-8">{head}</head>\n<body>{body}</body>\n</html>\n'
+
+
+def export_png(boards: dict[str, str], sizes: dict[str, tuple[int, int]]) -> None:
+    chrome = next((c for c in CHROME_CANDIDATES if Path(c).exists() or shutil.which(c)), None)
+    if chrome is None:
+        sys.exit("không tìm thấy Chrome/Edge để xuất PNG")
+    out_dir = OUT / "png"
+    out_dir.mkdir(exist_ok=True)
+    with tempfile.TemporaryDirectory() as tmp:
+        for name, html in boards.items():
+            stem = name.removesuffix(".dc.html")
+            page = Path(tmp) / f"{stem}.html"
+            page.write_text(to_standalone(html), encoding="utf-8")
+            width, height = sizes[name]
+            target = out_dir / f"{stem}.png"
+            subprocess.run(
+                [chrome, "--headless=new", "--disable-gpu", "--hide-scrollbars", "--force-device-scale-factor=1",
+                 f"--window-size={width},{height}", "--virtual-time-budget=8000", f"--screenshot={target}",
+                 page.as_uri()],
+                check=True, capture_output=True, timeout=120,
+            )
+            print("ảnh:", target.name, f"{width}x{height}")
+
+
 # ------------------------------------------------------------------------------------------------ canvas
 def main() -> None:
     boards = {
@@ -916,7 +961,7 @@ def main() -> None:
         "artboards": [
             {"file": "Login.dc.html", "title": "Đăng nhập (UC01)", "x": 0, "y": 0, "w": W, "h": 900, "page": "page-1"},
             {"file": "Main.dc.html", "title": "Dashboard bệnh nhân (UC04) — Điều dưỡng", "x": W + gap_x, "y": 0, "w": W, "h": 900, "page": "page-1"},
-            {"file": "PatientDetail.dc.html", "title": "Chi tiết bệnh nhân (UC05–07) — Bác sĩ", "x": 0, "y": 900 + gap_y, "w": W, "h": 1300, "page": "page-1"},
+            {"file": "PatientDetail.dc.html", "title": "Chi tiết bệnh nhân (UC05–07) — Bác sĩ", "x": 0, "y": 900 + gap_y, "w": W, "h": 1400, "page": "page-1"},
             {"file": "AlertsCenter.dc.html", "title": "Trung tâm cảnh báo (UC06–07) — Bác sĩ", "x": W + gap_x, "y": 900 + gap_y, "w": W, "h": 900, "page": "page-1"},
             {"file": "AdminUsers.dc.html", "title": "Người dùng (UC03)", "x": 0, "y": 0, "w": W, "h": 900, "page": "page-2"},
             {"file": "AdminAssignments.dc.html", "title": "Phân công (UC13)", "x": W + gap_x, "y": 0, "w": W, "h": 900, "page": "page-2"},
@@ -940,8 +985,17 @@ def main() -> None:
         ],
         "launch": {"view": "canvas", "page": "page-1"},
     }
+    canvas["annotations"].append({
+        "id": "note-square", "x": W + 80, "y": 0, "w": 420, "page": "page-3",
+        "text": "Góc vuông theo yêu cầu người dùng (2026-09-11): design system chỉ đổi một biến gốc --radius: 0, cả thang bo góc về 0. Ngoại lệ duy nhất: nút radio giữ hình tròn để phân biệt với checkbox.",
+    })
+    canvas = {
+        **canvas,
+    }
     (OUT / "canvas.json").write_text(json.dumps(canvas, ensure_ascii=False, indent=2), encoding="utf-8")
     print("đã sinh", len(boards), "artboard vào", OUT)
+    if "--png" in sys.argv:
+        export_png(boards, {a["file"]: (a["w"], a["h"]) for a in canvas["artboards"]})
 
 
 if __name__ == "__main__":

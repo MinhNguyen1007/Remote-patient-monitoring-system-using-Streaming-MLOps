@@ -90,7 +90,10 @@
       - bs.an, bs.binh — mỗi người phụ trách nửa số bệnh nhân;
       - dd.cuong — phụ trách tất cả.
       - Admin mặc định `admin@rpm.local` / `admin12345` khi `.env` chưa có `ADMIN_*` — đổi khi triển khai.
-- **Giai đoạn F — Frontend: đang làm.** Bước 1 xong (2026-09-11): mockup Claude Design canvas https://claude.ai/code/artifact/06619c98-443f-4157-be37-cef16741dc5d, nguồn `docs/design/mockups/` (8 màn hình + bảng thành phần + ghi chú phân tích). Đã soát bằng trình duyệt và sửa lỗi bố cục, số liệu khớp giữa các màn hình. **Chờ người dùng góp ý mockup trước khi code React.**
+- **Giai đoạn F — Frontend: đang làm.** Bước 1 xong (2026-09-11): mockup Claude Design canvas https://claude.ai/code/artifact/06619c98-443f-4157-be37-cef16741dc5d, nguồn `docs/design/mockups/` (8 màn hình + bảng thành phần + ghi chú phân tích). Đã soát bằng trình duyệt và sửa lỗi bố cục, số liệu khớp giữa các màn hình.
+  - Người dùng yêu cầu **góc vuông** → `--radius: 0` (đã áp dụng lên canvas bản 2).
+  - Tài liệu `02_8` đã viết lại có cấu trúc (design system, kiến trúc điều hướng, phân tích từng màn hình) kèm 9 ảnh `docs/design/mockups/png/*.png`, dùng được cho báo cáo Word.
+  - **Chờ người dùng góp ý mockup trước khi code React.**
 - **Việc tiếp theo**: **Giai đoạn F — Frontend React** (bám `frontend/CLAUDE.md`, `02_8_thiet_ke_giao_dien.md`, skill `csgo-case-opening-design` + `dataviz`):
   1. ~~Dựng mockup~~ (xong). Áp dụng góp ý của người dùng lên mockup nếu có (sửa `docs/design/mockups/build_mockups.py`, ghép lại canvas, cập nhật cùng URL).
   2. Màn hình theo 02_8.2:
