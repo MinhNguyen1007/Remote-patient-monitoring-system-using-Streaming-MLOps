@@ -9,7 +9,7 @@
 - **Đang ở đâu**:
   - Giai đoạn A (thiết kế, mục 2) và Giai đoạn B (khung repo + hạ tầng Docker) đã xong, nhánh `master`.
   - 2026-09-10: **rà soát toàn bộ** thiết kế + hạ tầng + dữ liệu thật và sửa lại (commit `d25a37b`).
-  - **Giai đoạn C — Dữ liệu & Model: dữ liệu xong; cả 2 mô hình đã qua gate và có `champion` (`risk_classifier` v2, `anomaly_detector` v2); còn `evaluate.py` (SHAP, h = 1 vs h = 4, nhãn proxy vs tử vong).**
+  - **Giai đoạn C — Dữ liệu & Model: XONG (2026-09-11).** Cả 2 mô hình có `champion` (`risk_classifier` v2, `anomaly_detector` v2); bảng/hình cho báo cáo ở `ml/reports/evaluation.md`.
     - `common/rpm_common`: mapping itemid, làm sạch, lưới 1 giờ, forward-fill, NEWS2 rút gọn, feature cửa sổ 6 giờ, baseline z-score, nhãn dự báo, hàm ghép `build_hourly_features`, cửa sổ 12 giờ + điểm bất thường (`anomaly.py`). 99 unit test qua, gồm test tính nhân quả (feature tại t không phụ thuộc dữ liệu sau t).
     - `ml/src/preprocess.py` + `ml/src/split.py`, 7 test qua. Đã chạy trên dữ liệu thật và sinh ra (trong `ml/data/processed/`, không nằm trong git):
       - `hourly.parquet`: 132 đợt ICU, 14.138 giờ;
@@ -45,14 +45,17 @@
     - **Người dùng chọn**: căn giữa cửa sổ theo kênh + gate **AUROC ≥ 0,75** và không kém champion (`MIN_AUROC_ANOMALY`). P/R/F1 chỉ báo cáo.
     - v2 (run `b96c9105a15f4f0a84466277e91eb1f1`), trên test: **AUROC 0,864**, Precision 0,727, Recall 0,167, F1 0,271, gắn cờ nhầm 0,7%. Recall theo loại: spike 0,25, level shift 0,19, drift 0,06.
     - **Ghi chú bắt buộc cho báo cáo 3.4/3.5**: test của mô hình bất thường đã dùng 2 lần; gate đổi sau khi xem kết quả test lần đầu; recall thấp ở τ = 0,99 (chi tiết `02_9` mục 2.9.3, `02_10` mục 2.10.3).
-- **Việc tiếp theo**:
-  1. `ml/src/evaluate.py` cho báo cáo 3.4/3.5 (chỉ đọc model/metric đã có, **không chọn lại gì trên test**):
-     - SHAP cho `risk_classifier@champion` (mục 2.9.2);
-     - so sánh h = 1 và h = 4 (chạy `train.py --horizon 1`, không đăng ký);
-     - đối chiếu nhãn proxy với `hospital_expire_flag`;
-     - bảng/biểu đồ ma trận nhầm lẫn, phân phối `anomaly_score`.
-  2. Sau đó chuyển Giai đoạn D (streaming: producer + consumer dùng `rpm_common` và 2 model champion).
-  3. Cần hạ tầng: `docker compose up -d postgres mlflow`, rồi đặt `MLFLOW_TRACKING_URI=http://localhost:5000`.
+  - **Đánh giá cho báo cáo** (`ml/src/evaluate.py` → `ml/reports/`, commit vào git; chạy lại khi champion đổi):
+    - h = 1 (run log riêng, không đăng ký): model Macro F1 0,578 < persistence 0,621, dù Recall CRITICAL 0,784 so với 0,486. Ở tầm 1 giờ, persistence rất khó thắng vì vitals tự tương quan mạnh → lý do chọn h = 4.
+    - SHAP lớp CRITICAL: `news2_max_6h`, `news2_score`, `respiratory_rate_mean_6h`, `heart_rate` đứng đầu.
+    - Nhãn proxy: tỷ lệ giờ CRITICAL 19,1% ở đợt ICU tử vong tại viện so với 3,6% ở đợt sống sót; AUROC mức đợt 0,718.
+    - Anomaly trên dữ liệu thật (không tiêm), cửa sổ test theo mức NEWS2 cao nhất trong 12 giờ: tỷ lệ gắn cờ NORMAL 0,6%, WARNING 17,4%, CRITICAL 34,8%. AUROC CRITICAL so với NORMAL 0,837 — bằng chứng thực nghiệm cho mô hình bất thường ngoài phần tiêm tổng hợp.
+- **Việc tiếp theo**: **Giai đoạn D — Streaming** (thư mục `streaming/`, bám `02_3` mục 2.3.1, `02_4` mục 2.4.1, `02_9` mục 2.9.1g và 2.9.6):
+  1. Bổ sung vào `.env` các biến mới của `.env.example` (topic predictions/alerts, `REPLAY_*`, `DEFAULT_*`).
+  2. Producer: replay `stream_replay.parquet` (giá trị `<vital>_obs` chưa điền), key = mã bệnh nhân, `REPLAY_SECONDS_PER_DATA_HOUR`, chế độ `--drift`.
+  3. Consumer: state theo bệnh nhân → forward-fill + `build_hourly_features` của `rpm_common`; `risk_level_from_proba` với `τ_critical` từ tag champion; `latest_window` → `anomaly_detector@champion`. Ghi `vital_records`/`predictions`, publish predictions/alerts, chống trùng cảnh báo (OPEN + cooldown 4 giờ dữ liệu), định kỳ kiểm tra alias để nạp lại model.
+  4. Unit test (alert evaluator, model wrapper) + integration test theo `02_10` mục 2.10.1–2.10.2.
+  5. Hạ tầng: `docker compose up -d postgres zookeeper kafka mlflow`, `MLFLOW_TRACKING_URI=http://localhost:5000`.
 - **Quyết định đã chốt sau rà soát 2026-09-10** (người dùng đã duyệt):
   - Model rủi ro là **dự báo** mức NEWS2 cao nhất trong 4 giờ tới, không phân loại tức thời. Phân loại tức thời bị rò rỉ nhãn vì nhãn là hàm tất định của đặc trưng. Model phải thắng baseline persistence.
   - Drift với PSI ≥ 0,25 → **tự động** kích hoạt retrain; quality gate chặn model kém; Admin vẫn retrain thủ công được.
@@ -128,4 +131,5 @@ cd ml && ..\.venv\Scripts\python -m pytest -q && cd ..
 # Train model (khi đã có code) — chạy trên host cần MLFLOW_TRACKING_URI=http://localhost:5000
 .venv\Scripts\python ml/src/train.py            # mô hình rủi ro
 .venv\Scripts\python ml/src/train_anomaly.py    # LSTM-Autoencoder
+.venv\Scripts\python ml/src/evaluate.py         # bảng/hình báo cáo → ml/reports/
 ```

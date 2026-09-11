@@ -19,10 +19,14 @@ src/
   metrics.py        [đã có] Metric phân loại, chọn τ_critical, metric bất thường
   gate.py           [đã có] Quality gate cho cả 2 mô hình
   drift.py          [đã có] reference_stats (log kèm model), PSI, KS
-  evaluate.py       Metric theo docs/design/02_10_thiet_ke_test.md mục 2.10.3, luôn kèm baseline persistence
+  evaluate.py       [đã có] Bảng/hình cho báo cáo 3.4/3.5 → reports/ (chỉ đọc champion + metric đã log, không chọn lại
+                    gì trên test): ma trận nhầm lẫn vs persistence, SHAP, h = 1 vs h = 4, nhãn proxy vs tử vong,
+                    anomaly_score trên tập tiêm và trên diễn biến NEWS2 thật
   drift_detect.py   PSI/KS theo 02_9 mục 2.9.4
   retrain.py        Entry point cho Airflow DAG retrain_pipeline, Champion–Challenger theo 02_9 mục 2.9.5
 splits/             File danh sách subject_id của 4 nhóm train/validation/test/stream (commit vào git)
+reports/            Đầu ra của evaluate.py (evaluation.md, evaluation_summary.json, fig_*.png) — commit vào git, chỉ chứa
+                    số liệu tổng hợp; chạy lại evaluate.py mỗi khi champion đổi
 notebooks/          EDA, thử nghiệm trước khi đưa vào src/ chính thức
 ```
 
