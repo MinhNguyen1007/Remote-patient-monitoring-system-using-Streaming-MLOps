@@ -3,7 +3,10 @@
 from dataclasses import dataclass, field
 
 MIN_MACRO_F1 = 0.60
-MIN_RECALL_CRITICAL = 0.80
+MIN_RECALL_CRITICAL = 0.75
+# τ_critical được chọn để đạt recall cao hơn ngưỡng gate: nếu hai giá trị bằng nhau, tập test nhỏ (15 bệnh nhân)
+# khiến mỗi lần train/retrain có khoảng 50% khả năng trượt chỉ do nhiễu. Hiệu chỉnh 2026-09-11 (trước đó gate = 0,80).
+TARGET_RECALL_CRITICAL = 0.80
 
 
 @dataclass

@@ -49,10 +49,15 @@ Chạy tự động trong DAG `retrain_pipeline` trước khi cho phép model m�
 
 | Mô hình | Tiêu chí đạt (ngưỡng đề xuất, sẽ hiệu chỉnh theo kết quả thực nghiệm ở mục 3.4) |
 |---|---|
-| Dự báo rủi ro (h = 4) | 1. Macro F1 ≥ 0,60 **và** cao hơn baseline persistence trên cùng tập test.<br>2. Recall lớp CRITICAL ≥ 0,80 tại `τ_critical` đã chọn trên tập validation.<br>3. Không kém champion hiện tại ở cả Macro F1 và Recall CRITICAL. |
+| Dự báo rủi ro (h = 4) | 1. Macro F1 ≥ 0,60 **và** cao hơn baseline persistence trên cùng tập test.<br>2. Recall lớp CRITICAL ≥ 0,75 tại `τ_critical`. `τ_critical` được chọn trên dự đoán out-of-fold của GroupKFold trên `train ∪ validation` với **mục tiêu 0,80** (mục 2.9.6).<br>3. Không kém champion hiện tại ở cả Macro F1 và Recall CRITICAL. |
 | Phát hiện bất thường (LSTM-Autoencoder) | 1. Precision ≥ 0,7 và Recall ≥ 0,7 tại `τ_anomaly = 0,99` trên tập test có 10% cửa sổ bị tiêm bất thường (seed cố định, mục 2.9.3).<br>2. F1 không kém champion. |
 
 Tham chiếu: baseline persistence (h = 4) trên tập `test` đạt Macro F1 0,547 và Recall CRITICAL 30,8% (toàn bộ dữ liệu: 0,567 và 31,3%). Nếu model mới không đạt, DAG gắn tag `gate=rejected` kèm lý do cho version đó và giữ nguyên champion.
+
+**Hiệu chỉnh ngưỡng Recall CRITICAL** (2026-09-11) — ngưỡng ban đầu là 0,80, bằng đúng mục tiêu dùng khi chọn `τ_critical`:
+- Mục tiêu chọn τ bằng ngưỡng gate nghĩa là không có biên an toàn. Tập `test` chỉ có 15 bệnh nhân (315 giờ CRITICAL, tương quan mạnh trong cùng bệnh nhân), nên mỗi lần train/retrain có khoảng 50% khả năng trượt chỉ do nhiễu.
+- Lần chạy thứ 2 (τ chọn bằng out-of-fold) đạt Recall CRITICAL 0,807 trên out-of-fold, 0,849 trên validation, nhưng 0,790 trên test (249/315, thiếu 3 giờ so với 0,80).
+- Ngưỡng gate được hạ xuống 0,75, còn mục tiêu chọn τ giữ 0,80. Đây là hiệu chỉnh **sau khi đã xem kết quả trên tập test**; báo cáo mục 3.4/3.5 phải nêu rõ điều này, cùng với việc tập test đã được dùng 2 lần.
 
 ## 2.10.4. Kiểm thử phi chức năng
 

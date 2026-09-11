@@ -18,7 +18,7 @@ from mlflow.exceptions import MlflowException
 from mlflow.models import infer_signature
 
 from drift import reference_stats
-from gate import MIN_RECALL_CRITICAL, evaluate_risk_gate
+from gate import TARGET_RECALL_CRITICAL, evaluate_risk_gate
 from metrics import choose_tau_critical, classification_metrics, scalar_metrics
 from risk_models import CV_FOLDS, cross_validate, cross_validate_persistence, fit_balanced, make_candidates
 from rpm_common.features import RISK_FEATURE_COLUMNS
@@ -31,6 +31,7 @@ EXPERIMENT = "risk_forecasting"
 REGISTERED_MODEL = "risk_classifier"
 SERVING_HORIZON = 4
 FEATURES = list(RISK_FEATURE_COLUMNS)
+TAU_SELECTION = "oof_groupkfold_train_validation"
 
 
 def load_splits(hourly: pd.DataFrame, label: str) -> dict[str, pd.DataFrame]:
@@ -72,14 +73,21 @@ def main() -> None:
     # Chọn họ mô hình bằng GroupKFold trên train ∪ validation
     dev = pd.concat([train, validation])
     candidates = make_candidates(args.seed)
-    cv = {name: cross_validate(make, dev[FEATURES], dev[label], dev["subject_id"]) for name, make in candidates.items()}
+    cv, oof_proba = {}, {}
+    for name, make in candidates.items():
+        cv[name], oof_proba[name] = cross_validate(make, dev[FEATURES], dev[label], dev["subject_id"])
     cv["persistence"] = cross_validate_persistence(dev["risk_class"], dev[label], dev["subject_id"])
     best = max(candidates, key=lambda name: cv[name]["macro_f1"]["mean"])
 
-    # Huấn luyện trên train, chọn τ_critical trên validation, báo cáo trên test
+    # Chọn τ_critical trên dự đoán out-of-fold của họ mô hình thắng (63 bệnh nhân thay vì 15 của validation)
+    tau = choose_tau_critical(dev[label], oof_proba[best][:, RISK_CRITICAL], TARGET_RECALL_CRITICAL)
+    oof_metrics = classification_metrics(
+        dev[label], risk_level_from_proba(oof_proba[best], tau), oof_proba[best]
+    )
+
+    # Model cuối huấn luyện trên train; validation chưa được model này thấy nên vẫn là tập kiểm tra độc lập
     model = fit_balanced(candidates[best](), train[FEATURES], train[label])
     val_proba = model.predict_proba(validation[FEATURES])
-    tau = choose_tau_critical(validation[label], val_proba[:, RISK_CRITICAL], MIN_RECALL_CRITICAL)
     val_metrics = classification_metrics(validation[label], risk_level_from_proba(val_proba, tau), val_proba)
     test_proba = model.predict_proba(test[FEATURES])
     test_metrics = classification_metrics(test[label], risk_level_from_proba(test_proba, tau), test_proba)
@@ -98,7 +106,8 @@ def main() -> None:
                 "estimator": str(model)[:5000],
                 "seed": args.seed,
                 "tau_critical": tau,
-                "target_recall_critical": MIN_RECALL_CRITICAL,
+                "tau_selection": TAU_SELECTION,
+                "target_recall_critical": TARGET_RECALL_CRITICAL,
                 "cv_folds": CV_FOLDS,
                 "n_features": len(FEATURES),
                 **{f"n_samples_{name}": len(part) for name, part in splits.items()},
@@ -113,11 +122,13 @@ def main() -> None:
         }
         mlflow.log_metrics(
             cv_metrics
+            | scalar_metrics(oof_metrics, "oof")
             | scalar_metrics(val_metrics, "val")
             | scalar_metrics(test_metrics, "test")
             | scalar_metrics(persistence_test, "persistence_test")
         )
         evaluation = {
+            "out_of_fold": oof_metrics,
             "validation": val_metrics,
             "test": test_metrics,
             "persistence_test": persistence_test,
@@ -143,6 +154,7 @@ def main() -> None:
             version = info.registered_model_version
             tags = {
                 "tau_critical": str(tau),
+                "tau_selection": TAU_SELECTION,
                 "horizon": str(args.horizon),
                 "model_family": best,
                 "gate": "passed" if gate.passed else "rejected",
@@ -160,6 +172,8 @@ def main() -> None:
         "best_model": best,
         "tau_critical": tau,
         "cv_macro_f1": {name: round(result["macro_f1"]["mean"], 3) for name, result in cv.items()},
+        "out_of_fold": {k: round(v, 3) for k, v in oof_metrics.items() if isinstance(v, float)},
+        "validation": {k: round(v, 3) for k, v in val_metrics.items() if isinstance(v, float)},
         "test": {k: round(v, 3) for k, v in test_metrics.items() if isinstance(v, float)},
         "persistence_test": {k: round(v, 3) for k, v in persistence_test.items() if isinstance(v, float)},
         "registered_version": version,

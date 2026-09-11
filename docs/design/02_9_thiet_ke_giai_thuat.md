@@ -26,7 +26,7 @@ Dữ liệu MIMIC là vitals do điều dưỡng ghi nhận, không phải tín 
 | Nhóm | Bệnh nhân | Đợt ICU | Giờ dữ liệu | Dùng để |
 |---|---|---|---|---|
 | `train` | 48 | 69 | 6.286 | Huấn luyện ban đầu |
-| `validation` | 15 | 17 | 2.251 | Chọn siêu tham số, chọn ngưỡng (τ), early stopping |
+| `validation` | 15 | 17 | 2.251 | Cùng `train` tạo tập phát triển cho GroupKFold (chọn họ mô hình, chọn `τ_critical`); early stopping và hiệu chỉnh `anomaly_score` của LSTM-Autoencoder |
 | `test` | 15 | 21 | 3.476 | **Cố định tuyệt đối** — chỉ dùng cho quality gate và báo cáo kết quả cuối |
 | `stream` | 20 | 25 | 2.125 | Được producer phát lại qua Kafka như bệnh nhân "đang nằm viện" (20 đợt, 1.834 giờ); dữ liệu tích lũy từ nhóm này là "dữ liệu mới" cho retrain |
 
@@ -194,7 +194,9 @@ Mô hình phát hiện bất thường được gate **độc lập**: đạt ng
 **Mức rủi ro hiển thị**:
 - `risk_level = CRITICAL` nếu `risk_score = P(CRITICAL) ≥ τ_critical`.
 - Ngược lại, lấy lớp có xác suất lớn hơn giữa NORMAL và WARNING.
-- `τ_critical` mặc định là ngưỡng được chọn trên tập `validation` để Recall CRITICAL đạt mục tiêu ở 2.10.3; ngưỡng này lưu thành tag của model champion. Admin có thể ghi đè (UC08).
+- `τ_critical` mặc định là ngưỡng lớn nhất (lưới bước 0,01) mà Recall CRITICAL vẫn đạt **mục tiêu 0,80** (cao hơn ngưỡng gate 0,75 ở 2.10.3 để có biên cho nhiễu của tập test nhỏ), chọn trên **dự đoán out-of-fold** của GroupKFold 5 fold trên `train ∪ validation` (63 bệnh nhân). Model cuối vẫn chỉ huấn luyện trên `train`. Ngưỡng này lưu thành tag của model champion. Admin có thể ghi đè (UC08).
+  - Lý do không chọn trên riêng `validation`: 15 bệnh nhân quá ít, ngưỡng dao động mạnh theo vài bệnh nhân. Lần chạy đầu chọn trên `validation` được τ = 0,25, nhưng Recall CRITICAL trên `test` chỉ đạt 0,730.
+  - Dự đoán out-of-fold của mỗi bệnh nhân đến từ model không thấy bệnh nhân đó lúc huấn luyện, và mỗi model fold được huấn luyện trên số bệnh nhân tương đương model cuối (~50 so với 48), nên phân phối xác suất gần giống nhau.
 - Nhờ vậy, badge đỏ trên dashboard trùng khớp với việc có cảnh báo.
 
 **Bất thường**: `is_anomaly = anomaly_score ≥ τ_anomaly`, mặc định `τ_anomaly = 0,99` (khoảng 1% cửa sổ bình thường bị gắn cờ nhầm). Ngưỡng percentile 95 ban đầu bị bỏ vì theo định nghĩa sẽ gắn cờ nhầm 5% cửa sổ bình thường, quá nhiều cho cảnh báo.

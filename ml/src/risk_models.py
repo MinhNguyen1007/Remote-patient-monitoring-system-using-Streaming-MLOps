@@ -11,7 +11,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.utils.class_weight import compute_sample_weight
 from xgboost import XGBClassifier
 
-from metrics import classification_metrics
+from metrics import CLASSES, classification_metrics
 
 CV_FOLDS = 5
 
@@ -51,14 +51,20 @@ def fit_balanced(model, X: pd.DataFrame, y: pd.Series):
     return model
 
 
-def cross_validate(make_model, X: pd.DataFrame, y: pd.Series, groups: pd.Series) -> dict:
-    """GroupKFold theo bệnh nhân; metric tính tại lớp có xác suất lớn nhất (chưa áp τ)."""
+def cross_validate(make_model, X: pd.DataFrame, y: pd.Series, groups: pd.Series) -> tuple[dict, np.ndarray]:
+    """GroupKFold theo bệnh nhân; metric tính tại lớp có xác suất lớn nhất (chưa áp τ).
+
+    Trả thêm xác suất out-of-fold: mỗi mẫu được dự đoán bởi model không thấy bệnh nhân của nó lúc fit,
+    dùng để chọn τ_critical trên toàn bộ tập phát triển thay vì chỉ trên validation.
+    """
     folds = []
+    oof_proba = np.full((len(X), len(CLASSES)), np.nan)
     for train_idx, valid_idx in GroupKFold(n_splits=CV_FOLDS).split(X, y, groups):
         model = fit_balanced(make_model(), X.iloc[train_idx], y.iloc[train_idx])
         proba = model.predict_proba(X.iloc[valid_idx])
+        oof_proba[valid_idx] = proba
         folds.append(classification_metrics(y.iloc[valid_idx], proba.argmax(axis=1), proba))
-    return summarize_folds(folds)
+    return summarize_folds(folds), oof_proba
 
 
 def cross_validate_persistence(current: pd.Series, y: pd.Series, groups: pd.Series) -> dict:

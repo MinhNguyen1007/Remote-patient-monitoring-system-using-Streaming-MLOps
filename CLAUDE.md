@@ -9,7 +9,7 @@
 - **Đang ở đâu**:
   - Giai đoạn A (thiết kế, mục 2) và Giai đoạn B (khung repo + hạ tầng Docker) đã xong, nhánh `master`.
   - 2026-09-10: **rà soát toàn bộ** thiết kế + hạ tầng + dữ liệu thật và sửa lại (commit `d25a37b`).
-  - **Giai đoạn C — Dữ liệu & Model: phần dữ liệu đã xong; mô hình dự báo rủi ro đã train nhưng chưa qua gate; LSTM-AE chưa làm.**
+  - **Giai đoạn C — Dữ liệu & Model: phần dữ liệu đã xong; mô hình dự báo rủi ro đã qua gate và là `champion` (v2); LSTM-AE chưa làm.**
     - `common/rpm_common`: mapping itemid, làm sạch, lưới 1 giờ, forward-fill, NEWS2 rút gọn, feature cửa sổ 6 giờ, baseline z-score, nhãn dự báo, hàm ghép `build_hourly_features`. 85 unit test qua, gồm test tính nhân quả (feature tại t không phụ thuộc dữ liệu sau t).
     - `ml/src/preprocess.py` + `ml/src/split.py`, 7 test qua. Đã chạy trên dữ liệu thật và sinh ra (trong `ml/data/processed/`, không nằm trong git):
       - `hourly.parquet`: 132 đợt ICU, 14.138 giờ;
@@ -17,27 +17,30 @@
       - `summary.json`.
     - File chia nhóm cố định `ml/splits/subject_split.json`: 48/15/15/20 bệnh nhân có vitals, seed 42 — **không tạo lại**.
     - Môi trường: `.venv` ở gốc repo (tạo bằng `--system-site-packages`, đã cài `-e common`).
-  - **Mô hình dự báo rủi ro (h = 4): code xong, đã chạy thật**:
-    - Code: `ml/src/train.py` + `risk_models.py`, `metrics.py`, `gate.py`, `drift.py`; `rpm_common/risk.py`. 21 test ở `ml/`, 87 test ở `common/`.
+  - **Mô hình dự báo rủi ro (h = 4): xong, `risk_classifier` v2 là `champion`**:
+    - Code: `ml/src/train.py` + `risk_models.py`, `metrics.py`, `gate.py`, `drift.py`; `rpm_common/risk.py`. 25 test ở `ml/`, 87 test ở `common/`.
+    - `τ_critical` chọn trên dự đoán out-of-fold GroupKFold của train ∪ validation (63 bệnh nhân), mục tiêu Recall CRITICAL 0,80 (`TARGET_RECALL_CRITICAL`); model cuối fit trên train.
     - CV Macro F1: Random Forest 0,622 (được chọn), Logistic Regression 0,618, XGBoost 0,608, persistence 0,565.
-    - Trên tập test, với `τ_critical = 0,25` chọn trên validation:
+    - Lần chạy 1 (`τ_critical = 0,25` chọn trên validation), trên test: Macro F1 0,639, Recall CRITICAL 0,730, AUROC 0,836 (persistence: 0,547 và 0,308). **Gate từ chối** vì Recall CRITICAL < 0,80 → `risk_classifier` v1, tag `gate=rejected`.
+    - Lần chạy 2, 2026-09-11 (τ chọn trên dự đoán out-of-fold GroupKFold của train ∪ validation, `τ_critical = 0,22`; run `383ec65516e44846b8f872dc267e2fe6`):
 
-      | Metric | Model | Persistence |
-      |---|---|---|
-      | Macro F1 | 0,639 | 0,547 |
-      | Recall CRITICAL | 0,730 | 0,308 |
-      | AUROC | 0,836 | — |
+      | Tập | Macro F1 | Recall CRITICAL | Precision CRITICAL |
+      |---|---|---|---|
+      | Out-of-fold (63 BN) | 0,591 | 0,807 | 0,395 |
+      | Validation | 0,623 | 0,849 | 0,498 |
+      | Test | 0,623 | **0,790** (249/315, cần 252) | 0,391 |
 
-    - **Quality gate từ chối** vì Recall CRITICAL 0,730 < ngưỡng tuyệt đối 0,80. Trên MLflow, `risk_classifier` v1 mang alias `challenger`, tag `gate=rejected`; **chưa có `champion`**.
+      Persistence trên test: Macro F1 0,547, Recall CRITICAL 0,308. Với gate cũ (0,80) run này bị từ chối, chỉ vì thiếu 3 giờ CRITICAL.
+    - **Người dùng chọn ngày 2026-09-11**: hạ ngưỡng gate Recall CRITICAL xuống **0,75** (`MIN_RECALL_CRITICAL`), còn mục tiêu chọn τ giữ 0,80. Lý do: nếu mục tiêu chọn τ bằng ngưỡng gate thì không có biên an toàn, và mỗi lần retrain có khoảng 50% khả năng trượt chỉ do nhiễu (test chỉ 15 bệnh nhân).
+      - Đã áp lại gate lên metric test **đã log** của v2 (không dự đoán lại trên test) → đạt.
+      - v2 mang alias `champion` + `challenger`, tag `gate=passed`, `gate_note` ghi lý do hiệu chỉnh, `tau_critical=0.22`. v1 giữ `gate=rejected`.
+    - **Ghi chú bắt buộc cho báo cáo mục 3.4/3.5**:
+      - tập test đã được dùng 2 lần;
+      - ngưỡng gate 0,75 được hiệu chỉnh **sau khi xem kết quả test** (chi tiết ở `02_10` mục 2.10.3).
 - **Việc tiếp theo**:
-  1. **Làm ngay khi mở phiên mới** — người dùng đã chọn ngày 2026-09-10: *chọn τ bằng CV, giữ ngưỡng 0,80*.
-     - Sửa `train.py`: chọn `τ_critical` trên dự đoán out-of-fold của GroupKFold trên train ∪ validation (63 bệnh nhân), thay vì chỉ trên validation (15 bệnh nhân). Model cuối vẫn fit trên train.
-     - Cập nhật câu mô tả cách chọn τ ở `docs/design/02_9` mục 2.9.6 và `02_10` mục 2.10.3 cho khớp.
-     - Chạy lại `train.py` **đúng 1 lần**. Nếu Recall CRITICAL trên test vẫn < 0,80 thì **hỏi lại người dùng**, không tự hạ ngưỡng trong `ml/src/gate.py`.
-     - Ghi chú cho báo cáo mục 3.4: tập test đã được dùng 2 lần (lần chạy đầu + lần chạy lại).
-     - Cần hạ tầng: `docker compose up -d postgres mlflow`, rồi đặt `MLFLOW_TRACKING_URI=http://localhost:5000`.
-  2. LSTM-Autoencoder (cửa sổ 12 giờ, 6 kênh z-score, chỉ cửa sổ NORMAL), đánh giá bằng tiêm bất thường; viết `evaluate.py`. Thêm tensorflow 2.21.0, shap 0.51.0 vào `ml/requirements.txt` (máy đã cài sẵn).
-  3. Bám `docs/design/02_9_thiet_ke_giai_thuat.md` mục 2.9.2–2.9.3, 2.9.5 và `02_10` mục 2.10.3.
+  1. LSTM-Autoencoder (cửa sổ 12 giờ, 6 kênh z-score, chỉ cửa sổ NORMAL), đánh giá bằng tiêm bất thường; viết `evaluate.py`. Thêm tensorflow 2.21.0, shap 0.51.0 vào `ml/requirements.txt` (máy đã cài sẵn).
+  2. Bám `docs/design/02_9_thiet_ke_giai_thuat.md` mục 2.9.3, 2.9.5 và `02_10` mục 2.10.3. SHAP cho model rủi ro (2.9.2) làm trong `evaluate.py`.
+  3. Cần hạ tầng: `docker compose up -d postgres mlflow`, rồi đặt `MLFLOW_TRACKING_URI=http://localhost:5000`.
 - **Quyết định đã chốt sau rà soát 2026-09-10** (người dùng đã duyệt):
   - Model rủi ro là **dự báo** mức NEWS2 cao nhất trong 4 giờ tới, không phân loại tức thời. Phân loại tức thời bị rò rỉ nhãn vì nhãn là hàm tất định của đặc trưng. Model phải thắng baseline persistence.
   - Drift với PSI ≥ 0,25 → **tự động** kích hoạt retrain; quality gate chặn model kém; Admin vẫn retrain thủ công được.

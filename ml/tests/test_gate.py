@@ -1,4 +1,4 @@
-from gate import evaluate_risk_gate
+from gate import MIN_RECALL_CRITICAL, TARGET_RECALL_CRITICAL, evaluate_risk_gate
 
 PERSISTENCE = {"macro_f1": 0.55, "recall_critical": 0.31}
 GOOD = {"macro_f1": 0.65, "recall_critical": 0.85}
@@ -29,3 +29,11 @@ def test_rejected_when_worse_than_champion_on_either_metric():
 
 def test_passes_when_equal_to_champion():
     assert evaluate_risk_gate(GOOD, PERSISTENCE, dict(GOOD)).passed
+
+
+def test_recall_exactly_at_threshold_passes():
+    assert evaluate_risk_gate({"macro_f1": 0.65, "recall_critical": MIN_RECALL_CRITICAL}, PERSISTENCE).passed
+
+
+def test_tau_target_keeps_margin_above_gate_threshold():
+    assert TARGET_RECALL_CRITICAL > MIN_RECALL_CRITICAL
