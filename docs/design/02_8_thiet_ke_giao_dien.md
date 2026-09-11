@@ -62,5 +62,15 @@ Mức rủi ro **không chỉ được thể hiện bằng màu**: mọi badge l
 
 ## 2.8.3. Ghi chú hiện thực
 
-- Mockup trực quan (wireframe hình ảnh) sẽ được dựng riêng bằng skill `design` (Claude Design canvas) trước khi code React thật, dùng làm tài liệu tham chiếu khi lập trình frontend ở Giai đoạn F.
+- **Mockup trực quan đã dựng** (2026-09-11) bằng Claude Design canvas: https://claude.ai/code/artifact/06619c98-443f-4157-be37-cef16741dc5d
+  - Mã nguồn các artboard ở `docs/design/mockups/`: `*.dc.html`, `canvas.json`, và script sinh `build_mockups.py` (chạy lại script khi sửa mockup).
+  - Gồm 8 màn hình theo mục 2.8.2 và 1 bảng thành phần (badge rủi ro, NEWS2, điểm bất thường, trạng thái cảnh báo, nút, kết nối realtime). Ghi chú phân tích thiết kế nằm ngay trên canvas.
+  - Mọi số liệu là số liệu mẫu, cùng định dạng với API backend.
+  - Quyết định trình bày rút ra từ mockup:
+    - badge chính = rủi ro dự báo 4 giờ tới, có icon + nhãn + xác suất; NEWS2 hiện tại hiển thị riêng với màu trung tính;
+    - thẻ bệnh nhân có viền dưới 3px theo màu rủi ro (motif "tier" của design system) và dải rủi ro 12 giờ gần nhất;
+    - biểu đồ vitals tách thành 5 dải xếp chồng dùng chung trục thời gian, không dùng 2 trục y (skill `dataviz`); vùng xám = khoảng 0 điểm NEWS2; giờ không đo để trống;
+    - chi tiết bệnh nhân có thêm làn điểm bất thường 0–1 với ngưỡng 0,99 và dải risk-timeline;
+    - màu trạng thái lấy từ bảng status của `dataviz` (xanh `#0ca30c`, vàng `#fab219`, đỏ `#d03b3b`), màu bất thường tím `#9085e9`; accent lime `#d2f65b` chỉ dùng cho hành động chính, focus và trạng thái live.
+- Dùng mockup làm tài liệu tham chiếu khi lập trình frontend ở Giai đoạn F.
 - Toàn bộ biểu đồ trong ứng dụng tuân theo hướng dẫn của skill `dataviz` để đảm bảo màu sắc/trục/tooltip nhất quán giữa các màn hình.

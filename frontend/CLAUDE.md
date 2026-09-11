@@ -29,7 +29,7 @@ src/
 - Route/trang phải gate theo role (Admin/Bác sĩ/Điều dưỡng) đúng bảng phân quyền ở `docs/design/02_2_usecase.md`.
 - Bác sĩ/Điều dưỡng chỉ thấy bệnh nhân được phân công (backend đã lọc; frontend không tự lọc thay backend). Trang Admin có tab Phân công (UC13).
 - Thao tác retrain: gọi API nhận `dag_run_id`, rồi hỏi trạng thái định kỳ — không chờ một request dài.
-- Mockup hình ảnh (khi được dựng bằng skill `design`) là tài liệu tham chiếu bắt buộc đọc trước khi code UI — không code UI trước khi có mockup nếu mockup đã được yêu cầu dựng.
+- **Mockup đã có**: https://claude.ai/code/artifact/06619c98-443f-4157-be37-cef16741dc5d (nguồn `../docs/design/mockups/`, token màu/font nằm trong `build_mockups.py`). Bắt buộc đọc trước khi code UI; lấy đúng token, kích thước và cấu tạo component từ đó. Font: Be Vietnam Pro (UI, hỗ trợ tiếng Việt) + JetBrains Mono (nhãn dữ liệu, số).
 
 ## Lệnh
 

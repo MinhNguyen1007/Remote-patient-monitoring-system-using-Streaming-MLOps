@@ -1,0 +1,153 @@
+{
+  "pages": [
+    {
+      "id": "page-1",
+      "name": "Bác sĩ · Điều dưỡng"
+    },
+    {
+      "id": "page-2",
+      "name": "Quản trị"
+    },
+    {
+      "id": "page-3",
+      "name": "Thành phần"
+    }
+  ],
+  "artboards": [
+    {
+      "file": "Login.dc.html",
+      "title": "Đăng nhập (UC01)",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "page": "page-1"
+    },
+    {
+      "file": "Main.dc.html",
+      "title": "Dashboard bệnh nhân (UC04) — Điều dưỡng",
+      "x": 1560,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "page": "page-1"
+    },
+    {
+      "file": "PatientDetail.dc.html",
+      "title": "Chi tiết bệnh nhân (UC05–07) — Bác sĩ",
+      "x": 0,
+      "y": 1100,
+      "w": 1440,
+      "h": 1300,
+      "page": "page-1"
+    },
+    {
+      "file": "AlertsCenter.dc.html",
+      "title": "Trung tâm cảnh báo (UC06–07) — Bác sĩ",
+      "x": 1560,
+      "y": 1100,
+      "w": 1440,
+      "h": 900,
+      "page": "page-1"
+    },
+    {
+      "file": "AdminUsers.dc.html",
+      "title": "Người dùng (UC03)",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "page": "page-2"
+    },
+    {
+      "file": "AdminAssignments.dc.html",
+      "title": "Phân công (UC13)",
+      "x": 1560,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "page": "page-2"
+    },
+    {
+      "file": "AdminThresholds.dc.html",
+      "title": "Ngưỡng cảnh báo (UC08)",
+      "x": 0,
+      "y": 1100,
+      "w": 1440,
+      "h": 900,
+      "page": "page-2"
+    },
+    {
+      "file": "AdminModels.dc.html",
+      "title": "Giám sát mô hình (UC09–10)",
+      "x": 1560,
+      "y": 1100,
+      "w": 1440,
+      "h": 1100,
+      "page": "page-2"
+    },
+    {
+      "file": "Components.dc.html",
+      "title": "Thành phần",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "page": "page-3"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "note-data",
+      "x": 0,
+      "y": -250,
+      "w": 420,
+      "page": "page-1",
+      "text": "Mọi số liệu trên mockup là số liệu MẪU, cùng định dạng với API backend (Giai đoạn E). Bệnh nhân BN-xxxxx là mã MIMIC nhóm stream."
+    },
+    {
+      "id": "note-badge",
+      "x": 1560,
+      "y": -250,
+      "w": 460,
+      "page": "page-1",
+      "text": "Phân tích: badge chính = RỦI RO DỰ BÁO 4 GIỜ TỚI (model), luôn có icon + nhãn + xác suất. NEWS2 hiện tại (luật) hiển thị riêng, màu trung tính, để hai khái niệm không bị gộp làm một.\n\nViền dưới 3px theo màu rủi ro = motif 'tier' của design system CS:GO. Dải 12 ô = rủi ro 12 giờ qua, giúp thấy xu hướng mà không cần mở chi tiết."
+    },
+    {
+      "id": "note-chart",
+      "x": 3060,
+      "y": 1100,
+      "w": 420,
+      "page": "page-1",
+      "text": "Phân tích biểu đồ chi tiết (theo skill dataviz): 5 vitals có đơn vị khác nhau nên tách thành 5 dải xếp chồng dùng chung trục thời gian, KHÔNG dùng 2 trục y.\n\nVùng xám = khoảng 0 điểm NEWS2. Giờ không đo để trống (không nội suy, giống lúc train). Nhiệt độ đo 4 giờ/lần nên vẽ điểm. Vạch tím = giờ bị gắn cờ bất thường; làn 'Bất thường' là điểm 0–1 với ngưỡng 0,99; dải màu dưới cùng = rủi ro dự báo mỗi giờ.\n\nTooltip + crosshair minh họa trạng thái hover."
+    },
+    {
+      "id": "note-alerts",
+      "x": 3060,
+      "y": 1800,
+      "w": 420,
+      "page": "page-1",
+      "text": "Cảnh báo mới vào qua WebSocket: nền lime nhạt + tag MỚI trong vài giây rồi mờ dần (một chuyển động, không nhấp nháy liên tục).\n\nChỉ Bác sĩ có thao tác Xác nhận / Đã xử lý (kèm ghi chú). Điều dưỡng xem cùng danh sách nhưng không có cột Thao tác."
+    },
+    {
+      "id": "note-admin",
+      "x": 0,
+      "y": -220,
+      "w": 460,
+      "page": "page-2",
+      "text": "Admin không theo dõi bệnh nhân: sidebar chỉ có mục Quản trị, 4 tab ứng với UC03, UC13, UC08, UC09–10."
+    },
+    {
+      "id": "note-drift",
+      "x": 3060,
+      "y": 1100,
+      "w": 420,
+      "page": "page-2",
+      "text": "Biểu đồ drift: đường max PSI mỗi lần chạy drift_check, 2 đường ngưỡng 0,10 / 0,25. Điểm vượt 0,25 tô đỏ = đã tự động kích hoạt retrain. Phần drift_check chưa hiện thực (Giai đoạn G) nên số liệu chỉ để minh họa.\n\nBảng version hiện đúng lịch sử thật: v1 bị từ chối kèm lý do gate."
+    }
+  ],
+  "launch": {
+    "view": "canvas",
+    "page": "page-1"
+  }
+}
