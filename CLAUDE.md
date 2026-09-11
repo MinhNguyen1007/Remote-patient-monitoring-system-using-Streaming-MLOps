@@ -102,6 +102,9 @@
     - Backend 30 test.
   - Docker: `frontend/Dockerfile` + `nginx.conf` (proxy `/api` + WebSocket tới backend), service `frontend` cổng 3000 (profile `app`).
   - **Chưa soát trực quan các màn hình cần đăng nhập trên trình duyệt**: quy tắc an toàn không cho Claude tự nhập mật khẩu vào trang web. Người dùng đăng nhập ở tab trình duyệt, hoặc tự xem ở http://127.0.0.1:5173.
+- **Tạm dừng 2026-09-11 (theo yêu cầu người dùng) sau khi xong F.** Mọi container đã `docker compose --profile app down` (volume vẫn giữ: DB, MLflow registry với 2 champion, Kafka). Không còn tiến trình nền nào.
+  - Bật lại: `docker compose up -d postgres zookeeper kafka mlflow`, rồi `docker compose --profile app up -d` (hoặc chạy trên host theo `backend/`, `streaming/`, `frontend/` CLAUDE.md).
+  - **Số liệu cho báo cáo gom ở [`docs/report/ghi_chu_bao_cao.md`](docs/report/ghi_chu_bao_cao.md)** (bản đồ mục báo cáo → nguồn, phiên bản công nghệ, kết quả, hạn chế bắt buộc công khai, tài liệu tham khảo). Cập nhật file đó sau G và H.
 - **Việc tiếp theo**: **Giai đoạn G — MLOps vận hành** (bám `02_9` mục 2.9.4–2.9.5, `02_3` mục 2.3.3):
   1. DAG Airflow `drift_check` (PSI/KS trên 24 giờ dữ liệu streaming gần nhất so với `reference_stats.json` của champion, ghi `drift_reports`, PSI ≥ 0,25 → trigger `retrain_pipeline`, chống vòng lặp 1 giờ, thông báo Admin).
   2. DAG `retrain_pipeline` (train challenger 2 mô hình trên train + dữ liệu stream đã có nhãn, gate trên cùng test cố định, chuyển alias, ghi `model_versions` kể cả bị từ chối). Image Airflow cần thêm thư viện ML (cùng phiên bản MLflow 3.11.1).
@@ -117,7 +120,7 @@
   - MLflow 3.11.1: log model từ host → artifact nằm trong volume qua proxy `mlflow-artifacts:/`; đăng ký + alias `champion`; container khác tải được model qua `http://mlflow:5000` (cần `--allowed-hosts`).
   - Airflow: `airflow-init` chạy xong trước webserver/scheduler; REST API với basic auth → 200; không còn DAG ví dụ.
   - Đã nâng schema `mlflow_db` lên 3.x và sửa `artifact_location` của experiment `Default`. **Khi đổi phiên bản MLflow phải chạy `mlflow db upgrade`** trên `mlflow_db` trước khi khởi động server.
-  - File `.env` trên máy chưa có các biến mới của `.env.example` (topic predictions/alerts, `REPLAY_*`, `DEFAULT_*`, `AIRFLOW_API_URL`) — bổ sung khi bắt đầu code Giai đoạn D/E.
+  - File `.env` trên máy đã có đủ biến của `.env.example` (bổ sung ở Giai đoạn D/E); chưa đặt `ADMIN_*` nên Admin dùng mật khẩu mặc định.
 - **Còn phụ thuộc người dùng**: file mẫu báo cáo Word (.docx) của trường — chưa có, chỉ chặn bước cuối cùng (mục 6), không chặn code.
 
 ## Kiến trúc tổng quan

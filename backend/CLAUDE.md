@@ -16,7 +16,7 @@ app/
   schemas/        Pydantic response/request (không trả thẳng SQLAlchemy model)
   seed.py         Admin đầu tiên (tự động lúc khởi động) + `python -m app.seed --demo`
   alembic/        Migration (0001: toàn bộ schema + hypertable)
-tests/            pytest trên DB `rpm_test` thật (TimescaleDB), 27 test
+tests/            pytest trên DB `rpm_test` thật (TimescaleDB), 30 test
 Dockerfile        Chạy `alembic upgrade head` rồi uvicorn (build context = gốc repo)
 ```
 

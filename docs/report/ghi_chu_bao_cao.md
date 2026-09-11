@@ -1,0 +1,183 @@
+# Ghi chú viết báo cáo (cập nhật 2026-09-11, hết Giai đoạn F)
+
+File này gom **mọi số liệu, quyết định và hạn chế** cần đưa vào báo cáo, sắp theo đúng cấu trúc mục báo cáo. Khi viết báo cáo (Giai đoạn I), đọc file này trước, rồi mở file nguồn được chỉ ra để lấy chi tiết. Số thập phân dùng dấu phẩy.
+
+> **Quy tắc cập nhật**: sau mỗi giai đoạn còn lại (G, H), bổ sung số liệu mới vào đúng mục bên dưới.
+
+## 0. Bản đồ mục báo cáo → nguồn trong repo
+
+| Mục báo cáo | Nguồn | Trạng thái |
+|---|---|---|
+| 1. Giới thiệu | `docs/design/01_gioi_thieu.md` | Có bản nháp |
+| 2.1 Sơ đồ chức năng | `docs/design/02_1_so_do_chuc_nang.md` | Xong (Mermaid) |
+| 2.2 Use Case (UC01–UC13) | `docs/design/02_2_usecase.md` | Xong |
+| 2.3 Activity | `docs/design/02_3_activity.md` | Xong |
+| 2.4 Sequence | `docs/design/02_4_sequence.md` | Xong |
+| 2.5 Class | `docs/design/02_5_class.md` | Xong |
+| 2.6 DFD / Database | `docs/design/02_6_dfd_database.md` | Xong |
+| 2.7 ERD | `docs/design/02_7_erd.md` | Xong |
+| 2.8 Thiết kế giao diện | `docs/design/02_8_thiet_ke_giao_dien.md` + 9 ảnh `docs/design/mockups/png/` | Xong |
+| 2.9 Thiết kế giải thuật | `docs/design/02_9_thiet_ke_giai_thuat.md` | Xong (2.9.4–2.9.5 drift/retrain chưa hiện thực) |
+| 2.10 Thiết kế test | `docs/design/02_10_thiet_ke_test.md` | Xong |
+| 3.1 Công nghệ | mục 3.1 bên dưới | Đủ số liệu |
+| 3.2 Dữ liệu | `ml/README.md`, `ml/data_dictionary.md`, mục 3.2 bên dưới | Đủ số liệu |
+| 3.3 Triển khai | `docker-compose.yml`, các `CLAUDE.md`, mục 3.3 bên dưới | Thiếu Airflow DAG (G) |
+| 3.4 Kết quả | `ml/reports/evaluation.md` (+ 3 hình), mục 3.4 bên dưới | Thiếu kết quả drift/retrain (G), đo p95 (H), ảnh chụp giao diện thật |
+| 3.5 Đánh giá | mục 3.5 bên dưới (hạn chế **bắt buộc** công khai) | Đủ cho C–F |
+| 4. Kết luận + hướng phát triển | mục 4 bên dưới | Có ý chính |
+| 5. Tài liệu tham khảo | mục 5 bên dưới | Có danh sách nền |
+| 6. Bản Word theo mẫu | — | **Chờ người dùng gửi file mẫu .docx của trường** |
+
+## 3.1 Công nghệ và phiên bản
+
+| Lớp | Công nghệ (phiên bản) |
+|---|---|
+| Streaming | Apache Kafka (Confluent `cp-kafka` 7.6.1, Zookeeper 7.6.1), client `confluent-kafka` 2.15.1 |
+| Cơ sở dữ liệu | PostgreSQL 16 + TimescaleDB 2.30.0 (hypertable `vital_records`, `predictions`), SQLAlchemy 2.0.49, Alembic 1.15.1 |
+| Học máy | scikit-learn 1.3.2 (Random Forest, Logistic Regression), XGBoost 3.0.0, TensorFlow 2.21.0 / Keras 3.13.1 (LSTM-Autoencoder), SHAP 0.51.0, SciPy 1.16.2 |
+| MLOps | MLflow 3.11.1 (tracking + registry, alias `champion`/`challenger`), Apache Airflow 2.9.3 |
+| Backend | FastAPI 0.135.3, Uvicorn 0.34.0, Pydantic 2.12.5, PyJWT 2.12.1 + bcrypt 4.2.1, WebSocket |
+| Frontend | React 19.2, TypeScript 7.0, Vite 8.2, Tailwind CSS 4.3, Base UI 1.8 + CVA, React Router 7.18, Vitest 5 + Testing Library |
+| Giám sát | Prometheus 2.54.1 (`/metrics` của backend), Grafana 11.1.4 |
+| Triển khai | Docker Compose (profile `app`: backend :8000, frontend nginx :3000, stream-consumer, stream-producer) |
+| Thiết kế giao diện | Claude Design canvas (mockup 9 artboard), design system dựa trên skill `csgo-case-opening-design` (dark theme, góc vuông) |
+
+## 3.2 Dữ liệu
+
+- **Nguồn**: MIMIC-III Clinical Database Demo v1.4 (PhysioNet, giấy phép mở), 100 bệnh nhân; CHARTEVENTS 758.355 dòng. 98 bệnh nhân có vitals.
+- **6 kênh vitals**: nhịp tim, SpO2, nhịp thở, huyết áp tâm thu, huyết áp tâm trương, nhiệt độ. Mapping itemid cho cả CareVue và MetaVision (`ml/README.md`).
+- **Tiền xử lý** (`common/rpm_common`, dùng chung cho train và streaming):
+  - lưới 1 giờ (trung vị khoảng cách đo 60 phút, nhiệt độ 240 phút);
+  - chỉ forward-fill, tối đa 2 giờ (vitals) và 6 giờ (nhiệt độ), không nội suy; sau khi điền 92,9% số giờ đủ 5 thông số NEWS2;
+  - NEWS2 rút gọn 5 thông số (0–15 điểm; không có oxy bổ sung và mức ý thức).
+- **Kết quả**: 132 đợt ICU, 14.138 giờ (`hourly.parquet`); nhóm stream 20 bệnh nhân, 1.834 giờ (`stream_replay.parquet`).
+- **Chia nhóm theo bệnh nhân** (`subject_id`, seed 42, cố định trong `ml/splits/subject_split.json`): train 48 / validation 15 / test 15 / stream 20.
+- **Nhãn dự báo**: mức NEWS2 cao nhất trong 4 giờ tới (h = 4). Không dùng nhãn tức thời vì nhãn là hàm tất định của đặc trưng (rò rỉ nhãn).
+- **Cửa sổ LSTM-AE**: 12 giờ × 6 kênh z-score so với baseline 6 giờ đầu của chính bệnh nhân; cửa sổ NORMAL: train 1.146, validation 334, test 485.
+
+## 3.3 Triển khai
+
+- **Luồng chạy**: producer phát lại nhóm stream (1 giây = 1 giờ dữ liệu, có `--drift`) → topic `vitals-stream` → consumer:
+  - dựng state → đặc trưng `rpm_common` → 2 champion → cảnh báo chống trùng;
+  - ghi 1 transaction DB;
+  - publish `predictions-stream` / `alerts-stream`.
+  Backend nghe Kafka → WebSocket tới người được phân công và gửi email. React dashboard hiển thị realtime.
+- **Đảm bảo xử lý**: at-least-once (commit offset sau khi ghi DB). Chống trùng: không có cảnh báo OPEN cùng loại **và** cooldown 4 giờ dữ liệu.
+- **Bảo mật**:
+  - JWT 3 vai trò; bác sĩ/điều dưỡng chỉ truy cập bệnh nhân được phân công (403);
+  - token WebSocket bị che trong log (`RedactTokenFilter`).
+- **Lệnh chạy**: xem mục "Lệnh hay dùng" ở `CLAUDE.md` gốc và `CLAUDE.md` từng module.
+- **Còn thiếu**: Airflow DAG `drift_check`, `retrain_pipeline` (Giai đoạn G).
+
+## 3.4 Kết quả
+
+### a) Dự báo rủi ro — `risk_classifier` v2 (Random Forest, τ_critical = 0,22)
+
+- **Chọn mô hình** bằng GroupKFold trên train (Macro F1): Random Forest 0,622 (chọn), Logistic Regression 0,618, XGBoost 0,608, persistence 0,565.
+- **τ_critical** chọn trên dự đoán out-of-fold của train ∪ validation (63 bệnh nhân), mục tiêu Recall CRITICAL 0,80.
+
+| Tập | Macro F1 | Recall CRITICAL | Precision CRITICAL |
+|---|---|---|---|
+| Out-of-fold (63 BN) | 0,591 | 0,807 | 0,395 |
+| Validation | 0,623 | 0,849 | 0,498 |
+| Test (3.084 giờ) | 0,623 | 0,790 | 0,391 |
+
+- **Test**:
+  - AUROC 0,836, AUPRC CRITICAL 0,615, Accuracy 0,647;
+  - persistence: Macro F1 0,547, Recall CRITICAL 0,308.
+  - Bảng theo lớp và ma trận nhầm lẫn: `ml/reports/evaluation.md`, `fig_risk_confusion.png`.
+- **Lịch sử version**:
+  - v1 (τ = 0,25 chọn trên validation): Macro F1 0,639, Recall CRITICAL 0,730 → gate từ chối.
+  - v2 → champion.
+- **So sánh horizon**:
+  - h = 1: model Macro F1 0,578 < persistence 0,621;
+  - h = 4: 0,623 > 0,547.
+  - → persistence rất mạnh ở tầm 1 giờ, là lý do chọn h = 4.
+- **SHAP** lớp CRITICAL (`fig_risk_shap_critical.png`): `news2_max_6h`, `news2_score`, `respiratory_rate_mean_6h`, `heart_rate` đứng đầu; hướng tác động hợp lý lâm sàng (SpO2, huyết áp thấp → rủi ro cao).
+- **Kiểm tra nhãn proxy với tử vong**:
+  - tỷ lệ giờ CRITICAL: 19,1% ở đợt ICU tử vong tại viện, 3,6% ở đợt sống sót;
+  - AUROC mức đợt 0,718.
+
+### b) Phát hiện bất thường — `anomaly_detector` v3 (LSTM-AE, = v2 đóng gói lại)
+
+- Kiến trúc LSTM 64-32 → RepeatVector → LSTM 32-64 → Dense 6; căn giữa cửa sổ theo kênh; điểm = ECDF của MSE trên cửa sổ NORMAL validation; ngưỡng τ = 0,99.
+- **Đánh giá bằng tiêm bất thường tổng hợp** (10% cửa sổ, seed 42; spike ±4σ, level shift +3σ, drift +3σ).
+- **v1** (chưa căn giữa): Precision 0,226, Recall 0,146, AUROC 0,850, gắn cờ nhầm 5,5% → từ chối.
+- **v2 = v3**:
+  - AUROC **0,864**, Precision 0,727, Recall 0,167, F1 0,271, gắn cờ nhầm 0,7%;
+  - Recall theo loại: spike 0,25, level shift 0,19, drift 0,06.
+- **Trên dữ liệu thật** (không tiêm):
+  - tỷ lệ gắn cờ theo mức NEWS2 cao nhất trong cửa sổ: NORMAL 0,6%, WARNING 17,4%, CRITICAL 34,8%;
+  - AUROC CRITICAL so với NORMAL 0,837 (`fig_anomaly_scores.png`).
+- Điểm bất thường đầu tiên có ở `hour_index` 16 (6 giờ baseline + cửa sổ 12 giờ).
+
+### c) Streaming end-to-end (host, 20 bệnh nhân / 1.834 giờ)
+
+- Ghi đủ 1.834 `vital_records` + `predictions` + 1.834 message `predictions-stream`.
+- **Cảnh báo**:
+  - 28 cảnh báo (19 RISK, 9 ANOMALY) cho 507 giờ dự báo CRITICAL, tức chống "bão cảnh báo";
+  - 0 cảnh báo OPEN trùng.
+- **Độ trễ xử lý** khoảng 130–190 ms/message: đặc trưng ~45 ms, Random Forest ~12 ms (sau khi ép `n_jobs=1`), LSTM-AE ~64 ms.
+- **Chịu lỗi**: kill cứng consumer giữa chừng rồi chạy lại → 229/229 bản ghi, 0 trùng.
+- **Đồng nhất train/serving**: test so từng giờ trên dữ liệu thật (đặc trưng streaming = đặc trưng lúc train).
+- Chạy được trong Docker (smoke test 74/74 bản ghi, nạp model qua `http://mlflow:5000`).
+
+### d) Backend và frontend
+
+- **Backend**:
+  - 25 route theo UC01–UC13;
+  - tích hợp thật: mỗi tài khoản chỉ nhận WebSocket của bệnh nhân mình phụ trách, email tới đúng người được phân công, `alert_update` tức thì khi đổi trạng thái.
+- **Frontend**: 8 màn hình theo mockup, cập nhật realtime qua WebSocket, chặn route theo vai trò.
+- **Số test tự động**:
+
+  | Module | Số test |
+  |---|---|
+  | `common` | 99 |
+  | `ml` | 41 |
+  | `streaming` | 27 |
+  | `backend` (DB thật) | 30 |
+  | `frontend` (Vitest) | 23 |
+  | **Tổng** | **220** |
+
+- **Cần bổ sung**: ảnh chụp giao diện thật sau khi người dùng đăng nhập (Claude không tự nhập mật khẩu), kết quả Giai đoạn G (drift → retrain tự động), đo p95 < 2 giây (Giai đoạn H).
+
+## 3.5 Đánh giá — hạn chế BẮT BUỘC công khai
+
+1. **Tập test của mô hình rủi ro đã dùng 2 lần.** Ngưỡng gate Recall CRITICAL hạ từ 0,80 xuống 0,75 **sau khi xem kết quả test**. v2 thiếu 3 giờ CRITICAL: 249/315, cần 252 cho 0,80.
+   - Lý do: mục tiêu chọn τ bằng ngưỡng gate thì không có biên an toàn, và mỗi lần retrain có khoảng 50% khả năng trượt do nhiễu (test chỉ 15 bệnh nhân).
+   - Gate được áp lại trên metric đã log, không dự đoán lại trên test. Chi tiết: `02_10` mục 2.10.3.
+2. **Tập test của mô hình bất thường cũng dùng 2 lần.** Gate đổi từ P/R ≥ 0,7 sang AUROC ≥ 0,75 sau khi xem kết quả lần đầu.
+   - Chẩn đoán dẫn tới quyết định chỉ chạy trên train ∪ validation: tiêu chí 0,7/0,7 tại τ = 0,99 không đạt được vì bất thường tiêm nằm trong độ biến thiên tự nhiên của vitals theo giờ.
+3. **Recall bất thường thấp** ở τ = 0,99 (0,167; drift chỉ 0,06). Hệ thống ưu tiên ít báo nhầm (0,7%).
+4. **Bất thường tổng hợp** không phải bất thường lâm sàng thật. Bằng chứng bổ sung: tỷ lệ gắn cờ tăng theo mức NEWS2 trên dữ liệu thật.
+5. **Thiên lệch chọn mẫu**: cả 100 bệnh nhân demo đều có `expire_flag = 1` (đã tử vong về sau); dữ liệu nhỏ (98 bệnh nhân có vitals, test 15 bệnh nhân) → khoảng tin cậy rộng.
+6. **Nhãn là proxy** (NEWS2 rút gọn 5 thông số, 0–15 điểm), không phải chẩn đoán lâm sàng. Chỉ kiểm chứng gián tiếp với tử vong tại viện (AUROC 0,718).
+7. **Streaming là phát lại dữ liệu lịch sử** (1 giây = 1 giờ), không phải thiết bị thật. Drift trong demo là drift tiêm nhân tạo (`--drift`: HR +15, SpO2 −3).
+8. **Số liệu drift trong mockup** (màn hình Mô hình) chỉ là minh họa, không phải kết quả đo.
+9. **Email** mặc định chỉ ghi log (`EMAIL_DELIVERY=log`), chưa gửi SMTP thật trong demo.
+10. **Giao diện** được người dùng tạm chấp nhận, dự kiến nâng cấp sau.
+
+## 4. Kết luận và hướng phát triển (ý chính)
+
+- **Đạt được**: pipeline streaming đầy đủ từ dữ liệu ICU thật tới dashboard realtime; 2 mô hình qua quality gate và thắng baseline persistence; Champion–Challenger trên MLflow; phân quyền theo phân công; chịu lỗi at-least-once.
+- **Hướng phát triển**:
+  - dữ liệu MIMIC-III/IV đầy đủ hoặc eICU (cần CITI/DUA) để có tập test lớn hơn và bệnh nhân sống sót;
+  - thêm 2 thông số NEWS2 còn thiếu (oxy bổ sung, mức ý thức);
+  - hiệu chỉnh xác suất (calibration);
+  - bất thường theo từng kênh để giải thích được;
+  - triển khai cloud (AWS/GCP);
+  - SMTP thật hoặc push notification;
+  - nâng cấp giao diện;
+  - xác thực đa yếu tố.
+
+## 5. Tài liệu tham khảo (danh sách nền — kiểm tra lại định dạng theo mẫu trường)
+
+1. Johnson, A., Pollard, T., & Mark, R. (2016). MIMIC-III Clinical Database Demo (version 1.4). PhysioNet. https://doi.org/10.13026/C2HM2Q
+2. Johnson, A. E. W., Pollard, T. J., Shen, L., et al. (2016). MIMIC-III, a freely accessible critical care database. *Scientific Data*, 3, 160035.
+3. Goldberger, A. L., et al. (2000). PhysioBank, PhysioToolkit, and PhysioNet. *Circulation*, 101(23), e215–e220. (trích dẫn chuẩn của PhysioNet)
+4. Royal College of Physicians (2017). *National Early Warning Score (NEWS) 2: Standardising the assessment of acute-illness severity in the NHS*.
+5. Malhotra, P., et al. (2016). LSTM-based Encoder-Decoder for Multi-sensor Anomaly Detection. ICML Anomaly Detection Workshop.
+6. Lundberg, S. M., & Lee, S.-I. (2017). A Unified Approach to Interpreting Model Predictions. *NeurIPS 2017*.
+7. Breiman, L. (2001). Random Forests. *Machine Learning*, 45, 5–32.
+8. Chen, T., & Guestrin, C. (2016). XGBoost: A Scalable Tree Boosting System. *KDD 2016*.
+9. Tài liệu chính thức: Apache Kafka, MLflow 3.x (Model Registry, aliases), Apache Airflow 2.9, TimescaleDB, FastAPI, React.
