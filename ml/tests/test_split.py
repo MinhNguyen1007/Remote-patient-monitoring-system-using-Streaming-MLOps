@@ -3,7 +3,7 @@ import json
 import pandas as pd
 import pytest
 
-from split import GROUP_SIZES, load_or_create_split, make_subject_split
+from rpm_ml.data.split import GROUP_SIZES, load_or_create_split, make_subject_split
 
 
 TOTAL = sum(GROUP_SIZES.values())

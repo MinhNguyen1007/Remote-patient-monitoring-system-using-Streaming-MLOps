@@ -226,6 +226,24 @@
         "test_recall_critical": 0.7904761904761904,
         "gate": "passed",
         "champion": true
+      },
+      {
+        "version": 3,
+        "tau_critical": 0.21,
+        "tau_selection": "oof_groupkfold_train_validation",
+        "test_macro_f1": 0.6119922880418766,
+        "test_recall_critical": 0.8031746031746032,
+        "gate": "rejected",
+        "champion": false
+      },
+      {
+        "version": 4,
+        "tau_critical": 0.24,
+        "tau_selection": "oof_groupkfold_train_validation",
+        "test_macro_f1": 0.6312897514428404,
+        "test_recall_critical": 0.7587301587301587,
+        "gate": "rejected",
+        "champion": false
       }
     ],
     "figures": [
@@ -251,12 +269,12 @@
     "stay_auroc": 0.7182334710743801
   },
   "anomaly": {
-    "champion_version": 3,
+    "champion_version": 4,
     "test_injected": {
       "precision": 0.7272727272727273,
       "recall": 0.16666666666666666,
       "f1": 0.2711864406779661,
-      "auroc": 0.8641542715484363,
+      "auroc": 0.8641781083142639,
       "false_positive_rate": 0.006864988558352402,
       "n_windows": 485,
       "n_anomalies": 48,
@@ -281,7 +299,7 @@
         "flag_rate": 0.34754797441364604
       }
     },
-    "real_auroc_critical_vs_normal": 0.8373244235376872,
+    "real_auroc_critical_vs_normal": 0.8373332160991802,
     "figures": [
       "fig_anomaly_scores.png"
     ]

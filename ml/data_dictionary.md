@@ -1,6 +1,6 @@
 # Data Dictionary — MIMIC-III Clinical Database Demo v1.4
 
-Mô tả chi tiết toàn bộ 26 file CSV trong dataset: file dùng để làm gì, mỗi cột nghĩa là gì. Số liệu (số dòng) lấy thực tế từ file đã tải tại `mimic-iii-clinical-database-demo-1.4_data/` (đã trừ dòng header).
+Mô tả chi tiết toàn bộ 26 file CSV trong dataset: file dùng để làm gì, mỗi cột nghĩa là gì. Số liệu (số dòng) lấy thực tế từ file đã tải tại `ml/data/raw/mimic-iii-clinical-database-demo-1.4/` (đã trừ dòng header).
 
 ## Khóa liên kết dùng xuyên suốt các bảng
 
@@ -310,7 +310,7 @@ Trong bản đầy đủ, bảng này chứa ghi chú lâm sàng dạng văn b�
 
 | Bảng | Dùng ở module | Mục đích |
 |---|---|---|
-| `PATIENTS`, `ADMISSIONS`, `ICUSTAYS` | `ml/src/preprocess.py` | Tuổi, giới tính, outcome tử vong thật (đối chiếu nhãn proxy), mốc thời gian ICU |
-| `CHARTEVENTS` | `ml/src/preprocess.py` | Nguồn vitals chính — được làm sạch và đưa về lưới 1 giờ; dữ liệu đã xử lý dùng cho huấn luyện, còn phần thuộc nhóm bệnh nhân "stream" được `streaming/producer.py` phát lại (producer không đọc CHARTEVENTS thô, để luồng streaming và huấn luyện dùng cùng một cách tiền xử lý) |
-| `D_ITEMS` | `ml/src/preprocess.py` | Tra cứu/gộp itemid CareVue+MetaVision về cùng tên feature |
+| `PATIENTS`, `ADMISSIONS`, `ICUSTAYS` | `rpm_ml/data/preprocess.py` | Tuổi, giới tính, outcome tử vong thật (đối chiếu nhãn proxy), mốc thời gian ICU |
+| `CHARTEVENTS` | `rpm_ml/data/preprocess.py` | Nguồn vitals chính — được làm sạch và đưa về lưới 1 giờ; dữ liệu đã xử lý dùng cho huấn luyện, còn phần thuộc nhóm bệnh nhân "stream" được `streaming/producer.py` phát lại (producer không đọc CHARTEVENTS thô, để luồng streaming và huấn luyện dùng cùng một cách tiền xử lý) |
+| `D_ITEMS` | `rpm_ml/data/preprocess.py` | Tra cứu/gộp itemid CareVue+MetaVision về cùng tên feature |
 | Các bảng còn lại | không dùng trong scope hiện tại | Có thể tham khảo mở rộng ở "Hướng phát triển" (mục 4.2), ví dụ: dùng thêm `LABEVENTS` làm feature bổ sung, `DRGCODES`/`DIAGNOSES_ICD` để phân tầng bệnh nhân theo nhóm bệnh khi đánh giá mô hình |

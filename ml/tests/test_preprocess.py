@@ -1,6 +1,6 @@
 import pandas as pd
 
-from preprocess import select_replay_stays
+from rpm_ml.data.preprocess import select_replay_stays
 from rpm_common.itemids import VITALS, obs_col
 
 

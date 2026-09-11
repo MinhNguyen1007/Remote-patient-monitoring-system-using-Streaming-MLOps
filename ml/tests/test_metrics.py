@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from metrics import anomaly_metrics, choose_tau_critical, classification_metrics
+from rpm_ml.evaluation.metrics import anomaly_metrics, choose_tau_critical, classification_metrics
 
 
 def test_tau_is_largest_threshold_keeping_target_recall():

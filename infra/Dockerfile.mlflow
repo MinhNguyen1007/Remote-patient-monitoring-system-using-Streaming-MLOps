@@ -1,6 +1,6 @@
 FROM python:3.11-slim
 
-# Phiên bản MLflow phải trùng với client ở ml/, streaming/, Airflow (client 3.x gọi API mà server 2.x không có).
+# Phiên bản MLflow phải trùng với client ở ml/, services/streaming, Airflow (client 3.x gọi API mà server 2.x không có).
 RUN pip install --no-cache-dir mlflow==3.11.1 psycopg2-binary==2.9.9
 
 WORKDIR /mlflow

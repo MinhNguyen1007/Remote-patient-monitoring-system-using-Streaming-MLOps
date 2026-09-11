@@ -128,4 +128,38 @@ sequenceDiagram
 
 Ghi chú:
 - Huấn luyện có thể mất nhiều phút, nên backend trả `202 Accepted` ngay và giao diện theo dõi trạng thái, thay vì giữ request chờ.
-- Luồng retrain **tự động** do drift dùng đúng DAG `retrain_pipeline` này, chỉ khác là được DAG `drift_check` kích hoạt (xem 2.3.3).
+  - `GET /admin/models/retrain/{dag_run_id}` trả kèm các dòng `model_versions` có cùng `dag_run_id` (version mới, PROMOTED/REJECTED, lý do gate).
+- Luồng retrain **tự động** do drift dùng đúng DAG `retrain_pipeline` này, chỉ khác là được DAG `drift_check` kích hoạt (xem 2.3.3 và 2.4.4).
+- Khi DAG kết thúc, bước `publish_result` gửi sự kiện `retrain_completed` lên topic `mlops-events`; backend đẩy WebSocket cho Admin để tab Giám sát mô hình tự làm mới (không gửi email).
+
+## 2.4.4. Phát hiện drift và thông báo Admin (UC09)
+
+```mermaid
+sequenceDiagram
+    participant AF as Airflow DAG drift_check
+    participant DB as PostgreSQL
+    participant MLF as MLflow Registry
+    participant K as Kafka mlops-events
+    participant BE as FastAPI Backend
+    participant A as Admin
+
+    AF->>MLF: reference_stats.json + drift_thresholds.json của risk_classifier@champion
+    AF->>DB: vital_records + patients (dựng lại đặc trưng bằng rpm_common)
+    AF->>AF: 24 nhịp gần nhất, ≥ 200 bản ghi, có dữ liệu mới? → PSI/KS 7 đặc trưng
+    AF->>DB: INSERT drift_reports
+    alt drift và không bị chống vòng lặp chặn
+        AF->>AF: TriggerDagRun retrain_pipeline (conf trigger=DRIFT, drift_report_id)
+        AF->>DB: UPDATE drift_reports SET triggered_retrain, dag_run_id
+    end
+    AF->>K: drift_report {drift_detected, drifted_features, triggered_retrain, notify_admin}
+    K-->>BE: Kafka listener (group rpm-backend)
+    BE-->>A: WebSocket drift_report (mọi Admin đang hoạt động)
+    opt notify_admin (bắt đầu đợt drift mới hoặc đã kích hoạt retrain)
+        BE->>A: Email thông báo drift (thread riêng)
+        BE->>DB: INSERT notification_logs (drift_report_id)
+    end
+```
+
+Ghi chú:
+- Airflow không gửi email trực tiếp: backend là nơi duy nhất gửi email và đẩy WebSocket, giống luồng cảnh báo ở 2.4.1.
+- Drift kéo dài (lần kiểm tra trước cũng có drift) mà không kích hoạt thêm retrain thì `notify_admin = false`: vẫn ghi báo cáo và đẩy WebSocket, không gửi email lặp mỗi 2 phút.

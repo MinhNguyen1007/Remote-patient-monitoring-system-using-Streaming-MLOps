@@ -8,8 +8,8 @@ mimic-iii-clinical-database-demo-*
 ml/data
 ml/mlruns
 ml/reports
-frontend/node_modules
-frontend/dist
+services/frontend/node_modules
+services/frontend/dist
 infra/postgres_data
 *.log
 .env

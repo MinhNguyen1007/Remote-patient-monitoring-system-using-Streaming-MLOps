@@ -3,7 +3,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from anomaly_model import AnomalyDetector, artifact_path, build_lstm_autoencoder
+from rpm_ml.models.anomaly import AnomalyDetector, artifact_path, build_lstm_autoencoder
 from rpm_common.anomaly import N_CHANNELS, WINDOW_HOURS
 
 

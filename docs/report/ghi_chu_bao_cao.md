@@ -1,8 +1,8 @@
-# Ghi chú viết báo cáo (cập nhật 2026-09-11, hết Giai đoạn F)
+# Ghi chú viết báo cáo (cập nhật 2026-09-11, hết Giai đoạn G)
 
 File này gom **mọi số liệu, quyết định và hạn chế** cần đưa vào báo cáo, sắp theo đúng cấu trúc mục báo cáo. Khi viết báo cáo (Giai đoạn I), đọc file này trước, rồi mở file nguồn được chỉ ra để lấy chi tiết. Số thập phân dùng dấu phẩy.
 
-> **Quy tắc cập nhật**: sau mỗi giai đoạn còn lại (G, H), bổ sung số liệu mới vào đúng mục bên dưới.
+> **Quy tắc cập nhật**: sau giai đoạn còn lại (H), bổ sung số liệu mới vào đúng mục bên dưới.
 
 ## 0. Bản đồ mục báo cáo → nguồn trong repo
 
@@ -17,13 +17,13 @@ File này gom **mọi số liệu, quyết định và hạn chế** cần đưa
 | 2.6 DFD / Database | `docs/design/02_6_dfd_database.md` | Xong |
 | 2.7 ERD | `docs/design/02_7_erd.md` | Xong |
 | 2.8 Thiết kế giao diện | `docs/design/02_8_thiet_ke_giao_dien.md` + 9 ảnh `docs/design/mockups/png/` | Xong |
-| 2.9 Thiết kế giải thuật | `docs/design/02_9_thiet_ke_giai_thuat.md` | Xong (2.9.4–2.9.5 drift/retrain chưa hiện thực) |
+| 2.9 Thiết kế giải thuật | `docs/design/02_9_thiet_ke_giai_thuat.md` | Xong (2.9.4 viết lại theo ngưỡng hiệu chỉnh, 2.9.5 theo hiện thực) |
 | 2.10 Thiết kế test | `docs/design/02_10_thiet_ke_test.md` | Xong |
 | 3.1 Công nghệ | mục 3.1 bên dưới | Đủ số liệu |
 | 3.2 Dữ liệu | `ml/README.md`, `ml/data_dictionary.md`, mục 3.2 bên dưới | Đủ số liệu |
-| 3.3 Triển khai | `docker-compose.yml`, các `CLAUDE.md`, mục 3.3 bên dưới | Thiếu Airflow DAG (G) |
-| 3.4 Kết quả | `ml/reports/evaluation.md` (+ 3 hình), mục 3.4 bên dưới | Thiếu kết quả drift/retrain (G), đo p95 (H), ảnh chụp giao diện thật |
-| 3.5 Đánh giá | mục 3.5 bên dưới (hạn chế **bắt buộc** công khai) | Đủ cho C–F |
+| 3.3 Triển khai | `docker-compose.yml`, `infra/Dockerfile.airflow`, `infra/airflow/dags/`, các `CLAUDE.md`, mục 3.3 bên dưới | Đủ |
+| 3.4 Kết quả | `ml/reports/evaluation.md` (+ 3 hình), mục 3.4 bên dưới | Thiếu đo p95 (H), ảnh chụp giao diện thật (cả tab Giám sát mô hình sau drift) |
+| 3.5 Đánh giá | mục 3.5 bên dưới (hạn chế **bắt buộc** công khai) | Đủ cho C–G |
 | 4. Kết luận + hướng phát triển | mục 4 bên dưới | Có ý chính |
 | 5. Tài liệu tham khảo | mục 5 bên dưới | Có danh sách nền |
 | 6. Bản Word theo mẫu | — | **Chờ người dùng gửi file mẫu .docx của trường** |
@@ -35,7 +35,7 @@ File này gom **mọi số liệu, quyết định và hạn chế** cần đưa
 | Streaming | Apache Kafka (Confluent `cp-kafka` 7.6.1, Zookeeper 7.6.1), client `confluent-kafka` 2.15.1 |
 | Cơ sở dữ liệu | PostgreSQL 16 + TimescaleDB 2.30.0 (hypertable `vital_records`, `predictions`), SQLAlchemy 2.0.49, Alembic 1.15.1 |
 | Học máy | scikit-learn 1.3.2 (Random Forest, Logistic Regression), XGBoost 3.0.0, TensorFlow 2.21.0 / Keras 3.13.1 (LSTM-Autoencoder), SHAP 0.51.0, SciPy 1.16.2 |
-| MLOps | MLflow 3.11.1 (tracking + registry, alias `champion`/`challenger`), Apache Airflow 2.9.3 |
+| MLOps | MLflow 3.11.1 (tracking + registry, alias `champion`/`challenger`), Apache Airflow 2.9.3 (LocalExecutor, image riêng Python 3.11 + venv ML), DAG `drift_check` (2 phút/lần) và `retrain_pipeline` |
 | Backend | FastAPI 0.135.3, Uvicorn 0.34.0, Pydantic 2.12.5, PyJWT 2.12.1 + bcrypt 4.2.1, WebSocket |
 | Frontend | React 19.2, TypeScript 7.0, Vite 8.2, Tailwind CSS 4.3, Base UI 1.8 + CVA, React Router 7.18, Vitest 5 + Testing Library |
 | Giám sát | Prometheus 2.54.1 (`/metrics` của backend), Grafana 11.1.4 |
@@ -46,7 +46,7 @@ File này gom **mọi số liệu, quyết định và hạn chế** cần đưa
 
 - **Nguồn**: MIMIC-III Clinical Database Demo v1.4 (PhysioNet, giấy phép mở), 100 bệnh nhân; CHARTEVENTS 758.355 dòng. 98 bệnh nhân có vitals.
 - **6 kênh vitals**: nhịp tim, SpO2, nhịp thở, huyết áp tâm thu, huyết áp tâm trương, nhiệt độ. Mapping itemid cho cả CareVue và MetaVision (`ml/README.md`).
-- **Tiền xử lý** (`common/rpm_common`, dùng chung cho train và streaming):
+- **Tiền xử lý** (`packages/common` — `rpm_common`, dùng chung cho train và streaming):
   - lưới 1 giờ (trung vị khoảng cách đo 60 phút, nhiệt độ 240 phút);
   - chỉ forward-fill, tối đa 2 giờ (vitals) và 6 giờ (nhiệt độ), không nội suy; sau khi điền 92,9% số giờ đủ 5 thông số NEWS2;
   - NEWS2 rút gọn 5 thông số (0–15 điểm; không có oxy bổ sung và mức ý thức).
@@ -57,6 +57,7 @@ File này gom **mọi số liệu, quyết định và hạn chế** cần đưa
 
 ## 3.3 Triển khai
 
+- **Cấu trúc repo** (tổ chức lại 2026-09-11, xem `README.md`): `services/` (backend, frontend, streaming — mỗi service có Dockerfile, test, CLAUDE.md), `ml/` (package `rpm_ml` chia theo chức năng: data, models, training, evaluation, drift, pipelines, storage), `packages/common` (`rpm_common` dùng chung), `infra/` (Docker, DAG Airflow, giám sát), `docs/`.
 - **Luồng chạy**: producer phát lại nhóm stream (1 giây = 1 giờ dữ liệu, có `--drift`) → topic `vitals-stream` → consumer:
   - dựng state → đặc trưng `rpm_common` → 2 champion → cảnh báo chống trùng;
   - ghi 1 transaction DB;
@@ -66,8 +67,13 @@ File này gom **mọi số liệu, quyết định và hạn chế** cần đưa
 - **Bảo mật**:
   - JWT 3 vai trò; bác sĩ/điều dưỡng chỉ truy cập bệnh nhân được phân công (403);
   - token WebSocket bị che trong log (`RedactTokenFilter`).
+- **MLOps vận hành (Giai đoạn G)**:
+  - DAG `drift_check` (mỗi 2 phút): `detect_drift` → `decide_retrain` (chống vòng lặp) → `trigger_retrain` → `publish_report`.
+  - DAG `retrain_pipeline`: `build_dataset` → `retrain_risk` ∥ `retrain_anomaly` → `publish_result` + `all_models_trained`.
+  - Image Airflow riêng (`infra/Dockerfile.airflow`, 7,4 GB): Airflow chạy bằng Python của image; code ML chạy trong venv `/opt/rpm-venv` (đúng phiên bản `ml/requirements.txt`) để không xung đột phụ thuộc, DAG gọi qua `BashOperator`.
+  - Sự kiện MLOps qua Kafka topic `mlops-events` (1 partition) → backend → WebSocket + email cho Admin. Airflow không tự gửi email.
+  - Migration `0002`: `notification_logs.drift_report_id` (log email drift), `model_versions.gate_reasons`.
 - **Lệnh chạy**: xem mục "Lệnh hay dùng" ở `CLAUDE.md` gốc và `CLAUDE.md` từng module.
-- **Còn thiếu**: Airflow DAG `drift_check`, `retrain_pipeline` (Giai đoạn G).
 
 ## 3.4 Kết quả
 
@@ -122,24 +128,49 @@ File này gom **mọi số liệu, quyết định và hạn chế** cần đưa
 - **Đồng nhất train/serving**: test so từng giờ trên dữ liệu thật (đặc trưng streaming = đặc trưng lúc train).
 - Chạy được trong Docker (smoke test 74/74 bản ghi, nạp model qua `http://mlflow:5000`).
 
-### d) Backend và frontend
+### d) Drift → retrain tự động (Giai đoạn G, chạy thật trên Docker Compose, 2026-09-11)
+
+- **Hiệu chỉnh ngưỡng drift** (`drift_thresholds.json` của `risk_classifier` v2, GroupKFold trên train ∪ validation, 6.994 cửa sổ không drift cùng hình dạng lần phát lại):
+  - quy tắc cũ "max PSI ≥ 0,25" gắn cờ **93%** cửa sổ không drift;
+  - ngưỡng hiệu chỉnh (tỷ lệ báo nhầm chung 5%): HR 1,78; SpO2 0,745; RR 1,40; SBP 0,92; DBP 0,53; nhiệt độ 1,03; NEWS2 0,92.
+  - Mô phỏng trước khi chạy: stream sạch không bị gắn cờ ở nhịp 24–52; `--drift` 50% bệnh nhân bị gắn cờ ở mọi nhịp (SpO2 PSI 0,82–1,61).
+- **Kịch bản (a) — phát lại sạch 72 giờ**: 2 lần kiểm tra (432 và 250 bản ghi), max PSI 0,235 và 0,340 → **không drift**. Lần 2 sẽ là drift giả nếu dùng quy tắc 0,25.
+- **Kịch bản (b) — `--drift` (HR +15, SpO2 −3 trên 10/20 bệnh nhân)**:
+  - 15:06: 291 bản ghi, SpO2 PSI 0,76 ≥ 0,74 → drift → tự kích hoạt `retrain_pipeline` (`drift__20260911T150400`) → 1 email tới Admin ("đã tự động kích hoạt huấn luyện lại"), ghi `notification_logs`.
+  - 15:08: vẫn drift (max PSI 1,147) nhưng không trigger lại (retrain đang chạy), không gửi email lặp.
+  - Retrain xong sau 2 phút 10 giây (risk 2:04, anomaly 1:39, chạy song song):
+
+    | Mô hình | Challenger (test) | Champion chấm lại cùng test | Gate |
+    |---|---|---|---|
+    | risk_classifier | v3: Macro F1 0,612, Recall CRITICAL 0,803 | v2: 0,623 / 0,790 | **Từ chối** (Macro F1 < champion) |
+    | anomaly_detector | v4: AUROC 0,864 | v3: 0,864 | Promote (bằng champion) |
+
+  - Consumer tự nạp `anomaly_detector` v4 sau 17 giây (kiểm tra alias mỗi 60 giây).
+  - **Phát hiện sau lần chạy này**: drift được kết luận khi mới có 16 nhịp (cửa sổ < 24 giờ). Dữ liệu stream lúc retrain chỉ 316 giờ và **0 cửa sổ NORMAL mới**, nên anomaly v4 học trên đúng dữ liệu cũ (AUROC 0,86418 so với 0,86415 của v3) và qua gate nhờ bằng điểm. Đã thêm điều kiện cửa sổ phải đủ 24 nhịp.
+- **Chạy lại (b) sau khi sửa**: 15:12 bỏ qua ("mới có 11 giờ dữ liệu streaming (cần 24)"); 15:14 (351 bản ghi) drift, max PSI 1,164, **không retrain** vì "lần retrain gần nhất mới kết thúc 5 phút trước" (cooldown 1 giờ), không gửi email vì drift đang tiếp diễn.
+- **Retrain thủ công UC10 qua API backend**: `POST /admin/models/retrain` → 202 → hỏi trạng thái → `success` sau 1 phút 30 giây, trả kèm kết quả gate. Dữ liệu: 858 giờ stream (660 giờ đã có nhãn), LSTM-AE thêm 17 cửa sổ NORMAL từ stream.
+  - risk_classifier v4: Macro F1 **0,631 > champion 0,623** nhưng Recall CRITICAL 0,759 < 0,790 → **từ chối** — gate chặn việc đánh đổi khả năng phát hiện ca nguy kịch lấy Macro F1.
+  - anomaly_detector v5: AUROC 0,853 < 0,864 → từ chối.
+- **Trạng thái cuối**: champion `risk_classifier` v2, `anomaly_detector` v4. `model_versions` có đủ 7 version kèm `gate_reasons`, `trigger`, `dag_run_id`, `drift_report_id`. `ml/reports/` đã sinh lại theo champion mới.
+
+### e) Backend và frontend
 
 - **Backend**:
   - 25 route theo UC01–UC13;
   - tích hợp thật: mỗi tài khoản chỉ nhận WebSocket của bệnh nhân mình phụ trách, email tới đúng người được phân công, `alert_update` tức thì khi đổi trạng thái.
-- **Frontend**: 8 màn hình theo mockup, cập nhật realtime qua WebSocket, chặn route theo vai trò.
+- **Frontend**: 8 màn hình theo mockup, cập nhật realtime qua WebSocket, chặn route theo vai trò. Tab Giám sát mô hình tự làm mới khi có sự kiện `drift_report`/`retrain_completed`, hiện lý do gate; điểm đỏ trên biểu đồ drift = drift theo ngưỡng hiệu chỉnh.
 - **Số test tự động**:
 
   | Module | Số test |
   |---|---|
   | `common` | 99 |
-  | `ml` | 41 |
+  | `ml` | 61 |
   | `streaming` | 27 |
-  | `backend` (DB thật) | 30 |
+  | `backend` (DB thật) | 34 |
   | `frontend` (Vitest) | 23 |
-  | **Tổng** | **220** |
+  | **Tổng** | **244** |
 
-- **Cần bổ sung**: ảnh chụp giao diện thật sau khi người dùng đăng nhập (Claude không tự nhập mật khẩu), kết quả Giai đoạn G (drift → retrain tự động), đo p95 < 2 giây (Giai đoạn H).
+- **Cần bổ sung**: ảnh chụp giao diện thật sau khi người dùng đăng nhập (Claude không tự nhập mật khẩu), đo p95 < 2 giây (Giai đoạn H).
 
 ## 3.5 Đánh giá — hạn chế BẮT BUỘC công khai
 
@@ -156,12 +187,18 @@ File này gom **mọi số liệu, quyết định và hạn chế** cần đưa
 8. **Số liệu drift trong mockup** (màn hình Mô hình) chỉ là minh họa, không phải kết quả đo.
 9. **Email** mặc định chỉ ghi log (`EMAIL_DELIVERY=log`), chưa gửi SMTP thật trong demo.
 10. **Giao diện** được người dùng tạm chấp nhận, dự kiến nâng cấp sau.
+11. **Ngưỡng drift 0,25 thông dụng không dùng được** với cửa sổ ~20 bệnh nhân (gắn cờ 93% cửa sổ không drift). Hệ thống dùng ngưỡng hiệu chỉnh theo từng đặc trưng (sàn 0,25, tỷ lệ báo nhầm ≈ 5% mỗi lần kiểm tra trên dữ liệu phát triển). Đây là hiệu chỉnh cho đúng quy mô bản Demo; tỷ lệ báo nhầm trên dữ liệu vận hành thật chưa được đo.
+12. **Chỉ phát hiện được một phần drift mô phỏng**: SpO2 −3 bị phát hiện, HR +15 thì không (ngưỡng HR 1,78 vì nhịp tim khác nhau rất nhiều giữa các bệnh nhân). Drift chỉ kiểm tra được ở nhịp 24–55 của mỗi lần phát lại (các đợt ICU ngắn kết thúc sớm, cửa sổ còn < 200 bản ghi).
+13. **Retrain trên drift mô phỏng không cải thiện mô hình**: cả 4 challenger (tự động + thủ công) đều không vượt champion trên test cố định, trừ anomaly v4 bằng điểm champion vì không có dữ liệu mới. Đây là hành vi mong muốn của gate (không hạ cấp hệ thống), nhưng không chứng minh được retrain "sửa" được drift. Lý do: dữ liệu stream nhỏ (≤ 858 giờ so với 6.286 giờ train) và test cố định không có drift.
+14. **Gate "không kém champion" cho qua khi bằng điểm**: anomaly v4 được promote dù thực chất trùng v3. Đã giảm khả năng này bằng điều kiện cửa sổ đủ 24 nhịp; quy tắc gate giữ nguyên theo thiết kế.
 
 ## 4. Kết luận và hướng phát triển (ý chính)
 
 - **Đạt được**: pipeline streaming đầy đủ từ dữ liệu ICU thật tới dashboard realtime; 2 mô hình qua quality gate và thắng baseline persistence; Champion–Challenger trên MLflow; phân quyền theo phân công; chịu lỗi at-least-once.
 - **Hướng phát triển**:
   - dữ liệu MIMIC-III/IV đầy đủ hoặc eICU (cần CITI/DUA) để có tập test lớn hơn và bệnh nhân sống sót;
+  - drift detection theo bệnh nhân (so với chính baseline của bệnh nhân) hoặc kiểm định có tính đến tương quan trong cùng bệnh nhân, thay cho PSI gộp;
+  - gate yêu cầu challenger tốt hơn champion một biên tối thiểu (không cho qua khi bằng điểm);
   - thêm 2 thông số NEWS2 còn thiếu (oxy bổ sung, mức ý thức);
   - hiệu chỉnh xác suất (calibration);
   - bất thường theo từng kênh để giải thích được;

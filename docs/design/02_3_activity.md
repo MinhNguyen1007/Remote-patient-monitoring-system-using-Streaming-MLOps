@@ -55,31 +55,36 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    S1([Airflow DAG drift_check chạy theo lịch<br/>hoặc chạy thủ công]) --> A[Lấy 24 giờ dữ liệu streaming gần nhất]
-    A --> A1{Đủ tối thiểu 200 bản ghi?}
+    S1([Airflow DAG drift_check chạy mỗi 2 phút<br/>hoặc chạy thủ công]) --> A[Lấy 24 nhịp dữ liệu streaming gần nhất]
+    A --> A1{Có champion, đủ 24 nhịp, có dữ liệu mới<br/>và đủ tối thiểu 200 bản ghi?}
     A1 -- Không --> E0([Kết thúc - bỏ qua lần kiểm tra])
     A1 -- Có --> B[Tính PSI và KS cho 7 đặc trưng<br/>so với reference_stats của champion]
     B --> C[Ghi DriftReport]
-    C --> D{max PSI ≥ 0,25?}
-    D -- Không --> E1([Kết thúc])
-    D -- Có --> F[Thông báo Admin:<br/>email + tab Giám sát mô hình]
-    F --> G{Đang có retrain chạy hoặc<br/>retrain gần nhất kết thúc chưa quá 1 giờ?}
-    G -- Có --> E2([Kết thúc - không kích hoạt lặp])
+    C --> D{Có đặc trưng PSI ≥ ngưỡng<br/>hiệu chỉnh của nó?}
+    D -- Không --> P
+    D -- Có --> G{Đang có retrain chạy hoặc<br/>retrain gần nhất kết thúc chưa quá 1 giờ?}
+    G -- Có --> P
     G -- Không --> R[Trigger DAG retrain_pipeline]
-    S2([Admin bấm Kích hoạt huấn luyện lại - UC10]) --> R
-    R --> H[Dựng dữ liệu: nhóm train +<br/>dữ liệu stream đã có nhãn]
+    R --> P[Publish sự kiện drift_report:<br/>WebSocket tab Giám sát mô hình;<br/>email Admin nếu đợt drift mới hoặc đã kích hoạt retrain]
+    P --> E1([Kết thúc])
+    S2([Admin bấm Kích hoạt huấn luyện lại - UC10]) --> R2[DAG retrain_pipeline]
+    R -.-> R2
+    R2 --> H[Dựng dữ liệu: nhóm train +<br/>dữ liệu stream đã có nhãn]
     H --> I[Huấn luyện challenger cho 2 mô hình,<br/>log MLflow, đăng ký version alias challenger]
     I --> J[Đánh giá challenger và champion<br/>trên cùng tập test cố định]
     J --> K{Đạt quality gate?<br/>áp dụng riêng cho từng mô hình}
     K -- Không --> L[Gắn tag gate=rejected kèm lý do,<br/>giữ nguyên champion]
-    L --> E3([Kết thúc])
-    K -- Có --> M[Chuyển alias champion sang version mới,<br/>ghi bảng model_versions]
-    M --> N[Consumer phát hiện alias đổi,<br/>nạp model mới]
+    K -- Có --> M[Chuyển alias champion sang version mới]
+    L --> W[Ghi model_versions kèm lý do gate]
+    M --> W
+    W --> N[Publish retrain_completed; consumer phát hiện<br/>alias đổi và nạp model mới]
     N --> E4([Kết thúc])
 ```
 
 Ghi chú:
 - Retrain được kích hoạt **tự động** khi có drift. Quality gate (mục 2.9.5) là chốt chặn không cho model kém hơn lên thay. Admin vẫn có thể kích hoạt thủ công (UC10) bất kỳ lúc nào.
+- Quyết định drift dùng ngưỡng PSI **hiệu chỉnh theo từng đặc trưng** (luôn ≥ 0,25), không dùng một ngưỡng 0,25 chung — lý do ở mục 2.9.4.
+- Thông báo Admin đứng sau bước chống vòng lặp để nội dung email nói rõ đã kích hoạt retrain hay chưa (và vì sao không).
 - Quality gate gồm 3 điều kiện:
   - Đạt ngưỡng tuyệt đối ở 2.10.3.
   - Mô hình rủi ro phải thắng baseline persistence.

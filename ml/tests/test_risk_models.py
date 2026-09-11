@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from risk_models import CV_FOLDS, cross_validate
+from rpm_ml.models.risk import CV_FOLDS, cross_validate
 
 
 class RecordingModel:

@@ -1,0 +1,17 @@
+{
+  // Ẩn thư mục/tệp sinh tự động khỏi Explorer (vẫn nằm trên đĩa, không ảnh hưởng chạy/test)
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/.pytest_cache": true,
+    "**/*.egg-info": true,
+    "**/node_modules": true,
+    "**/dist": true,
+    ".venv": true
+  },
+  "search.exclude": {
+    "ml/data": true,
+    "**/node_modules": true,
+    ".venv": true
+  },
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe"
+}

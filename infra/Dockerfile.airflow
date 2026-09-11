@@ -1,0 +1,37 @@
+# Image Airflow cho DAG drift_check và retrain_pipeline (build context = gốc repo).
+#   docker compose build airflow-scheduler
+#
+# Airflow chạy bằng Python của image gốc. Code ML (package rpm_ml + rpm_common) chạy trong venv riêng /opt/rpm-venv với
+# đúng phiên bản thư viện của ml/requirements.txt (MLflow 3.11.1, scikit-learn, TensorFlow) — cài chung vào môi trường
+# của Airflow sẽ xung đột ràng buộc phụ thuộc. DAG gọi code ML qua BashOperator: "$RPM_PYTHON" -m rpm_ml.<module>.
+# Python 3.11 để trùng với môi trường train trên host và image streaming (model pickle/Keras nạp qua lại được).
+FROM apache/airflow:2.9.3-python3.11
+
+USER root
+RUN python -m venv /opt/rpm-venv \
+    && mkdir -p /opt/rpm/ml /opt/rpm/packages /opt/airflow/rpm_runs \
+    && chown -R airflow: /opt/rpm-venv /opt/rpm /opt/airflow/rpm_runs
+USER airflow
+
+# Bỏ shap (chỉ rpm_ml.evaluation.report dùng; bản 0.51 khai báo cần numpy>=2, xung đột với numpy 1.26 đã ghim) và pytest
+COPY --chown=airflow ml/requirements.txt /opt/rpm/ml/requirements.txt
+RUN grep -vE '^(shap|pytest)==' /opt/rpm/ml/requirements.txt > /tmp/requirements-dag.txt \
+    && /opt/rpm-venv/bin/pip install --no-cache-dir -r /tmp/requirements-dag.txt \
+        psycopg2-binary==2.9.9 confluent-kafka==2.15.1
+
+# Package đặc trưng dùng chung: cùng code với lúc train trên host và với consumer
+COPY --chown=airflow packages/common /opt/rpm/packages/common
+RUN /opt/rpm-venv/bin/pip install --no-cache-dir /opt/rpm/packages/common
+
+# rpm_ml cài dạng editable: đường dẫn dữ liệu (rpm_ml/paths.py) tính từ /opt/rpm/ml
+COPY --chown=airflow ml/pyproject.toml /opt/rpm/ml/pyproject.toml
+COPY --chown=airflow ml/splits /opt/rpm/ml/splits
+COPY --chown=airflow ml/src /opt/rpm/ml/src
+RUN /opt/rpm-venv/bin/pip install --no-cache-dir --no-deps -e /opt/rpm/ml
+
+# ml/data/processed (hourly.parquet) không nằm trong image: mount chỉ đọc từ host (docker-compose.yml)
+ENV RPM_PYTHON=/opt/rpm-venv/bin/python \
+    RPM_ML_SRC=/opt/rpm/ml/src \
+    RPM_RUNS_DIR=/opt/airflow/rpm_runs \
+    PYTHONIOENCODING=utf-8 \
+    TF_CPP_MIN_LOG_LEVEL=2

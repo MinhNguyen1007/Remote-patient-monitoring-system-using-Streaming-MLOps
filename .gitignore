@@ -10,8 +10,8 @@ venv/
 
 # Node / frontend
 node_modules/
-frontend/dist/
-frontend/.vite/
+services/frontend/dist/
+services/frontend/.vite/
 
 # Env & secrets
 .env
@@ -26,6 +26,7 @@ ml/artifacts/
 *.joblib
 
 # Data (không commit dataset vào git - MIMIC-III Demo có license riêng + dung lượng lớn)
+# Dataset gốc nằm ở ml/data/raw/, dữ liệu sinh ra ở ml/data/processed/
 /data/
 ml/data/
 mimic-iii-clinical-database-demo-*/
@@ -35,8 +36,9 @@ infra/postgres_data/
 infra/airflow/logs/
 infra/airflow/plugins/
 
-# IDE / OS
-.vscode/
+# IDE / OS (giữ .vscode/settings.json: ẩn thư mục sinh tự động khỏi Explorer)
+.vscode/*
+!.vscode/settings.json
 .idea/
 .DS_Store
 Thumbs.db

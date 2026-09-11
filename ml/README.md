@@ -52,7 +52,7 @@ MIMIC-III trải qua 2 hệ thống ghi hồ sơ điện tử khác nhau theo th
 - `224689` (RR spontaneous): tập con của nhịp thở tổng.
 - Các mã đo tay trái/phải hiếm (`224167`, `227243`, `224643`, `227242`): tổng cộng 12 dòng, không có trong concept chuẩn.
 
-**Quy tắc làm sạch bắt buộc trong `preprocess.py`**:
+**Quy tắc làm sạch bắt buộc trong `rpm_ml/data/preprocess.py`**:
 - Bỏ các dòng sau:
 
   | Điều kiện | Số dòng | Ghi chú |
@@ -105,4 +105,4 @@ Chi tiết tiền xử lý: `docs/design/02_9_thiet_ke_giai_thuat.md` mục 2.9.
 
 ## 7. Vị trí file trên máy
 
-Dataset được tải về `mimic-iii-clinical-database-demo-1.4_data/` ở thư mục gốc repo — **không nằm trong git** (xem `.gitignore`) do có giấy phép riêng và dung lượng lớn (~95MB). Muốn tải lại: đăng ký tài khoản miễn phí tại physionet.org → vào trang dataset ở mục 1 → chấp nhận điều khoản → tải toàn bộ về đúng đường dẫn trên.
+Dataset được tải về `ml/data/raw/mimic-iii-clinical-database-demo-1.4/` — **không nằm trong git** (xem `.gitignore`) do có giấy phép riêng và dung lượng lớn (~95MB). Muốn tải lại: đăng ký tài khoản miễn phí tại physionet.org → vào trang dataset ở mục 1 → chấp nhận điều khoản → tải toàn bộ về đúng đường dẫn trên.

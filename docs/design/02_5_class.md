@@ -104,6 +104,7 @@ classDiagram
     class NotificationLog {
         +UUID id
         +UUID alert_id
+        +UUID drift_report_id
         +UUID recipient_user_id
         +string channel
         +datetime sent_at
@@ -126,6 +127,7 @@ classDiagram
         +string mlflow_version
         +string mlflow_run_id
         +GateStatusEnum gate_status
+        +string gate_reasons
         +bool is_champion
         +TriggerEnum trigger
         +UUID drift_report_id
@@ -168,7 +170,8 @@ classDiagram
     Prediction "1" --> "0..2" Alert : có thể tạo (tối đa 1 mỗi loại)
     Patient "1" --> "0..*" Alert : thuộc về
     User "0..1" <-- "0..*" Alert : xác nhận/xử lý
-    Alert "1" --> "0..*" NotificationLog : ghi log gửi
+    Alert "0..1" <-- "0..*" NotificationLog : log email cảnh báo
+    DriftReport "0..1" <-- "0..*" NotificationLog : log email thông báo drift
     NotificationLog "0..*" --> "1" User : người nhận
     Prediction "0..*" --> "1" ModelVersion : model rủi ro
     Prediction "0..*" --> "0..1" ModelVersion : model bất thường

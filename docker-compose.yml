@@ -1,6 +1,5 @@
-# Docker Compose - hạ tầng nền (Giai đoạn B).
-# Service ứng dụng nằm trong profile "app" (Giai đoạn D: stream-consumer, stream-producer;
-# backend/frontend thêm ở Giai đoạn E, F).
+# Docker Compose - hạ tầng nền + Airflow (DAG drift_check/retrain_pipeline) + service ứng dụng.
+# Service ứng dụng (services/backend, services/frontend, services/streaming) nằm trong profile "app".
 #
 # Chạy: docker compose up -d
 # Kiểm tra: docker compose ps
@@ -11,6 +10,26 @@ x-airflow-env: &airflow-env
   AIRFLOW__CORE__LOAD_EXAMPLES: "false"
   # Mặc định REST API chỉ nhận session cookie; backend cần basic auth để trigger DAG retrain (UC10).
   AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session
+  # Quét thư mục DAG mỗi 30 giây (mặc định 5 phút) để DAG mới/sửa có hiệu lực nhanh
+  AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL: "30"
+  # --- Giai đoạn G: code ML của DAG (venv /opt/rpm-venv trong image) kết nối các service qua hostname docker ---
+  POSTGRES_USER: ${POSTGRES_USER}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  POSTGRES_DB: ${POSTGRES_DB}
+  POSTGRES_HOST: postgres
+  POSTGRES_PORT: "5432"
+  KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+  KAFKA_TOPIC_MLOPS: ${KAFKA_TOPIC_MLOPS:-mlops-events}
+  MLFLOW_TRACKING_URI: http://mlflow:5000
+  DRIFT_CHECK_INTERVAL_MINUTES: ${DRIFT_CHECK_INTERVAL_MINUTES:-2}
+
+# Image Airflow + venv ML riêng (infra/Dockerfile.airflow); khai báo build ở cả 3 service để service nào lên trước
+# cũng không phải kéo image "rpm-airflow" (không có trên registry)
+x-airflow-image: &airflow-image
+  build:
+    context: .
+    dockerfile: infra/Dockerfile.airflow
+  image: rpm-airflow:latest
 
 services:
   postgres:
@@ -79,7 +98,7 @@ services:
       - mlflow_artifacts:/mlflow/artifacts
 
   airflow-init:
-    image: apache/airflow:2.9.3
+    <<: *airflow-image
     container_name: rpm_airflow_init
     depends_on:
       postgres:
@@ -91,7 +110,7 @@ services:
       - "airflow db migrate && airflow users create --username ${AIRFLOW_WWW_USER} --password ${AIRFLOW_WWW_PASSWORD} --firstname Admin --lastname User --role Admin --email admin@example.com"
 
   airflow-webserver:
-    image: apache/airflow:2.9.3
+    <<: *airflow-image
     container_name: rpm_airflow_webserver
     restart: unless-stopped
     depends_on:
@@ -105,8 +124,9 @@ services:
       - airflow_logs:/opt/airflow/logs
     command: webserver
 
+  # LocalExecutor: task của DAG (kể cả huấn luyện lại model) chạy trong container này
   airflow-scheduler:
-    image: apache/airflow:2.9.3
+    <<: *airflow-image
     container_name: rpm_airflow_scheduler
     restart: unless-stopped
     depends_on:
@@ -116,13 +136,15 @@ services:
     volumes:
       - ./infra/airflow/dags:/opt/airflow/dags
       - airflow_logs:/opt/airflow/logs
+      # hourly.parquet (4 nhóm cố định) cho retrain — sinh bởi python -m rpm_ml.data.preprocess, không nằm trong git/image
+      - ./ml/data/processed:/opt/rpm/ml/data/processed:ro
     command: scheduler
 
   # --- Giai đoạn E: backend FastAPI (profile "app"); tự chạy `alembic upgrade head` khi khởi động ---
   backend:
     build:
       context: .
-      dockerfile: backend/Dockerfile
+      dockerfile: services/backend/Dockerfile
     image: rpm-backend:latest
     container_name: rpm_backend
     profiles: ["app"]
@@ -145,7 +167,7 @@ services:
   frontend:
     build:
       context: .
-      dockerfile: frontend/Dockerfile
+      dockerfile: services/frontend/Dockerfile
     image: rpm-frontend:latest
     container_name: rpm_frontend
     profiles: ["app"]
@@ -156,11 +178,11 @@ services:
       - "3000:80"
 
   # --- Giai đoạn D: streaming (profile "app", không chạy cùng `docker compose up -d` hạ tầng) ---
-  # Trước khi chạy consumer lần đầu: tạo schema bằng Alembic (cd backend && alembic upgrade head).
+  # Trước khi chạy consumer lần đầu: tạo schema bằng Alembic (cd services/backend && alembic upgrade head).
   stream-consumer:
     build:
       context: .
-      dockerfile: streaming/Dockerfile
+      dockerfile: services/streaming/Dockerfile
     image: rpm-streaming:latest
     container_name: rpm_stream_consumer
     profiles: ["app"]
@@ -177,7 +199,7 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       MLFLOW_TRACKING_URI: http://mlflow:5000
       POSTGRES_HOST: postgres
-    command: ["consumer.py"]
+    command: ["rpm_streaming.consumer"]
 
   stream-producer:
     image: rpm-streaming:latest
@@ -189,9 +211,9 @@ services:
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     volumes:
-      # Dữ liệu phát lại sinh bởi ml/src/preprocess.py (không nằm trong git/image)
+      # Dữ liệu phát lại sinh bởi python -m rpm_ml.data.preprocess (không nằm trong git/image)
       - ./ml/data/processed:/app/ml/data/processed:ro
-    entrypoint: ["python", "producer.py"]
+    entrypoint: ["python", "-m", "rpm_streaming.producer"]
 
   prometheus:
     image: prom/prometheus:v2.54.1

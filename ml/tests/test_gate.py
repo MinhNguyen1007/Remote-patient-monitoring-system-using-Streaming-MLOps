@@ -1,4 +1,4 @@
-from gate import MIN_RECALL_CRITICAL, TARGET_RECALL_CRITICAL, evaluate_anomaly_gate, evaluate_risk_gate
+from rpm_ml.evaluation.gate import MIN_RECALL_CRITICAL, TARGET_RECALL_CRITICAL, evaluate_anomaly_gate, evaluate_risk_gate
 
 PERSISTENCE = {"macro_f1": 0.55, "recall_critical": 0.31}
 GOOD = {"macro_f1": 0.65, "recall_critical": 0.85}

@@ -1,4 +1,4 @@
-# Kết quả đánh giá mô hình (sinh tự động bởi `ml/src/evaluate.py`)
+# Kết quả đánh giá mô hình (sinh tự động bởi `python -m rpm_ml.evaluation.report`)
 
 Mọi chỉ số đo trên nhóm `test` cố định (15 bệnh nhân), trừ khi ghi khác. Không chọn lại ngưỡng hay mô hình nào trên tập test.
 
@@ -58,6 +58,8 @@ Theo từng lớp:
 |---|---|---|---|---|---|---|
 | v1 | 0,25 | validation | 0,639 | 0,730 | rejected |  |
 | v2 | 0,22 | oof_groupkfold_train_validation | 0,623 | 0,790 | passed | ✓ |
+| v3 | 0,21 | oof_groupkfold_train_validation | 0,612 | 0,803 | rejected |  |
+| v4 | 0,24 | oof_groupkfold_train_validation | 0,631 | 0,759 | rejected |  |
 
 ## 2. Nhãn proxy (NEWS2) so với tử vong tại viện
 
@@ -70,7 +72,7 @@ Toàn bộ dữ liệu, mức đợt ICU. Cả 100 bệnh nhân của bản Demo
 
 AUROC mức đợt ICU của tỷ lệ giờ CRITICAL khi phân biệt tử vong/sống sót: 0,718.
 
-## 3. Phát hiện bất thường — `anomaly_detector` v3, τ_anomaly = 0,99
+## 3. Phát hiện bất thường — `anomaly_detector` v4, τ_anomaly = 0,99
 
 ![anomaly_score](fig_anomaly_scores.png)
 

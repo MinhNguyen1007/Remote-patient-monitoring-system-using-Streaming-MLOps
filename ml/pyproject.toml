@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rpm-ml"
+version = "0.1.0"
+description = "Huấn luyện, đánh giá, drift và retrain cho hệ thống giám sát bệnh nhân từ xa"
+requires-python = ">=3.11"
+# Thư viện (phiên bản đã kiểm chứng) nằm ở requirements.txt; rpm-common cài từ packages/common
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["rpm_ml*"]

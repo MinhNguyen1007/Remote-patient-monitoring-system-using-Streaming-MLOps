@@ -1,4 +1,4 @@
-# Cài từ gốc repo: pip install -e common -r ml/requirements.txt
+# Cài từ gốc repo: pip install -e packages/common -e ml -r ml/requirements.txt
 # Phiên bản đã kiểm chứng chạy được trên máy phát triển.
 numpy==1.26.4
 pandas==2.1.4

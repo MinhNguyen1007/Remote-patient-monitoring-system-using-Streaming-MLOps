@@ -10,15 +10,15 @@
   - Giai đoạn A (thiết kế, mục 2) và Giai đoạn B (khung repo + hạ tầng Docker) đã xong, nhánh `master`.
   - 2026-09-10: **rà soát toàn bộ** thiết kế + hạ tầng + dữ liệu thật và sửa lại (commit `d25a37b`).
   - **Giai đoạn C — Dữ liệu & Model: XONG (2026-09-11).** Cả 2 mô hình có `champion` (`risk_classifier` v2, `anomaly_detector` **v3** = v2 đóng gói lại, cùng trọng số); bảng/hình cho báo cáo ở `ml/reports/evaluation.md`.
-    - `common/rpm_common`: mapping itemid, làm sạch, lưới 1 giờ, forward-fill, NEWS2 rút gọn, feature cửa sổ 6 giờ, baseline z-score, nhãn dự báo, hàm ghép `build_hourly_features`, cửa sổ 12 giờ + điểm bất thường (`anomaly.py`). 99 unit test qua, gồm test tính nhân quả (feature tại t không phụ thuộc dữ liệu sau t).
-    - `ml/src/preprocess.py` + `ml/src/split.py`, 7 test qua. Đã chạy trên dữ liệu thật và sinh ra (trong `ml/data/processed/`, không nằm trong git):
+    - `packages/common` (`rpm_common`): mapping itemid, làm sạch, lưới 1 giờ, forward-fill, NEWS2 rút gọn, feature cửa sổ 6 giờ, baseline z-score, nhãn dự báo, hàm ghép `build_hourly_features`, cửa sổ 12 giờ + điểm bất thường (`anomaly.py`). 99 unit test qua, gồm test tính nhân quả (feature tại t không phụ thuộc dữ liệu sau t).
+    - `rpm_ml/data/preprocess.py` + `split.py`, 7 test qua. Đã chạy trên dữ liệu thật và sinh ra (trong `ml/data/processed/`, không nằm trong git):
       - `hourly.parquet`: 132 đợt ICU, 14.138 giờ;
       - `stream_replay.parquet`: 20 bệnh nhân, 1.834 giờ;
       - `summary.json`.
     - File chia nhóm cố định `ml/splits/subject_split.json`: 48/15/15/20 bệnh nhân có vitals, seed 42 — **không tạo lại**.
-    - Môi trường: `.venv` ở gốc repo (tạo bằng `--system-site-packages`, đã cài `-e common`).
+    - Môi trường: `.venv` ở gốc repo (tạo bằng `--system-site-packages`, đã cài editable `packages/common`, `ml`, `services/streaming`).
   - **Mô hình dự báo rủi ro (h = 4): xong, `risk_classifier` v2 là `champion`**:
-    - Code: `ml/src/train.py` + `risk_models.py`, `metrics.py`, `gate.py`, `drift.py`; `rpm_common/risk.py`. 41 test ở `ml/` (cả 2 mô hình).
+    - Code: `rpm_ml/training/train_risk.py` + `models/risk.py`, `evaluation/metrics.py`, `evaluation/gate.py`, `drift/stats.py`; `rpm_common/risk.py`. 41 test ở `ml/` (cả 2 mô hình).
     - `τ_critical` chọn trên dự đoán out-of-fold GroupKFold của train ∪ validation (63 bệnh nhân), mục tiêu Recall CRITICAL 0,80 (`TARGET_RECALL_CRITICAL`); model cuối fit trên train.
     - CV Macro F1: Random Forest 0,622 (được chọn), Logistic Regression 0,618, XGBoost 0,608, persistence 0,565.
     - Lần chạy 1 (`τ_critical = 0,25` chọn trên validation), trên test: Macro F1 0,639, Recall CRITICAL 0,730, AUROC 0,836 (persistence: 0,547 và 0,308). **Gate từ chối** vì Recall CRITICAL < 0,80 → `risk_classifier` v1, tag `gate=rejected`.
@@ -38,21 +38,21 @@
       - tập test đã được dùng 2 lần;
       - ngưỡng gate 0,75 được hiệu chỉnh **sau khi xem kết quả test** (chi tiết ở `02_10` mục 2.10.3).
   - **Mô hình bất thường (LSTM-AE): xong, `anomaly_detector` v2 là `champion`** (2026-09-11):
-    - Code: `ml/src/train_anomaly.py`, `anomaly_model.py` (kiến trúc + wrapper pyfunc: cửa sổ z-score gốc (n, 12, 6) → `anomaly_score`), `injection.py`; `rpm_common/anomaly.py` (`make_windows`, `latest_window`, `center_windows`, ECDF).
+    - Code: `rpm_ml/training/train_anomaly.py`, `models/anomaly.py` (kiến trúc + wrapper pyfunc: cửa sổ z-score gốc (n, 12, 6) → `anomaly_score`), `evaluation/injection.py`; `rpm_common/anomaly.py` (`make_windows`, `latest_window`, `center_windows`, ECDF).
     - Cửa sổ NORMAL: train 1.146, validation 334, test 485.
     - v1 (chưa căn giữa): test Precision 0,23, Recall 0,15, AUROC 0,850, gắn cờ nhầm 5,5% → trượt gate cũ (P, R ≥ 0,7) → tag `gate=rejected`.
     - Chẩn đoán **chỉ trên train ∪ validation** (GroupKFold): tiêu chí 0,7/0,7 tại τ = 0,99 không đạt được với dữ liệu này, vì bất thường tiêm nằm trong độ biến thiên tự nhiên. Căn giữa cửa sổ làm ngưỡng ổn định hơn nhiều giữa các bệnh nhân.
     - **Người dùng chọn**: căn giữa cửa sổ theo kênh + gate **AUROC ≥ 0,75** và không kém champion (`MIN_AUROC_ANOMALY`). P/R/F1 chỉ báo cáo.
     - v2 (run `b96c9105a15f4f0a84466277e91eb1f1`), trên test: **AUROC 0,864**, Precision 0,727, Recall 0,167, F1 0,271, gắn cờ nhầm 0,7%. Recall theo loại: spike 0,25, level shift 0,19, drift 0,06.
     - **Ghi chú bắt buộc cho báo cáo 3.4/3.5**: test của mô hình bất thường đã dùng 2 lần; gate đổi sau khi xem kết quả test lần đầu; recall thấp ở τ = 0,99 (chi tiết `02_9` mục 2.9.3, `02_10` mục 2.10.3).
-  - **Đánh giá cho báo cáo** (`ml/src/evaluate.py` → `ml/reports/`, commit vào git; chạy lại khi champion đổi):
+  - **Đánh giá cho báo cáo** (`rpm_ml/evaluation/report.py` → `ml/reports/`, commit vào git; chạy lại khi champion đổi):
     - h = 1 (run log riêng, không đăng ký): model Macro F1 0,578 < persistence 0,621, dù Recall CRITICAL 0,784 so với 0,486. Ở tầm 1 giờ, persistence rất khó thắng vì vitals tự tương quan mạnh → lý do chọn h = 4.
     - SHAP lớp CRITICAL: `news2_max_6h`, `news2_score`, `respiratory_rate_mean_6h`, `heart_rate` đứng đầu.
     - Nhãn proxy: tỷ lệ giờ CRITICAL 19,1% ở đợt ICU tử vong tại viện so với 3,6% ở đợt sống sót; AUROC mức đợt 0,718.
     - Anomaly trên dữ liệu thật (không tiêm), cửa sổ test theo mức NEWS2 cao nhất trong 12 giờ: tỷ lệ gắn cờ NORMAL 0,6%, WARNING 17,4%, CRITICAL 34,8%. AUROC CRITICAL so với NORMAL 0,837 — bằng chứng thực nghiệm cho mô hình bất thường ngoài phần tiêm tổng hợp.
-  - **Giai đoạn D — Streaming: XONG (2026-09-11)**. Quy ước và lệnh ở `streaming/CLAUDE.md`.
-    - Schema DB: `backend/app/db/models.py` + Alembic migration `0001` (hypertable `vital_records`, `predictions`), đã `upgrade head` trên `rpm_db`.
-    - `streaming/`: producer (replay + `--drift`), consumer (state → `rpm_common` → 2 champion → alert chống trùng → 1 transaction DB → publish), `reset_demo.py`. 27 test, gồm test đồng nhất train/serving từng giờ trên dữ liệu thật.
+  - **Giai đoạn D — Streaming: XONG (2026-09-11)**. Quy ước và lệnh ở `services/streaming/CLAUDE.md`.
+    - Schema DB: `services/backend/app/db/models.py` + Alembic migration `0001` (hypertable `vital_records`, `predictions`), đã `upgrade head` trên `rpm_db`.
+    - `services/streaming`: producer (replay + `--drift`), consumer (state → `rpm_common` → 2 champion → alert chống trùng → 1 transaction DB → publish), `reset_demo.py`. 27 test, gồm test đồng nhất train/serving từng giờ trên dữ liệu thật.
     - E2E thật trên host: 20 bệnh nhân / 1.834 giờ → đủ 1.834 vital_records + predictions, 1.834 message predictions-stream.
       - Chỉ 28 cảnh báo (19 RISK, 9 ANOMALY) cho 507 giờ dự báo CRITICAL (chống bão cảnh báo); 0 cảnh báo OPEN trùng.
       - Xử lý khoảng 130–190 ms/message: đặc trưng ~45 ms, Random Forest ~12 ms (sau khi ép `n_jobs=1`), LSTM-AE ~64 ms.
@@ -63,11 +63,11 @@
       - `model_versions` unique `(model_name, mlflow_version)`, consumer tự đồng bộ champion (02_7);
       - `anomaly_score` sớm nhất ở `hour_index` 16, không phải giờ 12 (02_8, 02_9);
       - `DEFAULT_RISK_CRITICAL_THRESHOLD` để trống = dùng τ của champion.
-    - Docker: `streaming/Dockerfile` + service `stream-consumer`/`stream-producer` (profile `app`), `.dockerignore`. Image `rpm-streaming:latest` 4,09 GB đã build. Smoke test trong Docker đạt: 74/74 bản ghi, nạp 2 champion qua `http://mlflow:5000`.
+    - Docker: `services/streaming/Dockerfile` + service `stream-consumer`/`stream-producer` (profile `app`), `.dockerignore`. Image `rpm-streaming:latest` 4,09 GB đã build. Smoke test trong Docker đạt: 74/74 bản ghi, nạp 2 champion qua `http://mlflow:5000`.
     - **Lỗi thật tìm ra khi smoke test Docker**: `anomaly_detector` v2 log từ Windows lưu đường dẫn artifact dạng `artifactsutoencoder.keras`, Linux không mở được.
-      - Đã sửa wrapper (`artifact_path`) và đóng gói lại thành **v3** bằng `ml/src/repackage_anomaly.py`: cùng trọng số, điểm trùng khít v2 trên tập test, qua gate → champion.
+      - Đã sửa wrapper (`artifact_path`) và đóng gói lại thành **v3** bằng `rpm_ml/training/repackage_anomaly.py`: cùng trọng số, điểm trùng khít v2 trên tập test, qua gate → champion.
       - Consumer tự chuyển cờ champion v2 → v3 trong `model_versions`.
-  - **Giai đoạn E — Backend FastAPI: XONG (2026-09-11)**. API, quy ước và lệnh ở `backend/CLAUDE.md`.
+  - **Giai đoạn E — Backend FastAPI: XONG (2026-09-11)**. API, quy ước và lệnh ở `services/backend/CLAUDE.md`.
     - 25 route theo UC01–UC13:
       - JWT 3 role, phân quyền theo phân công (403);
       - chuyển trạng thái cảnh báo OPEN → ACKNOWLEDGED → RESOLVED (409 nếu sai thứ tự);
@@ -85,14 +85,14 @@
     - Sửa trong lúc làm:
       - JWT lộ trong log uvicorn (`/ws?token=`) → `RedactTokenFilter`;
       - `EmailStr` từ chối tên miền `.local` → kiểu `Email` riêng.
-    - Docker: `backend/Dockerfile` (tự chạy `alembic upgrade head`), service `backend` (profile `app`, cổng 8000), Prometheus scrape `backend:8000/metrics`. Smoke test container đạt.
+    - Docker: `services/backend/Dockerfile` (tự chạy `alembic upgrade head`), service `backend` (profile `app`, cổng 8000), Prometheus scrape `backend:8000/metrics`. Smoke test container đạt.
     - Tài khoản demo (`python -m app.seed --demo`, mật khẩu `demo12345`):
       - bs.an, bs.binh — mỗi người phụ trách nửa số bệnh nhân;
       - dd.cuong — phụ trách tất cả.
       - Admin mặc định `admin@rpm.local` / `admin12345` khi `.env` chưa có `ADMIN_*` — đổi khi triển khai.
 - **Giai đoạn F — Frontend React: XONG phần code (2026-09-11)**; người dùng tạm chấp nhận mockup (sẽ nâng cấp giao diện sau).
   - Mockup: https://claude.ai/code/artifact/06619c98-443f-4157-be37-cef16741dc5d (bản góc vuông), phân tích ở `02_8`, ảnh `docs/design/mockups/png/`.
-  - `frontend/`: Vite 8 + React 19 + TS 7 + Tailwind v4 + Base UI/CVA (template skill), đủ 8 màn hình theo mockup, route chặn theo vai trò, WebSocket tự nối lại, cập nhật realtime bằng hàm thuần (`lib/realtime.ts`). Quy ước ở `frontend/CLAUDE.md`.
+  - `services/frontend/`: Vite 8 + React 19 + TS 7 + Tailwind v4 + Base UI/CVA (template skill), đủ 8 màn hình theo mockup, route chặn theo vai trò, WebSocket tự nối lại, cập nhật realtime bằng hàm thuần (`lib/realtime.ts`). Quy ước ở `frontend/CLAUDE.md`.
   - 23 test Vitest; `npm run typecheck` và `npm run build` sạch. Đã chạy thật với backend + streaming (20 bệnh nhân): API và WebSocket qua proxy `/api` của Vite đều hoạt động.
   - Bổ sung backend để khớp mockup:
     - `latest` trả vitals sau forward-fill (trùng `vitals_filled`);
@@ -100,49 +100,79 @@
     - `news2_components` tính bằng `rpm_common.news2` (backend giờ cài `rpm_common`);
     - consumer đồng bộ thêm metric `persistence_test_*` vào `model_versions`.
     - Backend 30 test.
-  - Docker: `frontend/Dockerfile` + `nginx.conf` (proxy `/api` + WebSocket tới backend), service `frontend` cổng 3000 (profile `app`).
+  - Docker: `services/frontend/Dockerfile` + `nginx.conf` (proxy `/api` + WebSocket tới backend), service `frontend` cổng 3000 (profile `app`).
   - **Chưa soát trực quan các màn hình cần đăng nhập trên trình duyệt**: quy tắc an toàn không cho Claude tự nhập mật khẩu vào trang web. Người dùng đăng nhập ở tab trình duyệt, hoặc tự xem ở http://127.0.0.1:5173.
-- **Tạm dừng 2026-09-11 (theo yêu cầu người dùng) sau khi xong F.** Mọi container đã `docker compose --profile app down` (volume vẫn giữ: DB, MLflow registry với 2 champion, Kafka). Không còn tiến trình nền nào.
-  - Bật lại: `docker compose up -d postgres zookeeper kafka mlflow`, rồi `docker compose --profile app up -d` (hoặc chạy trên host theo `backend/`, `streaming/`, `frontend/` CLAUDE.md).
-  - **Số liệu cho báo cáo gom ở [`docs/report/ghi_chu_bao_cao.md`](docs/report/ghi_chu_bao_cao.md)** (bản đồ mục báo cáo → nguồn, phiên bản công nghệ, kết quả, hạn chế bắt buộc công khai, tài liệu tham khảo). Cập nhật file đó sau G và H.
-- **Việc tiếp theo**: **Giai đoạn G — MLOps vận hành** (bám `02_9` mục 2.9.4–2.9.5, `02_3` mục 2.3.3):
-  1. DAG Airflow `drift_check` (PSI/KS trên 24 giờ dữ liệu streaming gần nhất so với `reference_stats.json` của champion, ghi `drift_reports`, PSI ≥ 0,25 → trigger `retrain_pipeline`, chống vòng lặp 1 giờ, thông báo Admin).
-  2. DAG `retrain_pipeline` (train challenger 2 mô hình trên train + dữ liệu stream đã có nhãn, gate trên cùng test cố định, chuyển alias, ghi `model_versions` kể cả bị từ chối). Image Airflow cần thêm thư viện ML (cùng phiên bản MLflow 3.11.1).
-  3. Kiểm chứng: producer `--drift` → drift được phát hiện → retrain tự động; nút retrain trên giao diện (UC10) chạy được.
-  4. Sau G: Giai đoạn H (integration/E2E tự động, kiểm thử phi chức năng p95 < 2 giây, soát giao diện), rồi I (báo cáo).
+- **Giai đoạn G — MLOps vận hành: XONG (2026-09-11)**, kiểm chứng thật trên Docker Compose. Chi tiết số liệu: `docs/report/ghi_chu_bao_cao.md` mục 3.4(d) và hạn chế 11–14.
+  - **Hai quyết định mới của người dùng** (đã ghi vào 02_9 mục 2.9.4):
+    - Ngưỡng drift **hiệu chỉnh theo từng đặc trưng** (sàn 0,25, tỷ lệ báo nhầm ≈ 5%/lần kiểm tra), thay cho "max PSI ≥ 0,25". Lý do: với cửa sổ ~20 bệnh nhân, ngưỡng chung gắn cờ 93% cửa sổ không drift. Ngưỡng log thành `drift_thresholds.json` cạnh `reference_stats.json` mỗi lần train/retrain; champion v2 được bổ sung bằng `drift_detect.py backfill-thresholds`.
+    - `drift_check` chạy **2 phút/lần** (= 24 giờ dữ liệu ở tốc độ mặc định). Cửa sổ phải đủ 24 nhịp và ≥ 200 bản ghi; không có dữ liệu mới thì bỏ qua.
+    - Thông báo Admin qua Kafka topic `mlops-events` → backend (email + WebSocket); email chỉ khi bắt đầu đợt drift mới hoặc đã kích hoạt retrain.
+  - Code: `rpm_ml` drift/detect, pipelines/retrain, pipelines/policy, data/stream_data, storage/db, storage/events; `training/train_risk.py`/`train_anomaly.py` tách thành `train_risk_model`/`train_anomaly_model` dùng chung. DAG ở `infra/airflow/dags/`. Image `infra/Dockerfile.airflow` (Airflow 2.9.3-python3.11 + venv `/opt/rpm-venv`, bỏ shap/pytest vì shap 0.51 cần numpy ≥ 2). Backend: migration `0002`, listener tự tạo topic trước khi subscribe. Frontend: tab Giám sát mô hình tự làm mới, hiện lý do gate.
+  - Test: common 99, ml 61, streaming 27, backend 34, frontend 23 (tổng 244).
+  - **Kết quả chạy thật**:
+    - phát lại sạch → 2 lần kiểm tra, không drift;
+    - `--drift` → drift SpO2 → tự retrain → risk v3 **từ chối** (Macro F1 0,612 < 0,623), anomaly v4 promote (bằng điểm v3, do lúc đó chưa có dữ liệu stream mới — đã sửa bằng điều kiện 24 nhịp);
+    - chạy lại → bị chặn bởi cooldown 1 giờ, không gửi email lặp;
+    - UC10 qua API → risk v4 từ chối (Macro F1 0,631 nhưng Recall CRITICAL 0,759 < 0,790), anomaly v5 từ chối (AUROC 0,853 < 0,864).
+  - **Champion hiện tại**: `risk_classifier` v2, `anomaly_detector` **v4**. `ml/reports/` đã sinh lại.
+  - Nếu bật lại mà các lần drift bị chặn, kiểm tra cooldown 1 giờ tính từ lần retrain gần nhất.
+- **Tổ chức lại toàn bộ repo (2026-09-11, người dùng yêu cầu — thấy cấu trúc cũ rối)**: `services/{backend,frontend,streaming}`, `packages/common`, `ml/src/rpm_ml/{data,models,training,evaluation,drift,pipelines,storage}`, `rpm_streaming/{producer,consumer,kafka,storage}`, dataset chuyển vào `ml/data/raw/`, script chạy dạng `python -m`. Chi tiết ở mục "Cấu trúc thư mục" bên dưới và `README.md` (viết lại).
+  - Đã kiểm chứng: 244 test qua; 4 image build lại và chạy trong Docker; model anomaly log bằng code mới nạp được trong container consumer (không cài `rpm_ml`); DAG `drift_check` và bước `build` của retrain chạy trong container.
+  - `.venv` đã cài lại editable theo đường dẫn mới (`packages/common`, `ml`, `services/streaming`). Máy/phiên khác phải cài lại như vậy.
+- **Tạm dừng 2026-09-11 (theo yêu cầu người dùng) sau Giai đoạn G + tổ chức lại repo**, đã commit. Mọi container đã `docker compose --profile app down` (volume vẫn giữ: DB, MLflow registry, Airflow DB).
+  - Bật lại: `docker compose up -d postgres zookeeper kafka mlflow`, `docker compose up -d airflow-webserver airflow-scheduler`, `docker compose --profile app up -d`.
+  - DB đang chứa dữ liệu của lần phát lại `--drift` cuối (72 nhịp). Trước khi đo/demo mới: dừng consumer rồi `python -m rpm_streaming.storage.reset_demo --yes`.
+  - **Số liệu cho báo cáo gom ở [`docs/report/ghi_chu_bao_cao.md`](docs/report/ghi_chu_bao_cao.md)** (bản đồ mục báo cáo → nguồn, phiên bản công nghệ, kết quả, hạn chế bắt buộc công khai, tài liệu tham khảo). Cập nhật file đó sau H.
+- **Việc tiếp theo**: **Giai đoạn H — kiểm thử tích hợp & phi chức năng** (bám `02_10` mục 2.10.2, 2.10.4):
+  1. Integration/E2E tự động cho các luồng ở 2.10.2 (streaming → prediction → alert, sự kiện → WebSocket/email, retrain, nạp lại model khi đổi alias).
+  2. Đo độ trễ đầu–cuối p95 < 2 giây (20 bệnh nhân, tốc độ mặc định); chịu lỗi backend/consumer.
+  3. Soát giao diện thật (người dùng đăng nhập; chụp ảnh các màn hình, gồm tab Giám sát mô hình sau drift) cho báo cáo.
+  4. Sau H: Giai đoạn I (viết báo cáo mục 1–5, rồi mục 6 khi có mẫu Word).
 - **Quyết định đã chốt sau rà soát 2026-09-10** (người dùng đã duyệt):
   - Model rủi ro là **dự báo** mức NEWS2 cao nhất trong 4 giờ tới, không phân loại tức thời. Phân loại tức thời bị rò rỉ nhãn vì nhãn là hàm tất định của đặc trưng. Model phải thắng baseline persistence.
-  - Drift với PSI ≥ 0,25 → **tự động** kích hoạt retrain; quality gate chặn model kém; Admin vẫn retrain thủ công được.
+  - Drift → **tự động** kích hoạt retrain; quality gate chặn model kém; Admin vẫn retrain thủ công được. (Ngưỡng drift đổi thành ngưỡng hiệu chỉnh theo từng đặc trưng ngày 2026-09-11, xem Giai đoạn G.)
   - **Điều dưỡng được phân công như bác sĩ** (bảng `patient_assignments` nhiều–nhiều). Bác sĩ/điều dưỡng chỉ xem và nhận cảnh báo của bệnh nhân được phân công; Admin quản lý phân công (UC13).
-- **Dataset**: đã tải MIMIC-III Clinical Database Demo v1.4 tại `mimic-iii-clinical-database-demo-1.4_data/` (thư mục gốc repo, đã bị `.gitignore` loại, KHÔNG nằm trong git). Mô tả đầy đủ dataset + lý do chọn: [`ml/README.md`](ml/README.md). Mô tả chi tiết ý nghĩa toàn bộ 26 file CSV và từng cột: [`ml/data_dictionary.md`](ml/data_dictionary.md). Thư mục dataset có thể chưa tồn tại trên máy khác/session khác — nếu không thấy, người dùng cần tải lại từ PhysioNet theo hướng dẫn trong `ml/README.md`.
+- **Dataset**: đã tải MIMIC-III Clinical Database Demo v1.4 tại `ml/data/raw/mimic-iii-clinical-database-demo-1.4/` (chuyển từ gốc repo vào đây ngày 2026-09-11; `.gitignore` loại, KHÔNG nằm trong git). Mô tả đầy đủ dataset + lý do chọn: [`ml/README.md`](ml/README.md). Mô tả chi tiết ý nghĩa toàn bộ 26 file CSV và từng cột: [`ml/data_dictionary.md`](ml/data_dictionary.md). Thư mục dataset có thể chưa tồn tại trên máy khác/session khác — nếu không thấy, người dùng cần tải lại từ PhysioNet theo hướng dẫn trong `ml/README.md`.
 - **Hạ tầng Docker**: đã sửa và **smoke test thật** ngày 2026-09-10, rồi `docker compose down` (volume vẫn giữ):
   - Kafka: produce/consume từ host qua `localhost:29092`.
   - MLflow 3.11.1: log model từ host → artifact nằm trong volume qua proxy `mlflow-artifacts:/`; đăng ký + alias `champion`; container khác tải được model qua `http://mlflow:5000` (cần `--allowed-hosts`).
   - Airflow: `airflow-init` chạy xong trước webserver/scheduler; REST API với basic auth → 200; không còn DAG ví dụ.
   - Đã nâng schema `mlflow_db` lên 3.x và sửa `artifact_location` của experiment `Default`. **Khi đổi phiên bản MLflow phải chạy `mlflow db upgrade`** trên `mlflow_db` trước khi khởi động server.
-  - File `.env` trên máy đã có đủ biến của `.env.example` (bổ sung ở Giai đoạn D/E); chưa đặt `ADMIN_*` nên Admin dùng mật khẩu mặc định.
+  - File `.env` trên máy đã có đủ biến của `.env.example` (bổ sung ở Giai đoạn D/E/G); chưa đặt `ADMIN_*` nên Admin dùng mật khẩu mặc định.
 - **Còn phụ thuộc người dùng**: file mẫu báo cáo Word (.docx) của trường — chưa có, chỉ chặn bước cuối cùng (mục 6), không chặn code.
 
 ## Kiến trúc tổng quan
 
 ```
-MIMIC-III Demo → preprocess (common/rpm_common, lưới 1 giờ) → Kafka producer (replay nhóm stream) → topic vitals-stream
-  → Stream consumer: feature (common/rpm_common) → [Dự báo rủi ro 4h tới | LSTM-AE anomaly] + alert (chống trùng)
+MIMIC-III Demo → preprocess (rpm_common, lưới 1 giờ) → Kafka producer (replay nhóm stream) → topic vitals-stream
+  → Stream consumer: feature (rpm_common) → [Dự báo rủi ro 4h tới | LSTM-AE anomaly] + alert (chống trùng)
   → PostgreSQL+TimescaleDB  +  topic predictions-stream / alerts-stream
   → FastAPI backend (REST + WebSocket + JWT, gửi email tới người được phân công) → React dashboard (realtime)
 Song song: MLflow (tracking + registry, alias champion/challenger) ← training pipeline
-           Airflow DAG drift_check (PSI/KS) → tự động trigger DAG retrain_pipeline → quality gate → chuyển alias champion
+           Airflow DAG drift_check (PSI/KS, ngưỡng hiệu chỉnh) → tự động trigger DAG retrain_pipeline → quality gate → chuyển alias champion
+           Airflow → topic mlops-events → backend → WebSocket + email cho Admin
 ```
 
 Chi tiết từng sơ đồ: `docs/design/02_1_so_do_chuc_nang.md` … `02_10_thiet_ke_test.md`.
 
 ## Cấu trúc thư mục & module CLAUDE.md riêng
 
-- `backend/CLAUDE.md` — quy ước API, DB models, cách thêm endpoint/model mới
-- `frontend/CLAUDE.md` — quy ước component, design system (CS:GO theme tùy biến), state management
-- `ml/CLAUDE.md` — quy ước train/evaluate model, cách log vào MLflow
-- `common/` — package `rpm_common` dùng chung cho `ml/` và `streaming/` (quy ước ở `ml/CLAUDE.md`)
-- `streaming/CLAUDE.md` — Kafka producer + stream consumer, thứ tự xử lý 1 message, lệnh chạy
+Tổ chức lại ngày 2026-09-11 theo yêu cầu người dùng (gọn, chia theo chức năng). Tổng quan cho người đọc: `README.md`.
+
+```
+services/backend/       FastAPI — services/backend/CLAUDE.md (API, DB models, migration, sự kiện realtime, email)
+services/frontend/      React   — services/frontend/CLAUDE.md (design system CS:GO tùy biến, góc vuông, realtime)
+services/streaming/     Kafka   — services/streaming/CLAUDE.md (package rpm_streaming: producer/ consumer/ kafka/ storage/)
+ml/                     ML/MLOps — ml/CLAUDE.md (package rpm_ml: data/ models/ training/ evaluation/ drift/ pipelines/ storage/)
+packages/common/        rpm_common — đặc trưng dùng chung cho ml/ và services/streaming (quy ước ở ml/CLAUDE.md)
+infra/                  Dockerfile MLflow/Airflow, DAG Airflow (infra/airflow/dags), Prometheus/Grafana, init Postgres
+docs/                   design/ (thiết kế mục 1–2), report/ (ghi chú viết báo cáo)
+```
+
+- Ba package Python cài editable vào `.venv`: `rpm_common` (`packages/common`), `rpm_ml` (`ml`), `rpm_streaming` (`services/streaming`); script chạy dạng `python -m <package>.<module>`.
+- Mọi Dockerfile dùng build context = gốc repo và **giữ đúng bố cục thư mục như trong repo** trong image (vd `/app/services/streaming/src`), vì đường dẫn dữ liệu tính từ vị trí file.
+- Model `anomaly_detector` ≤ v5 mang file wrapper tên cũ (`anomaly_model.py`) và vẫn nạp được; version mới chụp kèm khung `rpm_ml/models/anomaly.py` (`serving_code_paths`).
+- `.vscode/settings.json` (có trong git) ẩn `__pycache__`, `.pytest_cache`, `node_modules`, `.venv` khỏi Explorer.
 
 ## Nguyên tắc chung khi code phần này
 
@@ -150,9 +180,9 @@ Chi tiết từng sơ đồ: `docs/design/02_1_so_do_chuc_nang.md` … `02_10_th
 - **Thiết kế đã có trước, code bám theo thiết kế** — nếu code cần lệch khỏi sơ đồ trong `docs/design/`, phải cập nhật lại tài liệu thiết kế tương ứng, không để lệch nhau.
 - **Patient-level split theo `subject_id`**: 4 nhóm cố định train/validation/test/stream. Không bao giờ để cùng 1 bệnh nhân ở 2 nhóm; `test` chỉ dùng cho quality gate (xem `docs/design/02_9_thiet_ke_giai_thuat.md` mục 2.9.1c).
 - **Không rò rỉ thông tin tương lai**: nhãn rủi ro là nhãn dự báo; mọi feature tại t chỉ dùng dữ liệu ≤ t; chỉ forward-fill, không nội suy.
-- **Một nguồn code feature duy nhất**: mọi tính toán feature nằm trong `common/rpm_common`, không copy sang `ml/` hay `streaming/` (tránh lệch giữa lúc train và lúc chạy thật).
+- **Một nguồn code feature duy nhất**: mọi tính toán feature nằm trong `packages/common` (`rpm_common`), không copy sang `ml/` hay `services/streaming` (tránh lệch giữa lúc train và lúc chạy thật).
 - **Champion–Challenger**: model mới chỉ nhận alias `champion` trên MLflow khi đạt quality gate. Gate gồm: ngưỡng tuyệt đối ở `02_10` mục 2.10.3, thắng baseline persistence, không kém champion trên cùng tập test. Không dùng stage `Production` (đã lỗi thời).
-- **Cùng một phiên bản MLflow** (`3.11.1`) cho server (`infra/Dockerfile.mlflow`) và mọi client (`ml/`, `streaming/`, Airflow).
+- **Cùng một phiên bản MLflow** (`3.11.1`) cho server (`infra/Dockerfile.mlflow`) và mọi client (`ml/`, `services/streaming`, Airflow).
 - Style giao diện: nền dark-theme lấy cảm hứng từ `csgo-case-opening-design` skill, tùy biến thêm màu ngữ nghĩa lâm sàng (xanh/vàng/đỏ theo risk level) — xem `docs/design/02_8_thiet_ke_giao_dien.md`. Không tự ý đổi sang theme y tế "an toàn" thông thường trừ khi người dùng yêu cầu lại.
 
 ## Lệnh hay dùng
@@ -160,36 +190,31 @@ Chi tiết từng sơ đồ: `docs/design/02_1_so_do_chuc_nang.md` … `02_10_th
 ```bash
 # Hạ tầng nền (Kafka từ host: localhost:29092; trong mạng docker: kafka:9092)
 docker compose up -d postgres zookeeper kafka mlflow prometheus grafana
-docker compose up -d airflow-webserver airflow-scheduler   # tự chạy airflow-init trước
+docker compose up -d airflow-webserver airflow-scheduler   # tự chạy airflow-init trước; image rpm-airflow (build lần đầu ~10 phút)
+docker compose build airflow-scheduler                      # sau khi sửa ml/src hoặc packages/common (code ML nằm trong image)
+docker compose --profile app up -d                          # backend :8000, frontend :3000, stream-consumer
 
-# Backend (chi tiết ở backend/CLAUDE.md; trên host cần POSTGRES_HOST=localhost KAFKA_BOOTSTRAP_SERVERS=localhost:29092)
-cd backend && ../.venv/Scripts/python -m uvicorn app.main:app --reload --port 8000
-
-# Frontend (khi đã có code, Giai đoạn F)
-cd frontend && npm run dev
-
-# Test backend (cần postgres đang chạy; tự tạo DB rpm_test)
-cd backend && ../.venv/Scripts/python -m pytest -q
-
-# Môi trường Python (một lần, từ gốc repo)
+# Môi trường Python (một lần, từ gốc repo); cài package nội bộ không cần mạng: thêm --no-build-isolation --no-deps
 python -m venv .venv
-.venv\Scripts\python -m pip install -e common -r ml/requirements.txt
+.venv\Scripts\python -m pip install -e packages/common -e ml -e services/streaming -r ml/requirements.txt
 
-# Test phần dữ liệu (Giai đoạn C)
-cd common && ..\.venv\Scripts\python -m pytest -q && cd ..
+# Test (từ gốc repo; backend cần postgres đang chạy, tự tạo DB rpm_test)
+cd packages/common && ..\..\.venv\Scripts\python -m pytest -q && cd ..\..
 cd ml && ..\.venv\Scripts\python -m pytest -q && cd ..
+cd services/streaming && ..\..\.venv\Scripts\python -m pytest -q && cd ..\..
+cd services/backend && ..\..\.venv\Scripts\python -m pytest -q && cd ..\..
+cd services/frontend && npm run test && cd ..\..
 
-# Tiền xử lý dữ liệu → ml/data/processed/
-.venv\Scripts\python ml/src/preprocess.py
+# Dữ liệu và model — trên host cần MLFLOW_TRACKING_URI=http://localhost:5000
+.venv\Scripts\python -m rpm_ml.data.preprocess            # → ml/data/processed/
+.venv\Scripts\python -m rpm_ml.training.train_risk        # mô hình rủi ro
+.venv\Scripts\python -m rpm_ml.training.train_anomaly     # LSTM-Autoencoder
+.venv\Scripts\python -m rpm_ml.evaluation.report          # bảng/hình báo cáo → ml/reports/
 
-# Schema DB (Alembic, từ backend/) và streaming — chi tiết ở streaming/CLAUDE.md
-cd backend && POSTGRES_HOST=localhost ../.venv/Scripts/python -m alembic upgrade head && cd ..
-KAFKA_BOOTSTRAP_SERVERS=localhost:29092 MLFLOW_TRACKING_URI=http://localhost:5000 POSTGRES_HOST=localhost .venv/Scripts/python streaming/src/consumer.py
-KAFKA_BOOTSTRAP_SERVERS=localhost:29092 .venv/Scripts/python streaming/src/producer.py --seconds-per-hour 1
-cd streaming && ..\.venv\Scripts\python -m pytest -q && cd ..
-
-# Train model — chạy trên host cần MLFLOW_TRACKING_URI=http://localhost:5000
-.venv\Scripts\python ml/src/train.py            # mô hình rủi ro
-.venv\Scripts\python ml/src/train_anomaly.py    # LSTM-Autoencoder
-.venv\Scripts\python ml/src/evaluate.py         # bảng/hình báo cáo → ml/reports/
+# Schema DB và chạy backend/streaming trên host (POSTGRES_HOST=localhost KAFKA_BOOTSTRAP_SERVERS=localhost:29092)
+cd services/backend && POSTGRES_HOST=localhost ../../.venv/Scripts/python -m alembic upgrade head && cd ../..
+cd services/backend && ../../.venv/Scripts/python -m uvicorn app.main:app --reload --port 8000
+KAFKA_BOOTSTRAP_SERVERS=localhost:29092 MLFLOW_TRACKING_URI=http://localhost:5000 POSTGRES_HOST=localhost .venv/Scripts/python -m rpm_streaming.consumer
+KAFKA_BOOTSTRAP_SERVERS=localhost:29092 .venv/Scripts/python -m rpm_streaming.producer --seconds-per-hour 1
+cd services/frontend && npm run dev
 ```

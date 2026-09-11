@@ -1,6 +1,6 @@
 # 2.9. Thiết kế giải thuật
 
-Mọi con số về dữ liệu trong mục này được đo trực tiếp trên MIMIC-III Clinical Database Demo v1.4 (xem `ml/README.md`). Toàn bộ mã tiền xử lý và tính đặc trưng nằm trong **một package Python dùng chung** (`common/rpm_common`), được cả pipeline huấn luyện (`ml/`) và consumer streaming (`streaming/`) import — đảm bảo lúc huấn luyện và lúc suy luận thời gian thực tính đặc trưng giống hệt nhau (tránh *training–serving skew*).
+Mọi con số về dữ liệu trong mục này được đo trực tiếp trên MIMIC-III Clinical Database Demo v1.4 (xem `ml/README.md`). Toàn bộ mã tiền xử lý và tính đặc trưng nằm trong **một package Python dùng chung** (`packages/common` (`rpm_common`)), được cả pipeline huấn luyện (`ml/`) và consumer streaming (`services/streaming`) import — đảm bảo lúc huấn luyện và lúc suy luận thời gian thực tính đặc trưng giống hệt nhau (tránh *training–serving skew*).
 
 ## 2.9.1. Tiền xử lý dữ liệu và Feature Engineering
 
@@ -94,7 +94,7 @@ Nếu bỏ quy tắc "một thông số 3 điểm", 13,9% số giờ dữ liệu
   - Các đặc trưng cửa sổ 6 giờ và Δ1h.
   - Ngữ cảnh (mục 2.9.1e).
 - **Mô hình**:
-  - **Baseline persistence** (bắt buộc so sánh): dự báo = mức NEWS2 hiện tại. Mô hình học máy chỉ có ý nghĩa khi thắng baseline này. Kết quả đo trên dữ liệu thật (đầu ra của `ml/src/preprocess.py`):
+  - **Baseline persistence** (bắt buộc so sánh): dự báo = mức NEWS2 hiện tại. Mô hình học máy chỉ có ý nghĩa khi thắng baseline này. Kết quả đo trên dữ liệu thật (đầu ra của `rpm_ml.data.preprocess`):
 
     | Horizon | Tập | Accuracy | Macro F1 | Recall CRITICAL |
     |---|---|---|---|---|
@@ -144,44 +144,59 @@ Nếu bỏ quy tắc "một thông số 3 điểm", 13,9% số giờ dữ liệu
 
 ## 2.9.4. Drift Detection
 
-- **Đặc trưng theo dõi**: 6 vitals và tổng NEWS2 (7 đặc trưng).
-- **Phân phối tham chiếu**: phân phối trên tập huấn luyện của **model champion hiện tại**, lưu thành artifact `reference_stats.json` (mốc chia bin + tỷ lệ mỗi bin) khi model được đăng ký.
-- **Cửa sổ hiện tại**: 24 giờ dữ liệu streaming gần nhất của tất cả bệnh nhân đang được phát lại. Cần tối thiểu 200 bản ghi, nếu không thì bỏ qua lần kiểm tra.
+- **Đặc trưng theo dõi**: 6 vitals (giá trị sau forward-fill) và tổng NEWS2 (7 đặc trưng), dựng lại từ `vital_records` bằng `rpm_common` giống hệt lúc huấn luyện.
+- **Phân phối tham chiếu**: phân phối trên tập huấn luyện của **`risk_classifier` champion hiện tại**, lưu thành artifact `reference_stats.json` (mốc chia bin + tỷ lệ mỗi bin + mẫu con cho KS) khi model được log. Lần đầu là nhóm `train`; sau retrain là `train` + dữ liệu stream đã dùng để huấn luyện.
+- **Cửa sổ hiện tại**: 24 giờ dữ liệu streaming gần nhất của tất cả bệnh nhân đang được phát lại.
+  - Producer gửi giờ thứ k của mọi bệnh nhân trong cùng một nhịp với cùng `recorded_at`, nên cửa sổ = các bản ghi có `recorded_at` thuộc **24 nhịp mới nhất**, không phụ thuộc tốc độ phát lại.
+  - Bỏ qua lần kiểm tra (không ghi báo cáo) khi: chưa có champion; cửa sổ **chưa đủ 24 nhịp** (đầu lần phát lại — ngưỡng được hiệu chỉnh trên cửa sổ đủ 24 giờ nên cửa sổ ngắn hơn không so được); cửa sổ dưới **200 bản ghi**; hoặc không có dữ liệu mới kể từ lần kiểm tra trước (cùng `window_end`).
+  - Điều kiện 24 nhịp được thêm sau lần chạy thật đầu tiên (2026-09-11): drift được kết luận ở nhịp 16, retrain chỉ có 316 giờ stream và 0 cửa sổ NORMAL mới cho LSTM-AE.
+  - Đo trên dữ liệu thật: các đợt ICU nhóm `stream` dài 12–365 giờ, nên cửa sổ chỉ đủ ≥ 200 bản ghi ở nhịp 24–55 của lần phát lại (446 bản ghi ở nhịp 24, 244 ở nhịp 48, 193 ở nhịp 60).
 - **PSI** cho từng đặc trưng:
 
   `PSI = Σ (actual_pct_i − expected_pct_i) × ln(actual_pct_i / expected_pct_i)`
 
   - 10 bin theo các mốc thập phân vị (decile) của phân phối tham chiếu; bin đầu/cuối mở rộng ra ±∞.
   - Bin có tỷ lệ bằng 0 được thay bằng ε = 1e-4 để tránh chia cho 0 hoặc `ln(0)`.
-- **KS-test**: tính thống kê D hai mẫu cho biến liên tục để kiểm chứng chéo và hiển thị trong báo cáo drift. Không dùng p-value để ra quyết định, vì với số mẫu lớn, chênh lệch rất nhỏ cũng "có ý nghĩa thống kê".
-- **Ngưỡng quyết định** (theo max PSI giữa các đặc trưng):
-
-  | PSI | Kết luận | Hành động |
-  |---|---|---|
-  | < 0,1 | Không đáng kể | — |
-  | 0,1 – < 0,25 | Lệch trung bình | Ghi vào `drift_reports`, không hành động |
-  | ≥ 0,25 | Lệch đáng kể | `drift_detected = true` → gửi thông báo cho Admin (email + tab Giám sát mô hình) và **tự động kích hoạt retrain** (mục 2.9.5) |
-- **Tần suất chạy**: Airflow DAG `drift_check` chạy theo lịch (mặc định 10 phút/lần khi demo, vì 1 giờ dữ liệu chỉ được phát trong vài giây), có thể chạy thủ công.
-- **Kịch bản drift cho demo/kiểm thử**: dữ liệu `stream` cùng phân phối với `train`, nên bình thường sẽ không có drift. Producer có chế độ `--drift` áp một độ lệch có kiểm soát lên một nhóm bệnh nhân được phát lại (ví dụ HR +15 bpm, SpO2 −3%), mô phỏng thay đổi thiết bị đo hoặc quần thể bệnh nhân. Báo cáo ghi rõ đây là drift mô phỏng.
+- **KS-test**: tính thống kê D hai mẫu để kiểm chứng chéo và hiển thị trong báo cáo drift. Không dùng p-value để ra quyết định, vì với số mẫu lớn, chênh lệch rất nhỏ cũng "có ý nghĩa thống kê".
+- **Mức lệch để hiển thị** (thang PSI thông dụng): < 0,1 không đáng kể; 0,1 – < 0,25 trung bình; ≥ 0,25 đáng kể.
+- **Ngưỡng quyết định drift — hiệu chỉnh theo từng đặc trưng** (hiệu chỉnh 2026-09-11, người dùng chọn):
+  - **Vấn đề của ngưỡng chung 0,25**: ngưỡng 0,1/0,25 giả định mẫu lớn và độc lập. Một cửa sổ ở đây chỉ gồm ~20 bệnh nhân × 24 giờ, các giờ của cùng bệnh nhân tương quan mạnh, nên chỉ riêng khác biệt giữa các bệnh nhân đã đẩy PSI lên cao. Đo trên cửa sổ không có drift cùng hình dạng lần phát lại (lấy từ bệnh nhân không nằm trong tham chiếu, GroupKFold trên `train ∪ validation`), quy tắc "max PSI ≥ 0,25" gắn cờ **93%** số cửa sổ. Nếu giữ quy tắc này, hệ thống retrain liên tục dù không có drift.
+  - **Cách hiệu chỉnh** (`rpm_ml/drift/stats.py`, `calibrate_thresholds`), chỉ dùng dữ liệu phát triển (nhóm huấn luyện ∪ `validation`, không bao giờ dùng `test`):
+    1. GroupKFold 5 fold theo `subject_id`. Mỗi fold dựng tham chiếu từ 4 fold còn lại.
+    2. Lấy ngẫu nhiên tối đa 20 đợt ICU (= số bệnh nhân nhóm `stream`) của fold bị giữ lại, 150 lần. Mọi đợt cùng bắt đầu ở giờ 0, cửa sổ 24 giờ kết thúc ở các nhịp 24, 28, … khi còn ≥ 200 bản ghi — đúng hình dạng cửa sổ lúc phát lại.
+    3. Ngưỡng của mỗi đặc trưng = max(0,25; phân vị q của PSI không drift của đặc trưng đó). Cùng một q cho mọi đặc trưng, chọn bằng tìm nhị phân sao cho tỷ lệ cửa sổ không drift bị gắn cờ (bất kỳ đặc trưng nào) ≈ **5%**.
+  - Ngưỡng được tính tự động mỗi lần train/retrain và log thành artifact `drift_thresholds.json` cạnh `reference_stats.json`. Champion train trước khi có bước này được bổ sung bằng `python -m rpm_ml.drift.detect backfill-thresholds` (chỉ thêm file vào run, model không đổi).
+  - **Kết luận drift** (`drift_detected = true`) khi có ít nhất một đặc trưng có PSI ≥ ngưỡng của nó. Khi đó:
+    - gửi thông báo cho Admin (email + tab Giám sát mô hình, xem 2.4.4);
+    - **tự động kích hoạt retrain** (mục 2.9.5).
+  - Kết quả đo thử (tham chiếu nhóm `train`, 2026-09-11): ngưỡng thu được từ 0,45 (DBP) tới 1,80 (HR), SpO2 0,745. Dữ liệu `stream` sạch không bị gắn cờ ở nhịp nào trong 24–52. Với `--drift` trên 50% bệnh nhân, lần kiểm tra nào cũng bị gắn cờ (SpO2 PSI 0,82–1,61).
+- **Tần suất chạy**: Airflow DAG `drift_check` chạy **2 phút/lần** (biến `DRIFT_CHECK_INTERVAL_MINUTES`), có thể chạy thủ công.
+  - Ở tốc độ phát lại mặc định (5 giây/giờ dữ liệu), 2 phút = đúng 24 giờ dữ liệu: các lần kiểm tra liên tiếp phủ các cửa sổ nối tiếp, không chồng lấp và không bỏ sót.
+  - Lịch 10 phút ban đầu bị bỏ, vì vùng có ≥ 200 bản ghi (nhịp 24–55) chỉ kéo dài ~2,7 phút nên thường bị bỏ lỡ hoàn toàn.
+- **Thông báo Admin**: DAG publish sự kiện `drift_report` lên Kafka topic `mlops-events`; backend đẩy WebSocket cho mọi Admin và gửi email khi `notify_admin = true`, tức khi **bắt đầu một đợt drift mới** (lần kiểm tra trước không có drift) hoặc **lần này đã kích hoạt retrain**. Drift kéo dài không gửi email lặp mỗi lần kiểm tra — cùng tinh thần chống bão cảnh báo ở 2.9.6.
+- **Kịch bản drift cho demo/kiểm thử**: dữ liệu `stream` cùng phân phối với `train`, nên bình thường sẽ không có drift. Producer có chế độ `--drift` áp một độ lệch có kiểm soát lên một nhóm bệnh nhân được phát lại (HR +15 bpm, SpO2 −3%), mô phỏng thay đổi thiết bị đo hoặc quần thể bệnh nhân. Báo cáo ghi rõ đây là drift mô phỏng.
+- **Hạn chế cần nêu ở 3.5**: ngưỡng được hiệu chỉnh cho đúng hình dạng cửa sổ của bản Demo (~20 bệnh nhân). Với số bệnh nhân lớn hơn, cửa sổ ổn định hơn và ngưỡng hiệu chỉnh sẽ tự giảm về gần 0,25. Tỷ lệ báo nhầm 5% là trên từng cửa sổ không drift của dữ liệu phát triển, chưa phải trên dữ liệu vận hành thật.
 
 ## 2.9.5. Chiến lược Retrain (Champion–Challenger)
 
 **Kích hoạt**:
-- **Tự động** khi `drift_check` phát hiện drift (PSI ≥ 0,25).
+- **Tự động** khi `drift_check` kết luận drift (mục 2.9.4).
 - **Thủ công** khi Admin bấm "Kích hoạt huấn luyện lại" (UC10).
-- Chống vòng lặp: không kích hoạt tự động nếu đang có một lần retrain chạy, hoặc lần retrain gần nhất mới kết thúc trong vòng 1 giờ.
-- Sau khi model mới được promote, phân phối tham chiếu đổi theo model mới nên PSI giảm lại.
+- Chống vòng lặp: không kích hoạt tự động nếu đang có một lần retrain chạy (trạng thái `queued`/`running`), hoặc lần retrain gần nhất (kể cả lần thủ công hay thất bại) mới kết thúc trong vòng 1 giờ.
+- Sau khi model rủi ro mới được promote, phân phối tham chiếu và ngưỡng drift đổi theo model mới.
 
-**Dữ liệu retrain**: nhóm `train` cố định + dữ liệu đã tích lũy từ nhóm `stream` có nhãn đã "chín" (đủ h giờ phía sau). Nhóm `validation` và `test` **không bao giờ đổi**.
+**Dữ liệu retrain**: nhóm `train` cố định + dữ liệu đã tích lũy từ nhóm `stream`. Nhóm `validation` và `test` **không bao giờ đổi**.
+- Dữ liệu stream được dựng lại từ `vital_records` (giá trị đo chưa điền) bằng đúng đường tính của lúc huấn luyện: lưới giờ → forward-fill → `build_hourly_features` → nhãn dự báo. Chỉ những giờ đã "chín" (đủ h giờ phía sau trong phần đã phát) mới có nhãn. Có test so khớp với `hourly.parquet`.
+- Chỉ phần đã thực sự phát được dùng; phần chưa phát của đợt ICU nhóm `stream` (có sẵn trong `hourly.parquet`) không bao giờ vào huấn luyện.
+- Mô hình rủi ro: dùng lại **nguyên quy trình huấn luyện ban đầu** (`train_risk_model`): chọn họ mô hình và `τ_critical` bằng GroupKFold trên (`train` + `stream`) ∪ `validation`, model cuối huấn luyện trên `train` + `stream`.
+- Mô hình bất thường: huấn luyện trên cửa sổ NORMAL của `train` + `stream`; early stopping và ECDF vẫn trên `validation`. σ của phần tiêm bất thường **vẫn lấy từ nhóm `train` cố định**, nên tập test đã tiêm không đổi giữa các lần.
 
-**Các bước của Airflow DAG `retrain_pipeline`**:
-1. Dựng tập dữ liệu.
-2. Huấn luyện challenger cho cả 2 mô hình và log toàn bộ vào MLflow.
-3. Đăng ký mỗi challenger thành một model version mới (alias `challenger`).
-4. Đánh giá **cả challenger lẫn champion hiện tại trên cùng tập `test` cố định**. Không so sánh với metric đã log từ lần trước, vì có thể được đo trên dữ liệu khác.
-5. Áp dụng quality gate.
-6. Promote hoặc từ chối.
-7. Ghi kết quả vào bảng `model_versions`.
+**Các bước của Airflow DAG `retrain_pipeline`** (`infra/airflow/dags/retrain_pipeline.py`, code ở `rpm_ml/pipelines/retrain.py`):
+1. `build_dataset`: dựng tập dữ liệu.
+2. `retrain_risk` và `retrain_anomaly` (chạy song song): huấn luyện challenger, log toàn bộ vào MLflow, đăng ký version mới (alias `challenger`).
+3. Trong mỗi bước: đánh giá **cả challenger lẫn champion hiện tại trên cùng tập `test` cố định** (không so với metric đã log từ lần trước, vì có thể được đo trên dữ liệu khác), áp quality gate, promote hoặc từ chối.
+4. Ghi kết quả vào bảng `model_versions`, kể cả version bị từ chối (`gate_reasons`, `trigger`, `drift_report_id`, `dag_run_id`, metric của challenger và champion).
+5. `publish_result`: sự kiện `retrain_completed` cho giao diện Admin (chạy cả khi một mô hình lỗi). Task `all_models_trained` chỉ thành công khi cả 2 bước huấn luyện thành công, để trạng thái DAG phản ánh đúng lỗi.
 
 **Quality gate** — mô hình dự báo rủi ro chỉ được promote khi đạt **đồng thời**:
 1. Ngưỡng tuyệt đối ở `02_10_thiet_ke_test.md` mục 2.10.3 (Macro F1, Recall CRITICAL).
@@ -195,6 +210,8 @@ Mô hình phát hiện bất thường được gate **độc lập**: AUROC tr�
 - Promote: chuyển alias `champion` sang version mới. Model service trong consumer kiểm tra alias định kỳ và nạp lại.
 - Từ chối: version được gắn tag `gate=rejected` kèm lý do; champion giữ nguyên — tránh tự động hạ cấp chất lượng hệ thống khi retrain trên dữ liệu nhiễu.
 - Trong tài liệu, "model Production" = version đang giữ alias `champion`.
+
+**Môi trường chạy**: image Airflow riêng (`infra/Dockerfile.airflow`, Airflow 2.9.3, Python 3.11). Code ML chạy trong venv `/opt/rpm-venv` với đúng phiên bản thư viện của `ml/requirements.txt` (MLflow 3.11.1), tách khỏi môi trường của Airflow để không xung đột phụ thuộc; DAG gọi code ML qua `BashOperator`.
 
 ## 2.9.6. Logic sinh cảnh báo
 

@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from injection import DRIFT_SIGMA, KINDS, SHIFT_SIGMA, SPIKE_SIGMA, channel_sigma, inject_anomalies
+from rpm_ml.evaluation.injection import DRIFT_SIGMA, KINDS, SHIFT_SIGMA, SPIKE_SIGMA, channel_sigma, inject_anomalies
 
 N, LENGTH, CHANNELS = 300, 12, 6
 
