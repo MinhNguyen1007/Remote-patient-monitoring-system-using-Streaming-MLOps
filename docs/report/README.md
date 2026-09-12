@@ -54,11 +54,21 @@ Bố cục phải chọn theo tỉ lệ khung in: trang A4 dọc dùng được 
 
 Ba phương án: (a) tách mỗi sơ đồ hoạt động dài thành 2 hình theo giai đoạn — đồng thời làm `docs/design/` dễ đọc hơn; (b) để mỗi hình trên một trang ngang riêng; (c) để hình trải hai trang dọc. Phương án (a) tốt nhất cho bản in.
 
+## Trạng thái nội dung
+
+Cả hai tài liệu đã viết xong nội dung: báo cáo ~19.600 từ (5 chương, 27 hình, 21 bảng), bài báo ~7.350 từ (5 mục, 7 hình, 4 bảng). Mỗi tài liệu có 12 tài liệu tham khảo đã được tra cứu và xác minh; script `check_refs.py` trong lịch sử phiên đã kiểm tra mọi trích dẫn `[n]` trong thân bài đều có trong danh mục và ngược lại.
+
+Hai chỗ còn đánh dấu `⟨…⟩` trong báo cáo **là ghi chú cố ý** cho người dùng khi mở file Word: chỗ cần thay danh sách hình/bảng thủ công bằng mục lục tự động của Word.
+
 ## Còn thiếu (cần người dùng cung cấp)
 
-1. **Thông tin hành chính** cho phần đầu báo cáo — mọi chỗ đánh dấu `⟨…⟩`: tên môn học, mã lớp, học vị + họ tên giảng viên hướng dẫn và email, danh sách thành viên nhóm kèm MSSV (hoặc xác nhận làm một mình để bỏ mục "LÀM VIỆC NHÓM").
-2. **Logo trường** (mẫu dùng một ảnh logo ở trang bìa) — chưa có trong repo.
-3. **Tài liệu tham khảo**: mục 2 của bài báo và mục 2.2 của báo cáo cần tra cứu, trích dẫn tài liệu thật (NEWS2, MIMIC-III, PSI/drift, LSTM-AE). Danh sách nền ở `ghi_chu_bao_cao.md` mục 5 chưa đủ và chưa kiểm tra định dạng.
+Theo yêu cầu "chưa biết thì không ghi", những thông tin dưới đây đã được **bỏ trống hẳn** thay vì để chỗ trống hay điền giả:
+
+1. **Trang bìa**: tên môn học, mã lớp, học vị + họ tên giảng viên hướng dẫn. Hiện trang bìa chỉ có tên trường, khoa, tên đề tài, họ tên + MSSV người thực hiện, khoá và năm.
+2. **Lời cảm ơn và trang cam đoan** viết "giảng viên hướng dẫn" chung, không nêu tên.
+3. **Bài báo** chỉ có một tác giả và một email; nếu làm nhóm hoặc muốn ghi tên giảng viên hướng dẫn làm đồng tác giả (như tệp mẫu) thì cần bổ sung.
+4. **Hai mục "LÀM VIỆC NHÓM" và "TỰ ĐÁNH GIÁ"** của mẫu đã được **bỏ khỏi** báo cáo vì không biết đồ án làm một mình hay theo nhóm. Nếu môn học yêu cầu thì thêm lại.
+5. **Logo trường** ở trang bìa — mẫu có, repo chưa có ảnh này.
 
 ## Lưu ý khi viết
 

@@ -136,13 +136,14 @@
 - **Giai đoạn I — viết bài báo & báo cáo: ĐANG LÀM (từ 2026-09-12)**. Mọi thứ liên quan ở [`docs/report/README.md`](docs/report/README.md).
   - Người dùng đưa **2 tệp mẫu** ở `docs/report/`: `Mau_Bai_bao_Project_NLP.md` (bài báo 5 mục) và `BaoCao_GiaoDichDinhLuong.md` (báo cáo đồ án 5 chương + phần đầu/cuối). Mẫu thứ hai là đồ án trước của chính người dùng → dùng lại được trường/khoa/khoá/thể thức cam đoan.
   - **Quyết định của người dùng 2026-09-12**: giữ đúng 5 chương của mẫu, nhét 10 mục thiết kế vào Ch2 (chức năng, use case, DFD, ERD) + Ch3 (activity, sequence, class, giải thuật, giao diện), thiết kế test vào 4.4 — **không** thêm chương mới, **không** đẩy xuống phụ lục.
-  - Đã xong: `bao_cao_do_an.md` + `bai_bao.md` (khung đầy đủ; Chương 1, các bảng kết quả, Chương 5 đã viết bằng số liệu thật), 15 hình PNG ở `docs/report/figures/`, `build_docx.py` (pandoc → .docx, đã thử: 27 hình nhúng, 13 bảng, 15 ngắt trang).
+  - **Nội dung đã viết xong (2026-09-12)**: `bao_cao_do_an.md` ~19.600 từ (5 chương, 27 hình, 21 bảng) và `bai_bao.md` ~7.350 từ (5 mục, 7 hình, 4 bảng); 15 hình PNG ở `docs/report/figures/`; `build_docx.py` xuất được cả hai.
+  - **12 tài liệu tham khảo đã tra cứu và xác minh** (MIMIC-III Johnson 2016, MIMIC-III Demo, PhysioNet Goldberger 2000, NEWS2 RCP 2017, tổng quan Muralitharan JMIR 2021, LSTM-AE Malhotra 2016, drift Gama 2014, technical debt Sculley 2015, LSTM Hochreiter 1997, Random Forest Breiman 2001, XGBoost Chen 2016, SHAP Lundberg 2017). Mọi trích dẫn `[n]` trong thân bài đều khớp danh mục ở cả 2 tài liệu (đã kiểm bằng script).
+  - **Theo yêu cầu người dùng "chưa biết thì không ghi"**: đã bỏ hẳn (không để chỗ trống) tên môn học, mã lớp, tên giảng viên hướng dẫn, danh sách thành viên nhóm; **bỏ luôn 2 mục "LÀM VIỆC NHÓM" và "TỰ ĐÁNH GIÁ"** của mẫu. Lời cảm ơn và trang cam đoan viết "giảng viên hướng dẫn" chung. Thêm lại khi người dùng cung cấp.
   - **Việc tiếp theo**:
-    1. Viết nội dung các mục còn đánh dấu `⟨…⟩` (Ch2, Ch3, 4.1–4.4, phần bàn luận).
-    2. **Tra cứu tài liệu tham khảo thật** cho mục 2.2 báo cáo / mục 2 bài báo (NEWS2, MIMIC-III, PSI/drift, LSTM-AE) — chưa có, `ghi_chu_bao_cao.md` mục 5 chỉ là danh sách nền.
-    3. Xử lý 3 hình chưa lọt trang A4 (`activity_drift` tỉ lệ 0,35, `activity_streaming` 0,41, `usecase` 0,50) — nên tách mỗi sơ đồ hoạt động dài thành 2 hình.
-    4. Tạo `docs/report/reference.docx` theo thể thức của trường để pandoc dùng đúng font/heading.
-  - **Chặn ở người dùng**: thông tin hành chính phần đầu (tên môn học, mã lớp, giảng viên hướng dẫn + email, thành viên nhóm + MSSV hoặc xác nhận làm một mình), và logo trường cho trang bìa.
+    1. Xử lý 3 hình chưa lọt trang A4 (`activity_drift` tỉ lệ 0,35, `activity_streaming` 0,41, `usecase` 0,50) — nên tách mỗi sơ đồ hoạt động dài thành 2 hình trong `docs/design/`, rồi render lại.
+    2. Tạo `docs/report/reference.docx` theo thể thức của trường để pandoc dùng đúng font/cỡ chữ/heading.
+    3. Chụp lại `images/3_patient_detail.png` sau khi sửa lỗi thẻ bất thường.
+  - **Chặn ở người dùng**: thông tin hành chính trang bìa và logo trường (danh sách đủ ở `docs/report/README.md` mục "Còn thiếu").
 - **Quyết định đã chốt sau rà soát 2026-09-10** (người dùng đã duyệt):
   - Model rủi ro là **dự báo** mức NEWS2 cao nhất trong 4 giờ tới, không phân loại tức thời. Phân loại tức thời bị rò rỉ nhãn vì nhãn là hàm tất định của đặc trưng. Model phải thắng baseline persistence.
   - Drift → **tự động** kích hoạt retrain; quality gate chặn model kém; Admin vẫn retrain thủ công được. (Ngưỡng drift đổi thành ngưỡng hiệu chỉnh theo từng đặc trưng ngày 2026-09-11, xem Giai đoạn G.)
