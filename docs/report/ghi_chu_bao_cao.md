@@ -1,18 +1,20 @@
 # Ghi chú viết báo cáo (cập nhật 2026-09-12, hết Giai đoạn H)
 
-File này gom **mọi số liệu, quyết định và hạn chế** cần đưa vào báo cáo, sắp theo đúng cấu trúc mục báo cáo. Khi viết báo cáo (Giai đoạn I), đọc file này trước, rồi mở file nguồn được chỉ ra để lấy chi tiết. Số thập phân dùng dấu phẩy.
+File này gom **mọi số liệu, quyết định và hạn chế** cần đưa vào báo cáo, sắp theo đúng cấu trúc mục báo cáo. Số thập phân dùng dấu phẩy.
 
-> **Quy tắc cập nhật**: mỗi khi có số liệu mới, bổ sung vào đúng mục bên dưới.
+> **Báo cáo và bài báo đã viết xong (2026-09-12)**: [`bao_cao_do_an.md`](bao_cao_do_an.md) và [`bai_bao.md`](bai_bao.md), theo sườn hai tệp mẫu của người dùng. File này giờ là **nguồn số liệu** để đối chiếu, không còn là danh sách việc cần làm.
+>
+> **Quy tắc cập nhật**: mỗi khi có số liệu mới, bổ sung vào đúng mục bên dưới **và** cập nhật chỗ tương ứng trong hai tệp trên, rồi chạy `python docs/report/tools/check_report.py`.
 
 ## 0. Bản đồ mục báo cáo → nguồn trong repo
 
 | Mục báo cáo | Nguồn | Trạng thái |
 |---|---|---|
-| 1. Giới thiệu | `docs/design/01_gioi_thieu.md` | Có bản nháp |
+| 1. Giới thiệu | `docs/design/01_gioi_thieu.md` | Xong (đã viết vào Chương 1 báo cáo) |
 | 2.1 Sơ đồ chức năng | `docs/design/02_1_so_do_chuc_nang.md` | Xong (Mermaid) |
 | 2.2 Use Case (UC01–UC13) | `docs/design/02_2_usecase.md` | Xong |
-| 2.3 Activity | `docs/design/02_3_activity.md` | Xong |
-| 2.4 Sequence | `docs/design/02_4_sequence.md` | Xong |
+| 2.3 Activity | `docs/design/02_3_activity.md` | Xong (2026-09-12: 2.3.1 và 2.3.3 tách thành phần a/b; sửa thứ tự ghi DB cho khớp code) |
+| 2.4 Sequence | `docs/design/02_4_sequence.md` | Xong (2026-09-12: sửa 2.4.1 — một transaction, quyết định cảnh báo trước khi ghi DB) |
 | 2.5 Class | `docs/design/02_5_class.md` | Xong |
 | 2.6 DFD / Database | `docs/design/02_6_dfd_database.md` | Xong |
 | 2.7 ERD | `docs/design/02_7_erd.md` | Xong |
@@ -22,11 +24,23 @@ File này gom **mọi số liệu, quyết định và hạn chế** cần đưa
 | 3.1 Công nghệ | mục 3.1 bên dưới | Đủ số liệu |
 | 3.2 Dữ liệu | `ml/README.md`, `ml/data_dictionary.md`, mục 3.2 bên dưới | Đủ số liệu |
 | 3.3 Triển khai | `docker-compose.yml`, `infra/Dockerfile.airflow`, `infra/airflow/dags/`, các `CLAUDE.md`, mục 3.3 bên dưới | Đủ |
-| 3.4 Kết quả | `ml/reports/evaluation.md` (+ 3 hình), `tests/e2e/reports/latency.md`, mục 3.4 bên dưới | Thiếu ảnh chụp giao diện thật (cả tab Giám sát mô hình sau drift) |
-| 3.5 Đánh giá | mục 3.5 bên dưới (hạn chế **bắt buộc** công khai) | Đủ cho C–G |
+| 3.4 Kết quả | `ml/reports/evaluation.md` (+ 3 hình), `tests/e2e/reports/latency.md`, `images/` (9 ảnh giao diện), mục 3.4 bên dưới | Đủ số liệu |
+| 3.5 Đánh giá | mục 3.5 bên dưới (hạn chế **bắt buộc** công khai) | Đủ (16 hạn chế) |
 | 4. Kết luận + hướng phát triển | mục 4 bên dưới | Có ý chính |
-| 5. Tài liệu tham khảo | mục 5 bên dưới | Có danh sách nền |
-| 6. Bản Word theo mẫu | — | **Chờ người dùng gửi file mẫu .docx của trường** |
+| 5. Tài liệu tham khảo | danh mục trong `bao_cao_do_an.md` / `bai_bao.md` (12 tài liệu đã xác minh); mục 5 bên dưới là danh sách nền | Xong |
+
+**Bản đồ sang hai tài liệu đã viết** (sườn theo hai tệp mẫu của người dùng, khác cách chia mục ở bảng trên):
+
+| Nội dung | Trong `bao_cao_do_an.md` | Trong `bai_bao.md` |
+|---|---|---|
+| Giới thiệu, ý nghĩa | Chương 1 | Mục 1 |
+| Nghiên cứu liên quan | 2.2 | Mục 2 |
+| Yêu cầu, use case, DFD, ERD | 2.1, 2.3 | (gộp vào mục 3) |
+| Kiến trúc, đặc trưng, hai mô hình, cảnh báo, MLOps | Chương 3 | Mục 3 |
+| Dữ liệu, công nghệ, cách đánh giá, kết quả | Chương 4 | Mục 4 |
+| Kết luận, hạn chế, hướng phát triển | Chương 5 | Mục 5 |
+
+Còn thiếu (cần người dùng cung cấp): thông tin hành chính trang bìa và logo trường — xem [`README.md`](README.md) mục "Còn thiếu".
 
 ## 3.1 Công nghệ và phiên bản
 

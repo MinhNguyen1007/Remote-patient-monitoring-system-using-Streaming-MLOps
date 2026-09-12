@@ -102,32 +102,34 @@ Kết quả kiểm thử phi chức năng cho độ trễ đầu–cuối p95 1,
 | Hình | Tên hình |
 |---|---|
 | Hình 2.1 | Sơ đồ chức năng tổng quát của hệ thống |
-| Hình 2.2 | Biểu đồ Use Case |
-| Hình 2.3 | DFD mức ngữ cảnh (Level 0) |
-| Hình 2.4 | DFD mức 1 |
+| Hình 2.2 | Biểu đồ Use Case của hệ thống |
+| Hình 2.3 | Sơ đồ luồng dữ liệu mức ngữ cảnh (Level 0) |
+| Hình 2.4 | Sơ đồ luồng dữ liệu mức 1 |
 | Hình 2.5 | Biểu đồ quan hệ dữ liệu (ERD) |
 | Hình 3.1 | Kiến trúc tổng quát của hệ thống |
-| Hình 3.2 | Luồng xử lý dữ liệu streaming đến cảnh báo |
-| Hình 3.3 | Tuần tự dự đoán realtime và phát cảnh báo |
-| Hình 3.4 | Luồng đăng nhập và mở kết nối realtime |
-| Hình 3.5 | Tuần tự đăng nhập và mở WebSocket |
-| Hình 3.6 | Biểu đồ lớp |
-| Hình 3.7 | Luồng phát hiện drift và huấn luyện lại mô hình |
-| Hình 3.8 | Tuần tự phát hiện drift và thông báo Admin |
-| Hình 3.9 | Tuần tự kích hoạt huấn luyện lại thủ công |
-| Hình 3.10 | Kiến trúc thông tin và điều hướng giao diện |
+| Hình 3.2 | Xử lý một bản ghi sinh hiệu: từ message tới bản ghi đã lưu và sự kiện đã phát |
+| Hình 3.3 | Quyết định cảnh báo và thông báo người được phân công |
+| Hình 3.4 | Tuần tự dự đoán realtime và phát cảnh báo |
+| Hình 3.5 | Luồng đăng nhập và mở kết nối realtime |
+| Hình 3.6 | Tuần tự đăng nhập và mở kết nối WebSocket |
+| Hình 3.7 | Biểu đồ lớp của hệ thống |
+| Hình 3.8 | Kiến trúc thông tin và điều hướng giao diện |
+| Hình 3.9 | Luồng `drift_check`: phát hiện drift và quyết định kích hoạt huấn luyện lại |
+| Hình 3.10 | Luồng `retrain_pipeline`: huấn luyện lại và quality gate |
+| Hình 3.11 | Tuần tự phát hiện drift và thông báo người quản trị |
+| Hình 3.12 | Tuần tự kích hoạt huấn luyện lại mô hình thủ công |
 | Hình 4.1 | Ma trận nhầm lẫn của mô hình dự báo rủi ro trên tập kiểm tra |
 | Hình 4.2 | Mức đóng góp đặc trưng (SHAP) cho lớp CRITICAL |
 | Hình 4.3 | Phân bố điểm bất thường trên cửa sổ bình thường và cửa sổ bị tiêm bất thường |
 | Hình 4.4 | Màn hình đăng nhập |
-| Hình 4.5 | Danh sách bệnh nhân được phân công (điều dưỡng phụ trách 20 bệnh nhân) |
-| Hình 4.6 | Chi tiết bệnh nhân: dự báo rủi ro, NEWS2 và biểu đồ sinh hiệu |
-| Hình 4.7 | Danh sách cảnh báo |
-| Hình 4.8 | Phạm vi xem theo phân công của một bác sĩ |
+| Hình 4.5 | Danh sách bệnh nhân được phân công, sắp theo mức rủi ro dự báo |
+| Hình 4.6 | Chi tiết bệnh nhân: dự báo rủi ro 4 giờ tới, NEWS2 và biểu đồ sinh hiệu |
+| Hình 4.7 | Danh sách cảnh báo và trạng thái xử lý |
+| Hình 4.8 | Phạm vi xem theo phân công: bác sĩ chỉ thấy bệnh nhân mình phụ trách |
 | Hình 4.9 | Quản lý tài khoản người dùng |
 | Hình 4.10 | Phân công bệnh nhân cho bác sĩ và điều dưỡng |
 | Hình 4.11 | Cấu hình ngưỡng cảnh báo |
-| Hình 4.12 | Giám sát mô hình: quality gate và biểu đồ drift |
+| Hình 4.12 | Giám sát mô hình: kết luận quality gate của từng phiên bản và biểu đồ drift |
 
 \newpage
 
@@ -137,20 +139,24 @@ Kết quả kiểm thử phi chức năng cho độ trễ đầu–cuối p95 1,
 
 | Bảng | Tên bảng |
 |---|---|
-| Bảng 2.1 | Danh sách use case theo vai trò |
-| Bảng 3.1 | Tập đặc trưng đầu vào của mô hình dự báo rủi ro |
-| Bảng 3.2 | Thang điểm NEWS2 rút gọn |
+| Bảng 2.1 | Danh sách trường hợp sử dụng theo tác nhân |
+| Bảng 2.2 | Yêu cầu phi chức năng và cách kiểm chứng |
+| Bảng 3.1 | Thang điểm NEWS2 rút gọn (năm thông số) |
+| Bảng 3.2 | Phân mức rủi ro lâm sàng từ điểm NEWS2 |
+| Bảng 3.3 | Tập đặc trưng đầu vào của mô hình dự báo rủi ro |
 | Bảng 4.1 | Quy mô dữ liệu sau tiền xử lý |
-| Bảng 4.2 | Chia dữ liệu theo bệnh nhân |
-| Bảng 4.3 | Công nghệ và phiên bản sử dụng |
-| Bảng 4.4 | Tiêu chí quality gate |
-| Bảng 4.5 | So sánh các thuật toán dự báo rủi ro (cross-validation) |
-| Bảng 4.6 | Kết quả mô hình dự báo rủi ro trên ba tập dữ liệu |
-| Bảng 4.7 | Kết quả mô hình phát hiện bất thường |
-| Bảng 4.8 | Kết quả chạy end-to-end tầng streaming |
-| Bảng 4.9 | Kết quả phát hiện drift và huấn luyện lại tự động |
-| Bảng 4.10 | Độ trễ đầu–cuối từ producer tới dashboard |
-| Bảng 4.11 | Số lượng kiểm thử tự động theo thành phần |
+| Bảng 4.2 | Chia dữ liệu theo bệnh nhân (`ml/splits/subject_split.json`, seed 42) |
+| Bảng 4.3 | Số giờ dữ liệu và số đợt ICU theo từng nhóm |
+| Bảng 4.4 | Công nghệ và phiên bản sử dụng |
+| Bảng 4.5 | Tiêu chí quality gate |
+| Bảng 4.6 | So sánh các thuật toán (cross-validation trên train ∪ validation) |
+| Bảng 4.7 | Kết quả `risk_classifier` v2 (Random Forest, τ_critical = 0,22) |
+| Bảng 4.8 | Kết quả `anomaly_detector` trên tập kiểm tra (10% cửa sổ bị tiêm bất thường) |
+| Bảng 4.9 | Kết quả chạy end-to-end (20 bệnh nhân, 1.834 giờ dữ liệu) |
+| Bảng 4.10 | Kết quả kiểm chứng vòng vận hành MLOps |
+| Bảng 4.11 | Kết quả quality gate của bốn phiên bản sinh ra từ việc huấn luyện lại |
+| Bảng 4.12 | Độ trễ đầu–cuối từ lúc producer phát tới lúc dashboard nhận qua WebSocket |
+| Bảng 4.13 | Số lượng kiểm thử tự động |
 
 \newpage
 
@@ -245,6 +251,8 @@ Ba quan hệ đáng lưu ý trong biểu đồ:
 Quản trị viên **không** theo dõi bệnh nhân; vai trò này chỉ quản lý người dùng, phân công, ngưỡng cảnh báo và mô hình. Đây là lựa chọn có chủ ý nhằm giới hạn phạm vi truy cập dữ liệu lâm sàng theo đúng nhu cầu công việc.
 
 ### 2.1.3. Yêu cầu phi chức năng
+
+**Bảng 2.2** Yêu cầu phi chức năng và cách kiểm chứng
 
 | Tiêu chí | Yêu cầu | Cách kiểm chứng |
 |---|---|---|
@@ -394,7 +402,7 @@ Hai quyết định kiến trúc xuyên suốt toàn hệ thống, đáng đư�
 
 **Điểm NEWS2 rút gọn.** NEWS2 nguyên bản có bảy thông số. Đồ án dùng năm thông số đo được liên tục trong dữ liệu; hai thông số còn lại — có thở oxy bổ sung hay không, và mức ý thức — không có trong bộ dữ liệu. Vì vậy tổng điểm nằm trong khoảng 0–15 thay vì 0–20. Huyết áp tâm trương không có điểm trong NEWS2 nhưng vẫn được giữ làm đặc trưng cho mô hình.
 
-**Bảng 3.2** Thang điểm NEWS2 rút gọn (năm thông số)
+**Bảng 3.1** Thang điểm NEWS2 rút gọn (năm thông số)
 
 | Thông số | 3 | 2 | 1 | 0 | 1 | 2 | 3 |
 |---|---|---|---|---|---|---|---|
@@ -408,6 +416,8 @@ Dữ liệu thật có giá trị thập phân, nên mỗi mức được hiện
 
 Từ tổng điểm, mức rủi ro được phân thành ba loại theo đúng hướng dẫn của NEWS2, **bao gồm cả quy tắc "một thông số đạt 3 điểm"**:
 
+**Bảng 3.2** Phân mức rủi ro lâm sàng từ điểm NEWS2
+
 | Mức | Điều kiện |
 |---|---|
 | NORMAL | Tổng 0–4 **và** không thông số nào đạt 3 điểm |
@@ -418,7 +428,7 @@ Quy tắc "một thông số đạt 3 điểm" không phải chi tiết nhỏ: n
 
 **Đặc trưng cửa sổ trượt.** Với cửa sổ sáu giờ gần nhất (yêu cầu tối thiểu ba giá trị đo thật, nếu không thì để trống), hệ thống tính trung bình, độ lệch chuẩn và độ dốc tuyến tính của từng thông số. Các đại lượng này được tính **trên giá trị đo thật, không tính trên giá trị đã điền** — nếu tính trên giá trị đã điền, độ lệch chuẩn và độ dốc sẽ bị làm phẳng giả tạo vì chuỗi giá trị điền là một hằng số. Ngoài ra còn có chênh lệch so với giờ trước của từng thông số và của tổng NEWS2, cùng NEWS2 cao nhất trong sáu giờ qua.
 
-**Bảng 3.1** Tập đặc trưng đầu vào của mô hình dự báo rủi ro
+**Bảng 3.3** Tập đặc trưng đầu vào của mô hình dự báo rủi ro
 
 | Nhóm đặc trưng | Nội dung |
 |---|---|
@@ -434,13 +444,17 @@ Quy tắc "một thông số đạt 3 điểm" không phải chi tiết nhỏ: n
 
 **Tính nhân quả.** Mọi đặc trưng tại giờ *t* chỉ được dùng dữ liệu tại thời điểm *t* hoặc trước đó. Đây là tính chất được kiểm chứng bằng kiểm thử tự động, không chỉ bằng rà soát mã nguồn: kiểm thử sửa đổi dữ liệu ở các giờ **sau** *t* rồi khẳng định không một đặc trưng nào tại *t* thay đổi.
 
-![Luồng xử lý dữ liệu streaming đến cảnh báo](figures/activity_streaming.png){width="10cm"}
+![Xử lý dữ liệu streaming: từ message tới bản ghi đã lưu](figures/activity_streaming_a.png){width="9cm"}
 
-**Hình 3.2** Luồng xử lý dữ liệu streaming đến cảnh báo
+**Hình 3.2** Xử lý một bản ghi sinh hiệu: từ message tới bản ghi đã lưu và sự kiện đã phát
+
+![Quyết định cảnh báo và thông báo người được phân công](figures/activity_streaming_b.png){width="11cm"}
+
+**Hình 3.3** Quyết định cảnh báo và thông báo người được phân công
 
 ![Tuần tự dự đoán realtime và phát cảnh báo](figures/sequence_realtime.png){width="15cm"}
 
-**Hình 3.3** Tuần tự dự đoán realtime và phát cảnh báo
+**Hình 3.4** Tuần tự dự đoán realtime và phát cảnh báo
 
 ### 3.2.3. Kiến trúc hai mô hình
 
@@ -474,15 +488,15 @@ Lý do của bước này được xác định bằng thực nghiệm, và th�
 
 ![Luồng đăng nhập và mở kết nối realtime](figures/activity_dang_nhap.png){width="8cm"}
 
-**Hình 3.4** Luồng đăng nhập và mở kết nối realtime
+**Hình 3.5** Luồng đăng nhập và mở kết nối realtime
 
 ![Tuần tự đăng nhập và mở WebSocket](figures/sequence_dang_nhap.png){width="14cm"}
 
-**Hình 3.5** Tuần tự đăng nhập và mở kết nối WebSocket
+**Hình 3.6** Tuần tự đăng nhập và mở kết nối WebSocket
 
 ![Biểu đồ lớp](figures/class_diagram.png){width="15cm"}
 
-**Hình 3.6** Biểu đồ lớp của hệ thống
+**Hình 3.7** Biểu đồ lớp của hệ thống
 
 #### c) Cơ chế sinh cảnh báo
 
@@ -508,7 +522,7 @@ Ba nguyên tắc thiết kế được áp dụng xuyên suốt:
 
 ![Kiến trúc thông tin và điều hướng giao diện](figures/ia_navigation.png){width="15cm"}
 
-**Hình 3.10** Kiến trúc thông tin và điều hướng giao diện
+**Hình 3.8** Kiến trúc thông tin và điều hướng giao diện
 
 ### 3.2.4. Đánh giá mô hình và vòng vận hành MLOps
 
@@ -563,17 +577,21 @@ Một chi tiết quan trọng về cách so sánh: ở mỗi lần huấn luyệ
 
 **Cách thay mô hình.** Hệ thống dùng **nhãn** của sổ đăng ký mô hình, không dùng khái niệm "giai đoạn Production" (khái niệm này đã bị chính MLflow đánh dấu lỗi thời). Mô hình đạt kiểm định thì nhãn `champion` được chuyển sang phiên bản mới; mô hình bị từ chối vẫn được đăng ký nhưng gắn thẻ ghi rõ lý do, và mô hình đang dùng giữ nguyên. Mọi phiên bản, kể cả phiên bản bị từ chối, đều được ghi vào cơ sở dữ liệu kèm lý do để quản trị viên xem được trên giao diện — điều này biến quality gate từ một cơ chế ẩn thành một thứ có thể kiểm tra được.
 
-![Luồng phát hiện drift và huấn luyện lại mô hình](figures/activity_drift.png){width="9cm"}
+![DAG drift_check: phát hiện drift và quyết định kích hoạt](figures/activity_drift_a.png){width="9cm"}
 
-**Hình 3.7** Luồng phát hiện drift và huấn luyện lại mô hình
+**Hình 3.9** Luồng `drift_check`: phát hiện drift và quyết định kích hoạt huấn luyện lại
+
+![DAG retrain_pipeline: huấn luyện lại và quality gate](figures/activity_drift_b.png){width="8cm"}
+
+**Hình 3.10** Luồng `retrain_pipeline`: huấn luyện lại và quality gate
 
 ![Tuần tự phát hiện drift và thông báo Admin](figures/sequence_drift.png){width="15cm"}
 
-**Hình 3.8** Tuần tự phát hiện drift và thông báo người quản trị
+**Hình 3.11** Tuần tự phát hiện drift và thông báo người quản trị
 
 ![Tuần tự kích hoạt huấn luyện lại thủ công](figures/sequence_retrain.png){width="15cm"}
 
-**Hình 3.9** Tuần tự kích hoạt huấn luyện lại mô hình thủ công
+**Hình 3.12** Tuần tự kích hoạt huấn luyện lại mô hình thủ công
 
 \newpage
 
@@ -619,6 +637,8 @@ Danh sách bệnh nhân của từng nhóm được lưu thành một tệp cố
 
 Số giờ dữ liệu chi tiết theo nhóm:
 
+**Bảng 4.3** Số giờ dữ liệu và số đợt ICU theo từng nhóm
+
 | Nhóm | Bệnh nhân | Đợt ICU | Giờ dữ liệu | Tỷ lệ số giờ |
 |---|---|---|---|---|
 | train | 48 | 69 | 6.286 | 44,5% |
@@ -646,7 +666,7 @@ Một con số đáng chú ý cho thấy bài toán dự báo là bài toán th�
 
 ## 4.3 Công nghệ sử dụng
 
-**Bảng 4.3** Công nghệ và phiên bản sử dụng
+**Bảng 4.4** Công nghệ và phiên bản sử dụng
 
 | Lớp | Công nghệ (phiên bản) |
 |---|---|
@@ -681,7 +701,7 @@ Hệ thống được kiểm thử ở bốn tầng, mỗi tầng trả lời m�
 
 **Tầng 3 — Kiểm định mô hình (quality gate).** Chạy tự động trong luồng huấn luyện lại, trước khi cho phép một phiên bản mới thay thế phiên bản đang dùng. Mọi chỉ số đo trên tập kiểm tra cố định.
 
-**Bảng 4.4** Tiêu chí quality gate
+**Bảng 4.5** Tiêu chí quality gate
 
 | Mô hình | Tiêu chí đạt |
 |---|---|
@@ -701,7 +721,7 @@ Hệ thống được kiểm thử ở bốn tầng, mỗi tầng trả lời m�
 
 ### 4.5.1. Mô hình dự báo rủi ro
 
-**Bảng 4.5** So sánh các thuật toán (cross-validation trên train ∪ validation)
+**Bảng 4.6** So sánh các thuật toán (cross-validation trên train ∪ validation)
 
 | Thuật toán | Macro F1 (CV) |
 |---|---|
@@ -710,7 +730,7 @@ Hệ thống được kiểm thử ở bốn tầng, mỗi tầng trả lời m�
 | XGBoost | 0,608 |
 | Baseline persistence | 0,565 |
 
-**Bảng 4.6** Kết quả `risk_classifier` v2 (Random Forest, τ_critical = 0,22)
+**Bảng 4.7** Kết quả `risk_classifier` v2 (Random Forest, τ_critical = 0,22)
 
 | Tập dữ liệu | Macro F1 | Recall CRITICAL | Precision CRITICAL |
 |---|---|---|---|
@@ -745,7 +765,7 @@ Thứ hai, nhịp thở nổi lên như thông số sinh tồn có giá trị d�
 
 ### 4.5.2. Mô hình phát hiện bất thường
 
-**Bảng 4.7** Kết quả `anomaly_detector` trên tập kiểm tra (10% cửa sổ bị tiêm bất thường)
+**Bảng 4.8** Kết quả `anomaly_detector` trên tập kiểm tra (10% cửa sổ bị tiêm bất thường)
 
 | Chỉ số | Giá trị |
 |---|---|
@@ -768,7 +788,7 @@ Thứ hai, nhịp thở nổi lên như thông số sinh tồn có giá trị d�
 
 ### 4.5.3. Kết quả chạy end-to-end tầng streaming
 
-**Bảng 4.8** Kết quả chạy end-to-end (20 bệnh nhân, 1.834 giờ dữ liệu)
+**Bảng 4.9** Kết quả chạy end-to-end (20 bệnh nhân, 1.834 giờ dữ liệu)
 
 | Chỉ tiêu | Kết quả |
 |---|---|
@@ -790,7 +810,7 @@ Toàn bộ vòng vận hành được kiểm chứng bằng cách chạy thật 
 
 **Ngưỡng drift sau hiệu chỉnh.** Ngưỡng thu được cho bảy đặc trưng trải từ 0,53 (huyết áp tâm trương) tới 1,78 (nhịp tim), riêng SpO₂ là 0,745 — tất cả đều cao hơn nhiều so với ngưỡng 0,25 thông dụng. Khoảng cách này chính là thước đo mức độ không phù hợp của ngưỡng chung với quy mô cửa sổ ở đây. Ngưỡng của nhịp tim cao nhất vì nhịp tim khác nhau rất nhiều giữa các bệnh nhân, nên chỉ riêng việc đổi nhóm bệnh nhân đã đẩy PSI của nó lên cao.
 
-**Bảng 4.9** Kết quả kiểm chứng vòng vận hành MLOps
+**Bảng 4.10** Kết quả kiểm chứng vòng vận hành MLOps
 
 | Kịch bản | Kết quả |
 |---|---|
@@ -801,6 +821,8 @@ Toàn bộ vòng vận hành được kiểm chứng bằng cách chạy thật 
 | Huấn luyện lại thủ công qua giao diện | Trả về ngay trạng thái đã nhận, hoàn tất sau 1 phút 30 giây, trả kèm kết luận quality gate |
 
 **Kết quả quality gate của bốn phiên bản mới.** Đây là phần đáng chú ý nhất của thực nghiệm: **không phiên bản nào trong bốn lần huấn luyện lại vượt được mô hình đang dùng.**
+
+**Bảng 4.11** Kết quả quality gate của bốn phiên bản sinh ra từ việc huấn luyện lại
 
 | Mô hình mới | Nguồn kích hoạt | Chỉ số trên tập kiểm tra | Kết luận |
 |---|---|---|---|
@@ -817,7 +839,7 @@ Trường hợp anomaly_detector v4 lại bộc lộ một điểm yếu: nó đ
 
 ### 4.5.5. Kết quả kiểm thử phi chức năng
 
-**Bảng 4.10** Độ trễ đầu–cuối từ lúc producer phát tới lúc dashboard nhận qua WebSocket
+**Bảng 4.12** Độ trễ đầu–cuối từ lúc producer phát tới lúc dashboard nhận qua WebSocket
 
 | Nhóm mẫu | n | p50 (s) | p95 (s) | p99 (s) | max (s) |
 |---|---|---|---|---|---|
@@ -839,7 +861,7 @@ Trường hợp anomaly_detector v4 lại bộc lộ một điểm yếu: nó đ
 
 Hai kết quả này xác nhận rằng thứ tự "ghi cơ sở dữ liệu trước, xác nhận tiêu thụ sau" (mục 3.1) hoạt động đúng như dự định, và việc tách máy chủ ứng dụng khỏi tầng xử lý cho phép khởi động lại từng phần mà không gián đoạn dòng dữ liệu.
 
-**Bảng 4.11** Số lượng kiểm thử tự động
+**Bảng 4.13** Số lượng kiểm thử tự động
 
 | Thành phần | Số test |
 |---|---|

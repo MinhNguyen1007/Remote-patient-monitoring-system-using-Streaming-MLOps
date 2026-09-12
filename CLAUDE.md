@@ -139,10 +139,13 @@
   - **Nội dung đã viết xong (2026-09-12)**: `bao_cao_do_an.md` ~19.600 từ (5 chương, 27 hình, 21 bảng) và `bai_bao.md` ~7.350 từ (5 mục, 7 hình, 4 bảng); 15 hình PNG ở `docs/report/figures/`; `build_docx.py` xuất được cả hai.
   - **12 tài liệu tham khảo đã tra cứu và xác minh** (MIMIC-III Johnson 2016, MIMIC-III Demo, PhysioNet Goldberger 2000, NEWS2 RCP 2017, tổng quan Muralitharan JMIR 2021, LSTM-AE Malhotra 2016, drift Gama 2014, technical debt Sculley 2015, LSTM Hochreiter 1997, Random Forest Breiman 2001, XGBoost Chen 2016, SHAP Lundberg 2017). Mọi trích dẫn `[n]` trong thân bài đều khớp danh mục ở cả 2 tài liệu (đã kiểm bằng script).
   - **Theo yêu cầu người dùng "chưa biết thì không ghi"**: đã bỏ hẳn (không để chỗ trống) tên môn học, mã lớp, tên giảng viên hướng dẫn, danh sách thành viên nhóm; **bỏ luôn 2 mục "LÀM VIỆC NHÓM" và "TỰ ĐÁNH GIÁ"** của mẫu. Lời cảm ơn và trang cam đoan viết "giảng viên hướng dẫn" chung. Thêm lại khi người dùng cung cấp.
-  - **Việc tiếp theo**:
-    1. Xử lý 3 hình chưa lọt trang A4 (`activity_drift` tỉ lệ 0,35, `activity_streaming` 0,41, `usecase` 0,50) — nên tách mỗi sơ đồ hoạt động dài thành 2 hình trong `docs/design/`, rồi render lại.
-    2. Tạo `docs/report/reference.docx` theo thể thức của trường để pandoc dùng đúng font/cỡ chữ/heading.
-    3. Chụp lại `images/3_patient_detail.png` sau khi sửa lỗi thẻ bất thường.
+  - **Người dùng xác nhận 2026-09-12: KHÔNG cần bản Word.** Bản giao là hai tệp Markdown; `build_docx.py` giữ lại nhưng không còn là bước bắt buộc, và `reference.docx` không cần làm nữa.
+  - **Hai script bảo trì ở `docs/report/tools/`** (dùng lại thay vì viết lại):
+    - `render_figures.py` — trích khối ```mermaid từ `docs/design/02_*.md` + `figures/src/*.mmd` rồi render PNG nền trắng. **Chạy lại mỗi khi sửa sơ đồ thiết kế.** Thêm/bớt khối mermaid làm lệch chỉ số → script báo lỗi, phải cập nhật bảng `NAMES`.
+    - `check_report.py` — soát 5 loại lỗi (số hình/bảng lệch thứ tự, chú thích lệch danh mục, bảng chưa đánh số, trích dẫn không khớp danh mục TLTK, ảnh thiếu); `--renumber` để đánh số lại và sinh lại 2 danh mục. Cả 5 lỗi này **đều đã từng xảy ra** ở lần viết đầu → chạy sau mỗi lần sửa nội dung.
+  - **Hai lỗi thiết kế lệch code, tìm ra khi tách sơ đồ (2026-09-12, đã sửa)**: cả `02_3` mục 2.3.1 và `02_4` mục 2.4.1 đều vẽ **hai lần ghi DB** (prediction rồi alert riêng) và đặt bước quyết định cảnh báo **sau** khi publish prediction. Code thực tế quyết định cảnh báo trước, rồi ghi vital_record + prediction + alert trong **một transaction**, publish, cuối cùng mới commit offset.
+  - **Về việc hình có lọt trang in**: tiêu chí đúng là **cỡ chữ sau khi thu hình**, không phải tỉ lệ khung hình (`cỡ chữ pt ≈ 794 × bề_rộng_in_cm / bề_rộng_ảnh_px` với ảnh render `-s 2`; ngưỡng đọc được ~7 pt). Theo tiêu chí này các sơ đồ tuần tự và `dfd_level1` khó in nhất, không phải sơ đồ hoạt động. Không còn là vấn đề chặn vì bản giao là Markdown.
+  - **Việc tiếp theo**: chụp lại `images/3_patient_detail.png` sau khi sửa lỗi thẻ bất thường (cần người dùng đăng nhập).
   - **Chặn ở người dùng**: thông tin hành chính trang bìa và logo trường (danh sách đủ ở `docs/report/README.md` mục "Còn thiếu").
 - **Quyết định đã chốt sau rà soát 2026-09-10** (người dùng đã duyệt):
   - Model rủi ro là **dự báo** mức NEWS2 cao nhất trong 4 giờ tới, không phân loại tức thời. Phân loại tức thời bị rò rỉ nhãn vì nhãn là hàm tất định của đặc trưng. Model phải thắng baseline persistence.

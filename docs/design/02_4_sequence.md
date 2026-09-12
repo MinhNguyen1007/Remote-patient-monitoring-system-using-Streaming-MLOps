@@ -20,24 +20,29 @@ sequenceDiagram
     opt baseline dùng được và đủ cửa sổ 12 giờ
         C->>C: predict_anomaly() → anomaly_score
     end
-    C->>DB: INSERT vital_record + prediction
+    opt risk_level = CRITICAL hoặc is_anomaly
+        C->>DB: SELECT lịch sử cảnh báo của bệnh nhân
+        C->>C: alerts_to_create(): bỏ loại còn OPEN<br/>hoặc chưa hết cooldown
+    end
+    C->>DB: MỘT transaction: INSERT vital_record<br/>+ prediction + alert (nếu có)
     C->>KE: publish(prediction)
     KE->>BE: consume(prediction)
     BE->>FE: WebSocket push (chỉ tới người được phân công)
-    alt vượt ngưỡng VÀ không có alert cùng loại đang mở/còn cooldown
-        C->>DB: INSERT alert (status = OPEN)
+    alt có alert mới
         C->>KE: publish(alert)
         KE->>BE: consume(alert)
         BE->>FE: WebSocket push alert
         BE->>DB: SELECT người được phân công (patient_assignments)
         BE-)Mail: gửi email (bất đồng bộ, không chặn luồng xử lý)
         BE->>DB: INSERT notification_logs
-    else không vượt ngưỡng hoặc trùng alert đang mở
-        Note over C,DB: chỉ lưu và đẩy prediction, không tạo alert
+    else không có alert mới
+        Note over C,DB: chỉ lưu và đẩy prediction
     end
+    C->>KV: commit offset (sau khi đã ghi DB)
 ```
 
 Ghi chú hiện thực:
+- **Quyết định cảnh báo nằm trước khi ghi DB**, và vital_record + prediction + alert được ghi trong **một transaction duy nhất** (`repository.save_hour`). Sơ đồ trước 2026-09-12 vẽ hai lần ghi DB riêng và đặt bước quyết định sau khi publish prediction — đã sửa cho khớp `services/streaming/src/rpm_streaming/consumer/main.py`.
 - **Model Service** là module chạy bên trong consumer, không phải service riêng.
   - Khi khởi động, nó nạp `models:/risk_classifier@champion` và `models:/anomaly_detector@champion` từ MLflow.
   - Sau đó định kỳ kiểm tra alias để nạp lại khi có model mới (mục 2.4.3).

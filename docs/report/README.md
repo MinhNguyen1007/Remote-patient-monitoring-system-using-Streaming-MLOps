@@ -8,12 +8,17 @@
 | [`bao_cao_do_an.md`](bao_cao_do_an.md) | Khung báo cáo đồ án 5 chương + phần đầu/phần cuối, theo sườn `BaoCao_GiaoDichDinhLuong.md` |
 | [`bai_bao.md`](bai_bao.md) | Khung bài báo 5 mục, theo sườn `Mau_Bai_bao_Project_NLP.md` |
 | `BaoCao_GiaoDichDinhLuong.md`, `Mau_Bai_bao_Project_NLP.md` | Hai tệp mẫu của người dùng (chỉ để tham khảo sườn, **không sửa**) |
-| [`build_docx.py`](build_docx.py) | Xuất `.docx` bằng Pandoc |
-| `figures/` | 15 hình sơ đồ đã render sẵn thành PNG; `figures/src/` chứa nguồn Mermaid của hình không lấy từ `docs/design/` |
+| [`build_docx.py`](build_docx.py) | Xuất `.docx` bằng Pandoc (tuỳ chọn — bản giao hiện tại là Markdown) |
+| [`tools/render_figures.py`](tools/render_figures.py) | Render sơ đồ Mermaid → PNG |
+| [`tools/check_report.py`](tools/check_report.py) | Soát nhất quán hình/bảng/trích dẫn/ảnh; `--renumber` để đánh số lại |
+| `figures/` | 17 hình sơ đồ đã render sẵn thành PNG; `figures/src/` chứa nguồn Mermaid của hình không lấy từ `docs/design/` |
 
 Ảnh khác được tham chiếu trực tiếp từ chỗ chúng đang nằm, không sao chép: 3 hình kết quả mô hình ở `ml/reports/`, 9 ảnh chụp giao diện ở `images/`.
 
-## Xuất Word
+## Xuất Word (tuỳ chọn)
+
+> Người dùng đã xác nhận **không cần** bản Word; bản giao là hai tệp Markdown ở trên. Phần này giữ lại vì script vẫn chạy được nếu về sau cần.
+
 
 ```bash
 python docs/report/build_docx.py             # cả hai tài liệu
@@ -34,25 +39,36 @@ pandoc -o docs/report/reference.docx --print-default-data-file reference.docx
 
 Mở `reference.docx` trong Word, sửa các style (Normal, Heading 1–3, Caption, Table) theo quy định, lưu lại. Lần build sau script tự dùng nó.
 
-## Render lại sơ đồ
-
-14 hình trong `figures/` được trích tự động từ các khối ```mermaid trong `docs/design/02_*.md`; hình `kien_truc_he_thong.png` render từ `figures/src/kien_truc_he_thong.mmd`. Khi sơ đồ thiết kế thay đổi thì render lại:
+## Hai script bảo trì
 
 ```bash
-npx -y @mermaid-js/mermaid-cli -i <file.mmd> -o docs/report/figures/<tên>.png -b white -s 2
+python docs/report/tools/render_figures.py           # render lại toàn bộ 17 sơ đồ
+python docs/report/tools/render_figures.py --list    # chỉ liệt kê nguồn từng hình
+python docs/report/tools/check_report.py             # soát nhất quán (thoát mã 1 nếu có vấn đề)
+python docs/report/tools/check_report.py --renumber   # đánh số lại Hình/Bảng + sinh lại 2 danh mục
 ```
 
-Bố cục phải chọn theo tỉ lệ khung in: trang A4 dọc dùng được tỉ lệ khoảng 0,67. Sơ đồ kiến trúc dùng `flowchart TB` (tỉ lệ 0,70) thay vì `LR` (4,68) chính vì lý do này.
+**`render_figures.py`** trích các khối ```mermaid trong `docs/design/02_*.md` theo đúng thứ tự xuất hiện, cộng với các tệp `.mmd` trong `figures/src/` (sơ đồ chỉ dùng cho báo cáo). Tên tệp PNG lấy từ bảng `NAMES` trong script. **Thêm hoặc bớt một khối mermaid trong `docs/design` sẽ làm lệch chỉ số**; khi đó script báo lỗi rõ và phải cập nhật `NAMES`, chứ không âm thầm ghi sai tên tệp. Chạy lại script này mỗi khi sửa sơ đồ thiết kế.
 
-**Ba hình chưa lọt trang A4** và cần xử lý trước khi nộp:
+**`check_report.py`** bắt năm lỗi mà viết tay rất dễ mắc:
 
-| Hình | Tỉ lệ | Vấn đề |
-|---|---|---|
-| `activity_drift.png` | 0,35 | Cao gấp ~3 lần khung trang; đổi sang `LR` cũng không cứu được (tỉ lệ thành 7,65) |
-| `activity_streaming.png` | 0,41 | Như trên |
-| `usecase.png` | 0,50 | Hơi cao, còn xoay xở được |
+1. số Hình/Bảng lệch thứ tự xuất hiện (chèn một hình vào giữa là lệch hết phía sau);
+2. chú thích trong danh mục khác chú thích trong thân bài;
+3. bảng chưa được đánh số;
+4. trích dẫn `[n]` không có trong danh mục tài liệu tham khảo, hoặc ngược lại;
+5. ảnh được tham chiếu nhưng không tồn tại trên đĩa.
 
-Ba phương án: (a) tách mỗi sơ đồ hoạt động dài thành 2 hình theo giai đoạn — đồng thời làm `docs/design/` dễ đọc hơn; (b) để mỗi hình trên một trang ngang riêng; (c) để hình trải hai trang dọc. Phương án (a) tốt nhất cho bản in.
+Cả năm lỗi này đều **đã từng xảy ra** trong lần viết đầu (Hình 3.10 nằm giữa 3.6 và 3.7; 10 chú thích lệch danh mục; 4 bảng chưa đánh số; 3 tài liệu có trong danh mục mà chưa được trích dẫn), nên hãy chạy script sau mỗi lần sửa nội dung.
+
+## Về việc hình có lọt trang in hay không
+
+Tiêu chí đúng **không phải tỉ lệ khung hình** mà là **cỡ chữ sau khi thu hình cho vừa khung**. Một sơ đồ rộng 5.586 px ở cỡ chữ mặc định của Mermaid, khi thu về bề rộng 16 cm, cho chữ khoảng 2,3 pt — không đọc được, dù tỉ lệ khung hình của nó (1,22) trông rất "vừa trang".
+
+Tính nhanh: `cỡ chữ (pt) ≈ 794 × bề_rộng_in(cm) / bề_rộng_ảnh(px)`, với ảnh render ở `-s 2`. Ngưỡng đọc được là khoảng 7 pt.
+
+Theo tiêu chí này, các sơ đồ tuần tự và `dfd_level1` là những hình khó in nhất, không phải các sơ đồ hoạt động. Vì bản giao hiện tại là Markdown (đọc trên màn hình, phóng to được) nên đây **không phải vấn đề đang chặn**. Nếu về sau cần bản in, ba cách xử lý: đặt hình trên một trang ngang riêng, tách sơ đồ thành nhiều phần nhỏ hơn, hoặc giảm số nút trên mỗi sơ đồ.
+
+Hai sơ đồ hoạt động dài (2.3.1 và 2.3.3) đã được tách thành hai phần a/b trong `docs/design/02_3_activity.md`, với điểm tách trùng ranh giới nghiệp vụ thật nên hai phần đọc độc lập được.
 
 ## Trạng thái nội dung
 
