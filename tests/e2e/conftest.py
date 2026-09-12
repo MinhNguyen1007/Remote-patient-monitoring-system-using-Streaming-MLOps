@@ -273,9 +273,11 @@ def make_staff(admin, db):
         return {**user, "password": STAFF_PASSWORD}
 
     yield make
+    # Xóa hẳn (không chỉ khóa): mỗi lần chạy tạo tài khoản mới, để lại thì bảng users đầy tài khoản rác.
+    # notification_logs và patient_assignments của họ cũng đi theo (ON DELETE CASCADE) — đều là dữ liệu test.
     for user in created:
         db.execute("DELETE FROM patient_assignments WHERE user_id = %s", (user["id"],))
-        db.execute("UPDATE users SET is_active = false WHERE id = %s", (user["id"],))
+        db.execute("DELETE FROM users WHERE id = %s", (user["id"],))
 
 
 @pytest.fixture
