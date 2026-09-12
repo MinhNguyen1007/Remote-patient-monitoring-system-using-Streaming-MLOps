@@ -12,7 +12,7 @@ Bộ test được thiết kế ánh xạ trực tiếp tới các use case (2.2
 | F | Logic giao diện |
 | G | Drift, retrain |
 
-Giai đoạn H chạy integration/E2E toàn hệ thống, kiểm thử phi chức năng và tổng hợp kết quả cho báo cáo.
+Giai đoạn H chạy integration/E2E toàn hệ thống, kiểm thử phi chức năng và tổng hợp kết quả cho báo cáo. Bộ test đó nằm ở [`tests/e2e/`](../../tests/e2e/README.md) (10 test, chạy trên Kafka + TimescaleDB + MLflow thật, tự khởi động stream consumer và backend để giết/bật lại được); cột "Kết quả" trong hai bảng bên dưới ghi số đo thật ngày 2026-09-12.
 
 ## 2.10.1. Unit Test
 
@@ -40,15 +40,15 @@ Giai đoạn H chạy integration/E2E toàn hệ thống, kiểm thử phi chứ
 
 ## 2.10.2. Integration Test
 
-| Luồng (tham chiếu Activity/Sequence) | Nội dung test | Công cụ |
-|---|---|---|
-| 2.3.1 / 2.4.1: Streaming → Prediction → Alert | • Producer đẩy bản ghi → `vital_records` và `predictions` xuất hiện trong DB, message xuất hiện trên `predictions-stream`.<br>• Khi vượt ngưỡng: có `alerts` và message trên `alerts-stream`.<br>• Đẩy 2 bản ghi CRITICAL liên tiếp chỉ tạo 1 alert. | pytest + testcontainers (Kafka, Postgres) |
-| 2.4.1: Sự kiện → WebSocket + Email | • Backend consume alert → client WebSocket của người **được phân công** nhận đúng payload; người không được phân công không nhận.<br>• Email gửi đúng danh sách người nhận (mock SMTP); `notification_logs` ghi đúng. | pytest-asyncio, `unittest.mock` |
-| 2.4.2: Đăng nhập + WebSocket | Đăng nhập đúng/sai qua API thật, token decode đúng role; mở WebSocket với token sai/hết hạn bị từ chối | pytest + httpx |
-| 2.4.3: Retrain thủ công | `POST /admin/models/retrain` (mock Airflow REST) → `202` kèm `dag_run_id`; `GET` trạng thái trả đúng running/success/failed | pytest + mock HTTP |
-| 2.3.3: Drift → Retrain tự động | • Producer chế độ `--drift` → `drift_check` tạo `drift_reports` với `drift_detected = true`, trigger `retrain_pipeline` và thông báo Admin.<br>• Chạy lại ngay lập tức không trigger lần 2 (chống vòng lặp).<br>• Producer không bật `--drift` → không kết luận drift. | Chạy thật trên Docker Compose (Airflow + Kafka + Postgres + MLflow), kiểm tra `drift_reports`, `model_versions`, log backend |
-| 2.4.3: Nạp lại model | Đổi alias `champion` trên MLflow → consumer nạp version mới trong 1 chu kỳ kiểm tra; prediction sau đó ghi `risk_model_version_id` mới | pytest + MLflow container |
-| Smoke test hạ tầng (chạy mỗi khi sửa `docker-compose.yml`) | • Từ host produce/consume qua `localhost:29092`.<br>• Log 1 model thử từ host lên MLflow rồi tải lại từ một container khác.<br>• Gọi Airflow REST API bằng basic auth trả 200. | script kiểm tra |
+| Luồng (tham chiếu Activity/Sequence) | Nội dung test | Hiện thực | Kết quả |
+|---|---|---|---|
+| 2.3.1 / 2.4.1: Streaming → Prediction → Alert | • Producer đẩy bản ghi → `vital_records` và `predictions` xuất hiện trong DB, message xuất hiện trên `predictions-stream`.<br>• Khi vượt ngưỡng: có `alerts` và message trên `alerts-stream`.<br>• Đẩy nhiều bản ghi CRITICAL liên tiếp chỉ tạo 1 alert.<br>• Phát lại giờ đã có → bị bỏ qua, không tạo bản ghi trùng. | `tests/e2e/test_1_streaming_pipeline.py` (Kafka + TimescaleDB + MLflow thật) | Đạt. 5 giờ CRITICAL liên tiếp → đúng 1 cảnh báo RISK gắn giờ đầu tiên, đúng 1 message `alerts-stream` |
+| 2.4.1: Sự kiện → WebSocket + Email | • Backend consume alert → client WebSocket của người **được phân công** nhận đúng payload; người không được phân công không nhận.<br>• Email gửi đúng danh sách người nhận; `notification_logs` ghi đúng.<br>• `alert_update` theo chuỗi `OPEN → ACKNOWLEDGED → RESOLVED`, sai thứ tự → 409. | `tests/e2e/test_2_realtime_events.py` (backend thật, `EMAIL_DELIVERY=log`) | Đạt |
+| 2.4.2: Đăng nhập + WebSocket | Đăng nhập đúng/sai qua API thật, token decode đúng role; mở WebSocket với token sai/rỗng bị từ chối | `tests/e2e/test_2_realtime_events.py` | Đạt |
+| 2.4.3: Retrain thủ công | `POST /admin/models/retrain` (mock Airflow REST) → `202` kèm `dag_run_id`; `GET` trạng thái trả đúng running/success/failed | `services/backend/tests/test_admin.py` | Đạt; thêm một lần chạy thật với Airflow ở Giai đoạn G |
+| 2.3.3: Drift → Retrain tự động | • Producer chế độ `--drift` → `drift_check` tạo `drift_reports` với `drift_detected = true`, trigger `retrain_pipeline` và thông báo Admin.<br>• Chạy lại ngay lập tức không trigger lần 2 (chống vòng lặp).<br>• Producer không bật `--drift` → không kết luận drift. | Chạy thật trên Docker Compose (Airflow + Kafka + Postgres + MLflow) ở Giai đoạn G | Đạt; số liệu ở `docs/report/ghi_chu_bao_cao.md` mục 3.4(d) |
+| 2.4.3: Nạp lại model | Đổi alias `champion` trên MLflow → consumer nạp version mới trong 1 chu kỳ kiểm tra; prediction sau đó ghi `risk_model_version_id` mới | `tests/e2e/test_3_model_reload.py` (MLflow thật, alias được trả về nguyên trạng) | Đạt; cờ `is_champion` trong `model_versions` cũng đi theo alias |
+| Smoke test hạ tầng (chạy mỗi khi sửa `docker-compose.yml`) | • Từ host produce/consume qua `localhost:29092`.<br>• Log 1 model thử từ host lên MLflow rồi tải lại từ một container khác.<br>• Gọi Airflow REST API bằng basic auth trả 200. | script kiểm tra | Đạt (2026-09-10) |
 
 ## 2.10.3. Model Evaluation Test (Quality Gate)
 
@@ -74,11 +74,13 @@ Tham chiếu: baseline persistence (h = 4) trên tập `test` đạt Macro F1 0,
 
 ## 2.10.4. Kiểm thử phi chức năng
 
-| Tiêu chí | Cách đo | Ngưỡng đề xuất |
-|---|---|---|
-| Độ trễ đầu–cuối | Từ lúc producer publish tới lúc dashboard nhận prediction qua WebSocket, với 20 bệnh nhân phát đồng thời ở tốc độ mặc định | p95 < 2 giây |
-| Chịu lỗi backend | Tắt backend trong lúc đang replay rồi bật lại | Consumer vẫn ghi DB; backend đọc tiếp từ offset cũ, không mất alert |
-| Chịu lỗi consumer | Khởi động lại consumer giữa chừng | State dựng lại từ DB; không tạo alert trùng; không bỏ sót bản ghi |
+| Tiêu chí | Cách đo | Ngưỡng đề xuất | Kết quả (2026-09-12) |
+|---|---|---|---|
+| Độ trễ đầu–cuối | Từ lúc producer publish tới lúc dashboard nhận prediction qua WebSocket, với 20 bệnh nhân phát đồng thời ở tốc độ mặc định (`tests/e2e/test_5_latency.py`) | p95 < 2 giây | **Đạt**: p95 1,62 giây trên 220 mẫu của kịch bản 20 bệnh nhân (1,64 giây trên toàn bộ 388 mẫu); p50 0,93; max 1,83. Bảng đầy đủ: `tests/e2e/reports/latency.md` |
+| Chịu lỗi backend | Tắt backend trong lúc đang replay rồi bật lại (`tests/e2e/test_4_fault_tolerance.py`) | Consumer vẫn ghi DB; backend đọc tiếp từ offset cũ, không mất alert | **Đạt**: cảnh báo sinh ra lúc backend tắt được xử lý sau khi bật lại, `notification_logs` ghi đúng người được phân công |
+| Chịu lỗi consumer | Giết cứng consumer giữa chừng rồi bật lại (`tests/e2e/test_4_fault_tolerance.py`) | State dựng lại từ DB; không tạo alert trùng; không bỏ sót bản ghi | **Đạt**: 9/9 bản ghi mỗi bệnh nhân, 0 giờ trùng, mỗi bệnh nhân vẫn đúng 1 cảnh báo |
+
+Độ trễ tăng gần như tuyến tính theo số bệnh nhân trong một nhịp vì consumer xử lý tuần tự (~70 ms/message): khoảng 28 bệnh nhân/nhịp là chạm ngưỡng 2 giây với một consumer. Cách mở rộng đã có sẵn trong thiết kế (3 partition, key = mã bệnh nhân → chạy nhiều consumer cùng group) nhưng chưa đo thử.
 
 ## 2.10.5. Chiến lược dữ liệu test
 

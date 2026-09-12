@@ -1,8 +1,8 @@
-# Ghi chú viết báo cáo (cập nhật 2026-09-11, hết Giai đoạn G)
+# Ghi chú viết báo cáo (cập nhật 2026-09-12, hết Giai đoạn H)
 
 File này gom **mọi số liệu, quyết định và hạn chế** cần đưa vào báo cáo, sắp theo đúng cấu trúc mục báo cáo. Khi viết báo cáo (Giai đoạn I), đọc file này trước, rồi mở file nguồn được chỉ ra để lấy chi tiết. Số thập phân dùng dấu phẩy.
 
-> **Quy tắc cập nhật**: sau giai đoạn còn lại (H), bổ sung số liệu mới vào đúng mục bên dưới.
+> **Quy tắc cập nhật**: mỗi khi có số liệu mới, bổ sung vào đúng mục bên dưới.
 
 ## 0. Bản đồ mục báo cáo → nguồn trong repo
 
@@ -22,7 +22,7 @@ File này gom **mọi số liệu, quyết định và hạn chế** cần đưa
 | 3.1 Công nghệ | mục 3.1 bên dưới | Đủ số liệu |
 | 3.2 Dữ liệu | `ml/README.md`, `ml/data_dictionary.md`, mục 3.2 bên dưới | Đủ số liệu |
 | 3.3 Triển khai | `docker-compose.yml`, `infra/Dockerfile.airflow`, `infra/airflow/dags/`, các `CLAUDE.md`, mục 3.3 bên dưới | Đủ |
-| 3.4 Kết quả | `ml/reports/evaluation.md` (+ 3 hình), mục 3.4 bên dưới | Thiếu đo p95 (H), ảnh chụp giao diện thật (cả tab Giám sát mô hình sau drift) |
+| 3.4 Kết quả | `ml/reports/evaluation.md` (+ 3 hình), `tests/e2e/reports/latency.md`, mục 3.4 bên dưới | Thiếu ảnh chụp giao diện thật (cả tab Giám sát mô hình sau drift) |
 | 3.5 Đánh giá | mục 3.5 bên dưới (hạn chế **bắt buộc** công khai) | Đủ cho C–G |
 | 4. Kết luận + hướng phát triển | mục 4 bên dưới | Có ý chính |
 | 5. Tài liệu tham khảo | mục 5 bên dưới | Có danh sách nền |
@@ -168,9 +168,31 @@ File này gom **mọi số liệu, quyết định và hạn chế** cần đưa
   | `streaming` | 27 |
   | `backend` (DB thật) | 34 |
   | `frontend` (Vitest) | 23 |
-  | **Tổng** | **244** |
+  | `tests/e2e` (hệ thống thật, Giai đoạn H) | 10 |
+  | **Tổng** | **254** |
 
-- **Cần bổ sung**: ảnh chụp giao diện thật sau khi người dùng đăng nhập (Claude không tự nhập mật khẩu), đo p95 < 2 giây (Giai đoạn H).
+- **Cần bổ sung**: ảnh chụp giao diện thật sau khi người dùng đăng nhập (Claude không tự nhập mật khẩu).
+
+### f) Kiểm thử tích hợp & phi chức năng (Giai đoạn H, 2026-09-12)
+
+Bộ `tests/e2e/` (10 test, ~6 phút) chạy trên hệ thống thật — Kafka, TimescaleDB, MLflow bằng docker compose, còn stream consumer và backend do chính bộ test khởi động để giết/bật lại được. Không có mock ở bất kỳ khâu nào.
+
+- **Độ trễ đầu–cuối** (`tests/e2e/reports/latency.md`), đo từ lúc producer gọi `produce()` tới lúc client WebSocket nhận sự kiện `prediction`, 20 bệnh nhân phát đồng thời, 5 giây/giờ dữ liệu:
+
+  | Nhóm mẫu | n | p50 (s) | p95 (s) | p99 (s) | max (s) |
+  |---|---|---|---|---|---|
+  | Tất cả | 388 | 0,88 | **1,64** | 2,02 | 2,31 |
+  | 20 bệnh nhân cùng lúc (kịch bản 2.10.4) | 220 | 0,93 | 1,62 | 1,74 | 1,83 |
+  | 14 bệnh nhân có đợt ICU dài | 168 | 0,83 | 1,76 | 2,12 | 2,31 |
+  | Cửa sổ đã đủ 12 giờ (có chạy LSTM-AE) | 80 | 1,02 | 1,88 | 2,21 | 2,31 |
+
+  **Đạt ngưỡng thiết kế p95 < 2 giây.** Hai lần chạy độc lập cho p95 1,64 và 1,62 giây. Phần lớn độ trễ là hàng đợi trong nhịp phát: 20 message của cùng một nhịp được consumer xử lý tuần tự (~70 ms/message), nên message cuối nhịp chờ lâu nhất. Nhịp có chạy LSTM-AE chậm hơn khoảng 0,2 giây ở p95.
+- **Chịu lỗi consumer**: giết cứng giữa lúc đang xử lý 2 bệnh nhân × 8 giờ → bật lại, dựng state từ DB, kết quả 9/9 bản ghi mỗi bệnh nhân, 0 giờ trùng, mỗi bản ghi đúng 1 prediction, mỗi bệnh nhân vẫn đúng 1 cảnh báo (không tạo trùng sau khi khởi động lại).
+- **Chịu lỗi backend**: tắt backend giữa lúc replay → consumer vẫn ghi DB và tạo cảnh báo (lúc đó chưa có `notification_logs`); bật lại → Kafka listener đọc tiếp từ offset đã commit, xử lý cảnh báo bị bỏ lại và ghi `notification_logs` đúng người được phân công. Không mất cảnh báo.
+- **Nạp lại model khi đổi alias**: trỏ `risk_classifier@champion` sang version khác → consumer nạp trong một chu kỳ kiểm tra, prediction tiếp theo ghi đúng `risk_model_version_id` mới, cờ `is_champion` trong `model_versions` đi theo; trả alias về v2 thì quay lại nguyên trạng.
+- **Luồng realtime theo phân công**: prediction và alert chỉ tới WebSocket của người được phân công; người không được phân công không nhận sự kiện nào của bệnh nhân đó, và `/patients/{id}` trả 403. `notification_logs` đúng một người nhận. Chuỗi `OPEN → ACKNOWLEDGED → RESOLVED` đẩy `alert_update` mỗi bước, gọi sai thứ tự → 409.
+- **Chống bão cảnh báo (đo lại tự động)**: 5 giờ CRITICAL liên tiếp (ngưỡng Admin hạ xuống 1e-6) chỉ sinh **1** cảnh báo RISK, gắn đúng giờ CRITICAL đầu tiên, và đúng 1 message trên `alerts-stream`.
+- **Ngưỡng của Admin ghi đè τ của champion**: đổi `alert-settings` qua API → consumer áp dụng trong ~1 chu kỳ đọc lại, quan sát được ngay ở mức rủi ro của các giờ tiếp theo.
 
 ## 3.5 Đánh giá — hạn chế BẮT BUỘC công khai
 
@@ -191,6 +213,8 @@ File này gom **mọi số liệu, quyết định và hạn chế** cần đưa
 12. **Chỉ phát hiện được một phần drift mô phỏng**: SpO2 −3 bị phát hiện, HR +15 thì không (ngưỡng HR 1,78 vì nhịp tim khác nhau rất nhiều giữa các bệnh nhân). Drift chỉ kiểm tra được ở nhịp 24–55 của mỗi lần phát lại (các đợt ICU ngắn kết thúc sớm, cửa sổ còn < 200 bản ghi).
 13. **Retrain trên drift mô phỏng không cải thiện mô hình**: cả 4 challenger (tự động + thủ công) đều không vượt champion trên test cố định, trừ anomaly v4 bằng điểm champion vì không có dữ liệu mới. Đây là hành vi mong muốn của gate (không hạ cấp hệ thống), nhưng không chứng minh được retrain "sửa" được drift. Lý do: dữ liệu stream nhỏ (≤ 858 giờ so với 6.286 giờ train) và test cố định không có drift.
 14. **Gate "không kém champion" cho qua khi bằng điểm**: anomaly v4 được promote dù thực chất trùng v3. Đã giảm khả năng này bằng điều kiện cửa sổ đủ 24 nhịp; quy tắc gate giữ nguyên theo thiết kế.
+15. **Độ trễ đo trên một máy, một consumer.** p95 1,6 giây là số của 20 bệnh nhân trên một máy Windows chạy đồng thời cả Kafka, TimescaleDB, MLflow, consumer và backend trong Docker Desktop. Độ trễ gần như tuyến tính theo số bệnh nhân mỗi nhịp vì consumer xử lý tuần tự (~70 ms/message): khoảng 28 bệnh nhân/nhịp là chạm ngưỡng 2 giây. Muốn nhiều hơn thì tăng số partition và chạy nhiều consumer cùng group — kiến trúc đã sẵn sàng (3 partition, key = mã bệnh nhân) nhưng **chưa đo thử**.
+16. **Bộ E2E dùng ngưỡng rủi ro nhân tạo.** Để kiểm tra luồng cảnh báo một cách tất định, test hạ `risk_critical_threshold` xuống 1e-6 (mọi giờ thành CRITICAL) thay vì chờ giờ thật vượt ngưỡng; phần chống trùng và chống bão cảnh báo vẫn là logic thật, nhưng tần suất cảnh báo trong test không phản ánh tần suất thật (xem mục c).
 
 ## 4. Kết luận và hướng phát triển (ý chính)
 

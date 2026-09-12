@@ -45,3 +45,5 @@ Thumbs.db
 
 # Logs
 *.log
+# Log tiến trình con của bộ test E2E (Giai đoạn H); reports/ thì có commit
+tests/e2e/.logs/

@@ -21,6 +21,7 @@ services/                 Các service chạy thật (mỗi service có Dockerfi
 ml/                       Dữ liệu, huấn luyện, đánh giá, drift, retrain                 (src/rpm_ml/)
 packages/common/          rpm_common: làm sạch, lưới giờ, NEWS2, đặc trưng — dùng chung cho train và streaming
 infra/                    Docker (MLflow, Airflow), Airflow DAG, Prometheus/Grafana, script khởi tạo Postgres
+tests/e2e/                Test tích hợp & phi chức năng chạy trên hệ thống thật (độ trễ, chịu lỗi)
 docs/                     Thiết kế (design/, mục 1–2 báo cáo) và ghi chú viết báo cáo (report/)
 docker-compose.yml        Toàn bộ hệ thống; service ứng dụng nằm trong profile "app"
 ```
@@ -59,4 +60,5 @@ cùng các `requirements.txt`; lệnh chi tiết ở `CLAUDE.md` gốc và `CLAU
 - Thiết kế đầy đủ: [`docs/design/`](docs/design/) — chức năng, use case, activity, sequence, class, DFD, ERD, giao diện, giải thuật, test.
 - Dataset (nguồn, giấy phép, mapping itemid, trích dẫn bắt buộc): [`ml/README.md`](ml/README.md), từ điển dữ liệu [`ml/data_dictionary.md`](ml/data_dictionary.md).
 - Kết quả mô hình: [`ml/reports/evaluation.md`](ml/reports/evaluation.md); số liệu cho báo cáo: [`docs/report/ghi_chu_bao_cao.md`](docs/report/ghi_chu_bao_cao.md).
+- Kiểm thử tích hợp & phi chức năng (độ trễ đầu–cuối, chịu lỗi): [`tests/e2e/README.md`](tests/e2e/README.md), kết quả đo ở [`tests/e2e/reports/latency.md`](tests/e2e/reports/latency.md).
 - Tiến độ và quyết định đã chốt: mục "Trạng thái hiện tại" trong [`CLAUDE.md`](CLAUDE.md).

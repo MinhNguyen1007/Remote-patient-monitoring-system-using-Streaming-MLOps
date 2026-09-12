@@ -123,11 +123,17 @@
   - Bật lại: `docker compose up -d postgres zookeeper kafka mlflow`, `docker compose up -d airflow-webserver airflow-scheduler`, `docker compose --profile app up -d`.
   - DB đang chứa dữ liệu của lần phát lại `--drift` cuối (72 nhịp). Trước khi đo/demo mới: dừng consumer rồi `python -m rpm_streaming.storage.reset_demo --yes`.
   - **Số liệu cho báo cáo gom ở [`docs/report/ghi_chu_bao_cao.md`](docs/report/ghi_chu_bao_cao.md)** (bản đồ mục báo cáo → nguồn, phiên bản công nghệ, kết quả, hạn chế bắt buộc công khai, tài liệu tham khảo). Cập nhật file đó sau H.
-- **Việc tiếp theo**: **Giai đoạn H — kiểm thử tích hợp & phi chức năng** (bám `02_10` mục 2.10.2, 2.10.4):
-  1. Integration/E2E tự động cho các luồng ở 2.10.2 (streaming → prediction → alert, sự kiện → WebSocket/email, retrain, nạp lại model khi đổi alias).
-  2. Đo độ trễ đầu–cuối p95 < 2 giây (20 bệnh nhân, tốc độ mặc định); chịu lỗi backend/consumer.
-  3. Soát giao diện thật (người dùng đăng nhập; chụp ảnh các màn hình, gồm tab Giám sát mô hình sau drift) cho báo cáo.
-  4. Sau H: Giai đoạn I (viết báo cáo mục 1–5, rồi mục 6 khi có mẫu Word).
+- **Giai đoạn H — kiểm thử tích hợp & phi chức năng: XONG phần tự động (2026-09-12)**. Bộ test ở `tests/e2e/` (README riêng), 10 test chạy ~6 phút trên hệ thống thật.
+  - Không mock gì: Kafka + TimescaleDB + MLflow từ docker compose; **stream consumer và backend do chính bộ test khởi động** dưới dạng tiến trình con nên giết/bật lại được (2.10.4).
+  - Phủ 2.10.2 dòng 1, 2, 3, 6 và 2.10.4 cả 3 dòng. Dòng 4 (retrain thủ công) nằm ở `services/backend/tests`, dòng 5 (drift → retrain) đã chạy thật ở Giai đoạn G.
+  - **Độ trễ đầu–cuối đạt ngưỡng**: p95 **1,62 giây** (20 bệnh nhân cùng lúc, tốc độ mặc định), p50 0,93, max 1,83. Bảng đầy đủ ở `tests/e2e/reports/latency.md` (sinh tự động, commit vào git). Hai lần chạy độc lập cho 1,62 và 1,64.
+  - Chịu lỗi: giết cứng consumer → đủ bản ghi, 0 giờ trùng, không cảnh báo trùng; tắt backend giữa chừng → bật lại đọc tiếp offset cũ, `notification_logs` đúng người được phân công.
+  - Tổng test: 254 (common 99, ml 61, streaming 27, backend 34, frontend 23, e2e 10).
+  - ⚠ Bộ E2E **xóa dữ liệu phát lại** trong `rpm_db` khi bắt đầu (như `reset_demo`), giữ users/model_versions/alert_settings/drift_reports.
+  - Ba điểm đáng nhớ khi sửa bộ test (đã ghi trong README): group Kafka phải riêng từng phiên (stream consumer dùng `earliest` nên được commit sẵn offset cuối topic); khẳng định dựa trên log phải dùng `log_since_last_start()`; test cần thấy cảnh báo **mới** phải đi qua fixture `alert_slate` (cảnh báo OPEN cũ + cooldown sẽ chặn).
+- **Việc tiếp theo**:
+  1. **Còn lại của H**: soát giao diện thật (người dùng đăng nhập; chụp ảnh các màn hình, gồm tab Giám sát mô hình sau drift) cho báo cáo mục 3.4 — Claude không tự nhập mật khẩu vào trang web.
+  2. Giai đoạn I: viết báo cáo mục 1–5 theo `docs/report/ghi_chu_bao_cao.md`, rồi mục 6 khi có mẫu Word.
 - **Quyết định đã chốt sau rà soát 2026-09-10** (người dùng đã duyệt):
   - Model rủi ro là **dự báo** mức NEWS2 cao nhất trong 4 giờ tới, không phân loại tức thời. Phân loại tức thời bị rò rỉ nhãn vì nhãn là hàm tất định của đặc trưng. Model phải thắng baseline persistence.
   - Drift → **tự động** kích hoạt retrain; quality gate chặn model kém; Admin vẫn retrain thủ công được. (Ngưỡng drift đổi thành ngưỡng hiệu chỉnh theo từng đặc trưng ngày 2026-09-11, xem Giai đoạn G.)
@@ -166,6 +172,7 @@ services/streaming/     Kafka   — services/streaming/CLAUDE.md (package rpm_st
 ml/                     ML/MLOps — ml/CLAUDE.md (package rpm_ml: data/ models/ training/ evaluation/ drift/ pipelines/ storage/)
 packages/common/        rpm_common — đặc trưng dùng chung cho ml/ và services/streaming (quy ước ở ml/CLAUDE.md)
 infra/                  Dockerfile MLflow/Airflow, DAG Airflow (infra/airflow/dags), Prometheus/Grafana, init Postgres
+tests/e2e/              Test tích hợp & phi chức năng trên hệ thống thật — tests/e2e/README.md (Giai đoạn H)
 docs/                   design/ (thiết kế mục 1–2), report/ (ghi chú viết báo cáo)
 ```
 
@@ -204,6 +211,8 @@ cd ml && ..\.venv\Scripts\python -m pytest -q && cd ..
 cd services/streaming && ..\..\.venv\Scripts\python -m pytest -q && cd ..\..
 cd services/backend && ..\..\.venv\Scripts\python -m pytest -q && cd ..\..
 cd services/frontend && npm run test && cd ..\..
+# E2E trên hệ thống thật (~6 phút; XÓA dữ liệu phát lại trong rpm_db — xem tests/e2e/README.md)
+cd tests/e2e && ..\..\.venv\Scripts\python -m pytest -q && cd ..\..
 
 # Dữ liệu và model — trên host cần MLFLOW_TRACKING_URI=http://localhost:5000
 .venv\Scripts\python -m rpm_ml.data.preprocess            # → ml/data/processed/
