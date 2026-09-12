@@ -195,6 +195,7 @@ Bộ `tests/e2e/` (10 test, ~6 phút) chạy trên hệ thống thật — Kafka
 - **Luồng realtime theo phân công**: prediction và alert chỉ tới WebSocket của người được phân công; người không được phân công không nhận sự kiện nào của bệnh nhân đó, và `/patients/{id}` trả 403. `notification_logs` đúng một người nhận. Chuỗi `OPEN → ACKNOWLEDGED → RESOLVED` đẩy `alert_update` mỗi bước, gọi sai thứ tự → 409.
 - **Chống bão cảnh báo (đo lại tự động)**: 5 giờ CRITICAL liên tiếp (ngưỡng Admin hạ xuống 1e-6) chỉ sinh **1** cảnh báo RISK, gắn đúng giờ CRITICAL đầu tiên, và đúng 1 message trên `alerts-stream`.
 - **Ngưỡng của Admin ghi đè τ của champion**: đổi `alert-settings` qua API → consumer áp dụng trong ~1 chu kỳ đọc lại, quan sát được ngay ở mức rủi ro của các giờ tiếp theo.
+- **Lỗi thật do bộ E2E tìm ra**: `Repository.sync_champion` của consumer ghi đè `model_versions.gate_status = 'PROMOTED'` mỗi lần đồng bộ champion, trái với docstring của chính nó ("chỉ bật cờ champion và gộp metric"). Hậu quả: trỏ alias `champion` sang một version **đã bị quality gate từ chối** sẽ biến dòng đó thành `PROMOTED` trong khi `gate_reasons` vẫn ghi lý do từ chối — tab Giám sát mô hình của Admin báo sai. Phát hiện khi test đổi alias sang `risk_classifier` v4 (bị từ chối vì Recall CRITICAL 0,759 < 0,790). Đã sửa (`ON CONFLICT` không còn ghi `gate_status`; chỉ lần chèn đầu tiên mới ghi `PROMOTED` cho model huấn luyện ngoài DAG), sửa lại dòng sai trong DB, và thêm khẳng định chống hồi quy vào `test_3_model_reload.py`.
 
 ## 3.5 Đánh giá — hạn chế BẮT BUỘC công khai
 

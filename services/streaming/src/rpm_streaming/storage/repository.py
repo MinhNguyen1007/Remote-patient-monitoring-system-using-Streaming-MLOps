@@ -101,7 +101,10 @@ class Repository:
         """Ghi/cập nhật version champion vào model_versions và chỉ để đúng 1 version is_champion cho model này.
 
         Version do DAG retrain_pipeline tạo đã có sẵn dòng (trigger, drift_report_id, gate_reasons, metric champion cũ):
-        chỉ bật cờ champion và gộp metric, không ghi đè các cột đó.
+        chỉ bật cờ champion và gộp metric, không ghi đè các cột đó — kể cả `gate_status`. `gate_status` là kết luận
+        của quality gate về version đó, không phải trạng thái alias: nếu ai đó trỏ alias `champion` sang một version
+        đã bị gate từ chối, dòng đó phải vẫn hiện REJECTED kèm `gate_reasons` để tab Giám sát mô hình nói thật.
+        Chỉ lần chèn đầu tiên mới ghi 'PROMOTED' (model huấn luyện ngoài DAG, không có bản ghi gate nào).
         """
         with self.conn, self.conn.cursor() as cur:
             cur.execute(
@@ -110,7 +113,7 @@ class Repository:
                     (id, model_name, mlflow_version, mlflow_run_id, gate_status, is_champion, trigger, metrics, trained_at)
                 VALUES (%s, %s, %s, %s, 'PROMOTED', true, %s, %s, %s)
                 ON CONFLICT (model_name, mlflow_version) DO UPDATE
-                    SET is_champion = true, gate_status = 'PROMOTED',
+                    SET is_champion = true,
                         metrics = COALESCE(model_versions.metrics, '{}'::jsonb) || EXCLUDED.metrics
                 RETURNING id
                 """,

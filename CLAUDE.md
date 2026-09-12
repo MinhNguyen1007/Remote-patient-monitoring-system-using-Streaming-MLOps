@@ -130,6 +130,7 @@
   - Chịu lỗi: giết cứng consumer → đủ bản ghi, 0 giờ trùng, không cảnh báo trùng; tắt backend giữa chừng → bật lại đọc tiếp offset cũ, `notification_logs` đúng người được phân công.
   - Tổng test: 254 (common 99, ml 61, streaming 27, backend 34, frontend 23, e2e 10).
   - ⚠ Bộ E2E **xóa dữ liệu phát lại** trong `rpm_db` khi bắt đầu (như `reset_demo`), giữ users/model_versions/alert_settings/drift_reports.
+  - **Lỗi thật bộ E2E tìm ra**: `sync_champion` của consumer ghi đè `model_versions.gate_status = 'PROMOTED'` mỗi lần đồng bộ, nên trỏ alias `champion` sang version đã bị gate từ chối làm tab Giám sát mô hình báo sai (dòng vẫn giữ `gate_reasons` từ chối). Đã sửa (`ON CONFLICT` không ghi `gate_status` nữa), sửa dòng sai trong DB, rebuild `rpm-streaming`, thêm khẳng định chống hồi quy trong `test_3_model_reload.py`.
   - Ba điểm đáng nhớ khi sửa bộ test (đã ghi trong README): group Kafka phải riêng từng phiên (stream consumer dùng `earliest` nên được commit sẵn offset cuối topic); khẳng định dựa trên log phải dùng `log_since_last_start()`; test cần thấy cảnh báo **mới** phải đi qua fixture `alert_slate` (cảnh báo OPEN cũ + cooldown sẽ chặn).
 - **Việc tiếp theo**:
   1. **Còn lại của H**: soát giao diện thật (người dùng đăng nhập; chụp ảnh các màn hình, gồm tab Giám sát mô hình sau drift) cho báo cáo mục 3.4 — Claude không tự nhập mật khẩu vào trang web.

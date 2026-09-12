@@ -55,6 +55,14 @@ def risk_version_of_last_prediction(db, patient_id) -> str:
     return row[0]["mlflow_version"] if row else None
 
 
+def gate_row(db, version: str) -> dict | None:
+    rows = db.rows(
+        "SELECT gate_status, gate_reasons, is_champion FROM model_versions"
+        " WHERE model_name = %s AND mlflow_version = %s", (RISK_MODEL, version)
+    )
+    return rows[0] if rows else None
+
+
 def test_consumer_reloads_champion_within_one_refresh_cycle(replay, consumer, db, subject, champion_alias):
     switch_to, original, other_version = champion_alias
 
@@ -64,6 +72,7 @@ def test_consumer_reloads_champion_within_one_refresh_cycle(replay, consumer, db
     assert risk_version_of_last_prediction(db, patient_id) == original
 
     replacement = other_version()
+    gate_before = gate_row(db, replacement)
     switch_to(replacement)
     wait_until(
         lambda: f"đã nạp {RISK_MODEL} v{replacement}" in consumer.log_since_last_start(),
@@ -80,6 +89,14 @@ def test_consumer_reloads_champion_within_one_refresh_cycle(replay, consumer, db
         "SELECT mlflow_version, is_champion FROM model_versions WHERE model_name = %s AND is_champion", (RISK_MODEL,)
     )
     assert [row["mlflow_version"] for row in champions] == [replacement]
+
+    # Nhưng kết luận của quality gate thì KHÔNG được đổi theo alias: đổi alias sang một version đã bị gate từ chối
+    # không biến nó thành PROMOTED, nếu không tab Giám sát mô hình sẽ báo sai lý do gate.
+    gate_after = gate_row(db, replacement)
+    if gate_before is not None:
+        assert (gate_after["gate_status"], gate_after["gate_reasons"]) == \
+            (gate_before["gate_status"], gate_before["gate_reasons"]), \
+            "đổi alias champion không được ghi đè gate_status/gate_reasons"
 
     switch_to(original)
     wait_until(
