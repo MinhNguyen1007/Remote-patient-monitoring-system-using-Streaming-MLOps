@@ -47,3 +47,7 @@ Thumbs.db
 *.log
 # Log tiến trình con của bộ test E2E (Giai đoạn H); reports/ thì có commit
 tests/e2e/.logs/
+
+# Bản Word sinh ra từ docs/report/*.md (tạo lại bằng python docs/report/build_docx.py)
+docs/report/*.docx
+docs/report/.*.pandoc.md

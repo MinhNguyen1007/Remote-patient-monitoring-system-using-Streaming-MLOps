@@ -1,0 +1,53 @@
+%% Bố cục TB (không phải LR): xếp dọc cho tỉ lệ ~0,70, vừa khít một trang A4 dọc trong bản Word.
+flowchart TB
+    subgraph NGUON["Nguồn dữ liệu"]
+        MIMIC[("MIMIC-III Demo<br/>100 bệnh nhân ICU")]
+        PRE["Tiền xử lý<br/>rpm_common: làm sạch,<br/>lưới 1 giờ, forward-fill"]
+        MIMIC --> PRE
+    end
+
+    subgraph STREAM["Tầng streaming"]
+        PROD["Kafka Producer<br/>phát lại nhóm stream"]
+        TOPIC1[/"topic vitals-stream"/]
+        CONS["Stream Consumer<br/>đặc trưng → 2 mô hình<br/>→ quyết định cảnh báo"]
+        TOPIC2[/"topic predictions-stream<br/>alerts-stream"/]
+        PROD --> TOPIC1 --> CONS --> TOPIC2
+    end
+
+    subgraph MODEL["Mô hình học máy"]
+        RISK["Dự báo rủi ro 4 giờ tới<br/>Random Forest"]
+        ANOM["Phát hiện bất thường<br/>LSTM-Autoencoder"]
+    end
+
+    subgraph LUU["Lưu trữ"]
+        DB[("PostgreSQL + TimescaleDB<br/>hypertable vital_records,<br/>predictions")]
+    end
+
+    subgraph UNGDUNG["Tầng ứng dụng"]
+        API["FastAPI<br/>REST + WebSocket + JWT"]
+        WEB["React Dashboard<br/>realtime"]
+        MAIL["Email tới người<br/>được phân công"]
+        API --> WEB
+        API --> MAIL
+    end
+
+    subgraph MLOPS["Tầng MLOps"]
+        MLF[("MLflow<br/>tracking + registry<br/>alias champion")]
+        DRIFT["Airflow DAG drift_check<br/>PSI, ngưỡng hiệu chỉnh"]
+        RETRAIN["Airflow DAG retrain_pipeline<br/>+ quality gate"]
+        TOPIC3[/"topic mlops-events"/]
+        DRIFT -->|"phát hiện drift"| RETRAIN
+        RETRAIN -->|"đạt gate"| MLF
+        DRIFT --> TOPIC3
+        RETRAIN --> TOPIC3
+    end
+
+    PRE --> PROD
+    CONS <-->|"nạp champion"| MODEL
+    MODEL -.->|"models:/@champion"| MLF
+    CONS --> DB
+    TOPIC2 --> API
+    TOPIC3 --> API
+    DB --> API
+    DB -->|"dữ liệu stream mới"| DRIFT
+    DB -->|"huấn luyện lại"| RETRAIN

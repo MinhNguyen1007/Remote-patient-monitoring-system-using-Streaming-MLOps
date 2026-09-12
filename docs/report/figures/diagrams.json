@@ -1,0 +1,86 @@
+[
+  {
+    "file": "so_do_chuc_nang.png",
+    "caption": "Sơ đồ chức năng tổng quát của hệ thống",
+    "source": "02_1_so_do_chuc_nang.md",
+    "heading": "2.1. Sơ đồ chức năng tổng quát"
+  },
+  {
+    "file": "usecase.png",
+    "caption": "Biểu đồ Use Case (13 use case, 3 vai trò)",
+    "source": "02_2_usecase.md",
+    "heading": "Biểu đồ"
+  },
+  {
+    "file": "activity_streaming.png",
+    "caption": "Luồng xử lý dữ liệu streaming đến cảnh báo",
+    "source": "02_3_activity.md",
+    "heading": "2.3.1. Luồng xử lý dữ liệu streaming → cảnh báo (UC12, UC11)"
+  },
+  {
+    "file": "activity_dang_nhap.png",
+    "caption": "Luồng đăng nhập và mở kết nối realtime",
+    "source": "02_3_activity.md",
+    "heading": "2.3.2. Luồng đăng nhập (UC01)"
+  },
+  {
+    "file": "activity_drift.png",
+    "caption": "Luồng phát hiện drift và huấn luyện lại mô hình",
+    "source": "02_3_activity.md",
+    "heading": "2.3.3. Luồng phát hiện drift → huấn luyện lại (UC09, UC10)"
+  },
+  {
+    "file": "sequence_realtime.png",
+    "caption": "Tuần tự dự đoán realtime và phát cảnh báo",
+    "source": "02_4_sequence.md",
+    "heading": "2.4.1. Dự đoán realtime & phát cảnh báo"
+  },
+  {
+    "file": "sequence_dang_nhap.png",
+    "caption": "Tuần tự đăng nhập và mở WebSocket",
+    "source": "02_4_sequence.md",
+    "heading": "2.4.2. Đăng nhập hệ thống và mở kết nối realtime"
+  },
+  {
+    "file": "sequence_retrain.png",
+    "caption": "Tuần tự kích hoạt huấn luyện lại thủ công",
+    "source": "02_4_sequence.md",
+    "heading": "2.4.3. Kích hoạt huấn luyện lại mô hình (thủ công bởi Admin — UC10)"
+  },
+  {
+    "file": "sequence_drift.png",
+    "caption": "Tuần tự phát hiện drift và thông báo Admin",
+    "source": "02_4_sequence.md",
+    "heading": "2.4.4. Phát hiện drift và thông báo Admin (UC09)"
+  },
+  {
+    "file": "class_diagram.png",
+    "caption": "Biểu đồ lớp",
+    "source": "02_5_class.md",
+    "heading": "2.5. Biểu đồ Lớp (Class Diagram)"
+  },
+  {
+    "file": "dfd_level0.png",
+    "caption": "DFD mức ngữ cảnh (Level 0)",
+    "source": "02_6_dfd_database.md",
+    "heading": "2.6.1. DFD mức ngữ cảnh (Context Diagram - Level 0)"
+  },
+  {
+    "file": "dfd_level1.png",
+    "caption": "DFD mức 1",
+    "source": "02_6_dfd_database.md",
+    "heading": "2.6.2. DFD mức 1 (Level 1)"
+  },
+  {
+    "file": "erd.png",
+    "caption": "Biểu đồ quan hệ dữ liệu (ERD)",
+    "source": "02_7_erd.md",
+    "heading": "2.7. Biểu đồ mối quan hệ giữa các dữ liệu (ERD)"
+  },
+  {
+    "file": "ia_navigation.png",
+    "caption": "Kiến trúc thông tin và điều hướng giao diện",
+    "source": "02_8_thiet_ke_giao_dien.md",
+    "heading": "2.8.3. Kiến trúc thông tin và điều hướng"
+  }
+]
