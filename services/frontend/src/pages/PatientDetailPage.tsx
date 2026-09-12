@@ -13,7 +13,7 @@ import { useServerEvents } from '@/context/WebSocketContext';
 import { useAsync } from '@/hooks/useAsync';
 import { clock, dateTime, vn } from '@/lib/format';
 import { appendTimeline } from '@/lib/realtime';
-import { DEFAULT_TAU_ANOMALY, RISK_META } from '@/lib/risk';
+import { DEFAULT_TAU_ANOMALY, FIRST_ANOMALY_HOUR, RISK_META } from '@/lib/risk';
 import type { Alert, PatientDetail } from '@/types/api';
 
 const WINDOWS = { '24': 24, '48': 48, all: 1000 } as const;
@@ -25,6 +25,17 @@ const NEWS2_LABELS: [keyof NonNullable<PatientDetail['news2_components']>, strin
   ['heart_rate', 'Nhịp tim'],
   ['temperature', 'Nhiệt độ'],
 ];
+
+/** Lời giải thích cho thẻ "Diễn biến bất thường": nói đúng lý do chưa có điểm, xem AnomalyChip. */
+function anomalyNote(latest: PatientDetail['latest']): string {
+  if (!latest) return 'Chưa có bản ghi nào để chấm điểm bất thường.';
+  if (latest.anomaly_score === null) {
+    return latest.hour_index < FIRST_ANOMALY_HOUR
+      ? `Cần 16 giờ dữ liệu (baseline 6 giờ + cửa sổ 12 giờ) trước khi chấm điểm bất thường; hiện ở giờ ${latest.hour_index}.`
+      : 'Cửa sổ 12 giờ gần nhất không đủ giá trị đo để dựng chuỗi, nên chưa chấm được điểm bất thường cho giờ này.';
+  }
+  return `Lỗi tái tạo 12 giờ gần nhất lớn hơn ${vn(latest.anomaly_score * 100, 1)}% cửa sổ bình thường. Ngưỡng gắn cờ ${vn(DEFAULT_TAU_ANOMALY)}.`;
+}
 
 /** UC05, UC06, UC07 — chi tiết bệnh nhân được phân công (backend trả 403 nếu không được phân công). */
 export function PatientDetailPage() {
@@ -131,12 +142,10 @@ export function PatientDetailPage() {
         <div className="card flex flex-col gap-3 p-5">
           <span className="eyebrow">Diễn biến bất thường</span>
           <div>
-            <AnomalyChip score={latest?.anomaly_score ?? null} flagged={latest?.is_anomaly} />
+            <AnomalyChip score={latest?.anomaly_score ?? null} flagged={latest?.is_anomaly} hourIndex={latest?.hour_index} />
           </div>
           <span className="text-[12.5px] text-pretty text-muted-foreground">
-            {latest?.anomaly_score === null || !latest
-              ? 'Cần 16 giờ dữ liệu (baseline 6 giờ + cửa sổ 12 giờ) trước khi chấm điểm bất thường.'
-              : `Lỗi tái tạo 12 giờ gần nhất lớn hơn ${vn((latest.anomaly_score ?? 0) * 100, 1)}% cửa sổ bình thường. Ngưỡng gắn cờ ${vn(DEFAULT_TAU_ANOMALY)}.`}
+            {anomalyNote(latest)}
           </span>
         </div>
       </section>

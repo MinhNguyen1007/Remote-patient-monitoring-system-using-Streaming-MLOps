@@ -32,6 +32,11 @@ describe('Chip NEWS2 và bất thường', () => {
   it('bất thường: chưa đủ 16 giờ, ổn định, bị gắn cờ', () => {
     const { rerender } = render(<AnomalyChip score={null} />);
     expect(screen.getByText('Chưa đủ 16 giờ')).toBeInTheDocument();
+    rerender(<AnomalyChip score={null} hourIndex={9} />);
+    expect(screen.getByText('Chưa đủ 16 giờ')).toBeInTheDocument();
+    // Quá giờ 16 mà vẫn chưa có điểm thì nguyên nhân là cửa sổ 12 giờ thiếu giá trị đo, không phải "chưa đủ giờ"
+    rerender(<AnomalyChip score={null} hourIndex={88} />);
+    expect(screen.getByText('Thiếu dữ liệu cửa sổ')).toBeInTheDocument();
     rerender(<AnomalyChip score={0.42} flagged={false} />);
     expect(screen.getByText('Ổn định')).toBeInTheDocument();
     rerender(<AnomalyChip score={0.995} flagged />);

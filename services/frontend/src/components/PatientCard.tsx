@@ -52,7 +52,7 @@ export function PatientCard({ patient, now }: { patient: PatientSummary; now: nu
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <News2Chip score={latest?.news2_score ?? null} />
-        <AnomalyChip score={latest?.anomaly_score ?? null} flagged={latest?.is_anomaly} />
+        <AnomalyChip score={latest?.anomaly_score ?? null} flagged={latest?.is_anomaly} hourIndex={latest?.hour_index} />
       </div>
       <div className="flex items-center justify-between border-t border-border pt-3">
         {patient.open_alerts > 0 ? (

@@ -2,7 +2,7 @@
 import { Activity, CircleCheck, Clock, OctagonAlert, TriangleAlert, type LucideIcon } from 'lucide-react';
 
 import { vn } from '@/lib/format';
-import { ALERT_STATUS_META, ALERT_TYPE_META, DEFAULT_TAU_ANOMALY, RISK_META } from '@/lib/risk';
+import { ALERT_STATUS_META, ALERT_TYPE_META, DEFAULT_TAU_ANOMALY, FIRST_ANOMALY_HOUR, RISK_META } from '@/lib/risk';
 import { cn } from '@/lib/utils';
 import type { AlertStatus, AlertType, RiskLevel } from '@/types/api';
 
@@ -39,13 +39,23 @@ export function News2Chip({ score }: { score: number | null }) {
   );
 }
 
-/** Điểm bất thường LSTM-Autoencoder; `null` = chưa đủ 16 giờ dữ liệu để chấm điểm. */
-export function AnomalyChip({ score, flagged }: { score: number | null; flagged?: boolean | null }) {
+/** Điểm bất thường LSTM-Autoencoder.
+ *
+ * `null` có hai nguyên nhân khác nhau, không được nói lẫn: đợt ICU chưa đủ 16 giờ (baseline 6 giờ + cửa sổ 12 giờ),
+ * hoặc đã quá giờ 16 nhưng cửa sổ 12 giờ gần nhất thiếu giá trị đo nên không dựng được (rất thường gặp: nhiều đợt
+ * ICU có quãng dài không đo đủ 6 thông số).
+ */
+export function AnomalyChip({ score, flagged, hourIndex }: {
+  score: number | null;
+  flagged?: boolean | null;
+  hourIndex?: number | null;
+}) {
   if (score === null) {
+    const tooEarly = hourIndex == null || hourIndex < FIRST_ANOMALY_HOUR;
     return (
       <span className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground">
         <Clock aria-hidden size={14} />
-        Chưa đủ 16 giờ
+        {tooEarly ? 'Chưa đủ 16 giờ' : 'Thiếu dữ liệu cửa sổ'}
       </span>
     );
   }
