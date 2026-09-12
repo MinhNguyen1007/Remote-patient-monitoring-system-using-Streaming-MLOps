@@ -113,6 +113,9 @@ Theo yêu cầu "chưa biết thì không ghi", những thông tin dưới đây
 3. **Bài báo** chỉ có một tác giả và một email; nếu làm nhóm hoặc muốn ghi tên giảng viên hướng dẫn làm đồng tác giả (như tệp mẫu) thì cần bổ sung.
 4. **Hai mục "LÀM VIỆC NHÓM" và "TỰ ĐÁNH GIÁ"** của mẫu đã được **bỏ khỏi** báo cáo vì không biết đồ án làm một mình hay theo nhóm. Nếu môn học yêu cầu thì thêm lại.
 5. **Logo trường** ở trang bìa — mẫu có, repo chưa có ảnh này.
+6. **Hai ảnh giao diện cần chụp lại** (cần đăng nhập, Claude không tự nhập mật khẩu được):
+   - `images/3_patient_detail.png` — bản đang dùng ở báo cáo vẫn còn lỗi cũ: bệnh nhân ở giờ thứ 88, dải bất thường đầy đủ, nhưng thẻ "Diễn biến bất thường" ghi "Chưa đủ 16 giờ". Lỗi đã sửa trong code, chỉ thiếu ảnh mới.
+   - `images/3_patient_detail_v2.png` — thực ra là ảnh **danh sách bệnh nhân** chụp lại sau khi sửa (đã hiện đúng "Thiếu dữ liệu cửa sổ"), bị đặt nhầm tên. Nên đổi tên thành `2_patient_list.png` để thay bản cũ (bản cũ vẫn ghi sai "Chưa đủ 16 giờ" ở nhiều thẻ).
 
 ## Lưu ý khi viết
 
