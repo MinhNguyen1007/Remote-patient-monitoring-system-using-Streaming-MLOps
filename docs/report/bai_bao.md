@@ -109,7 +109,7 @@ Cảnh báo chỉ được đẩy tới bác sĩ và điều dưỡng **được
 
 ![DAG drift_check: phát hiện drift và quyết định kích hoạt](figures/activity_drift_a.png){width="9cm"}
 
-**Hình 3.** Luồng `drift_check`: phát hiện drift và quyết định kích hoạt huấn luyện lại
+**Hình 3.** Luồng kiểm tra drift: phát hiện drift và quyết định kích hoạt huấn luyện lại
 
 Hệ thống theo dõi sáu thông số sinh tồn và tổng NEWS2, so phân phối của cửa sổ 24 giờ gần nhất với phân phối trên tập huấn luyện của mô hình đang dùng, bằng chỉ số PSI với 10 khoảng chia theo thập phân vị. Thống kê Kolmogorov–Smirnov được tính để kiểm chứng chéo nhưng p-value không dùng để ra quyết định: với số mẫu lớn, chênh lệch nhỏ đến mức không có ý nghĩa thực tế vẫn "có ý nghĩa thống kê".
 

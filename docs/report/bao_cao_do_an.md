@@ -114,8 +114,8 @@ Kết quả kiểm thử phi chức năng cho độ trễ đầu–cuối p95 1,
 | Hình 3.6 | Tuần tự đăng nhập và mở kết nối WebSocket |
 | Hình 3.7 | Biểu đồ lớp của hệ thống |
 | Hình 3.8 | Kiến trúc thông tin và điều hướng giao diện |
-| Hình 3.9 | Luồng `drift_check`: phát hiện drift và quyết định kích hoạt huấn luyện lại |
-| Hình 3.10 | Luồng `retrain_pipeline`: huấn luyện lại và quality gate |
+| Hình 3.9 | Luồng kiểm tra drift: phát hiện drift và quyết định kích hoạt huấn luyện lại |
+| Hình 3.10 | Luồng huấn luyện lại: huấn luyện challenger và quality gate |
 | Hình 3.11 | Tuần tự phát hiện drift và thông báo người quản trị |
 | Hình 3.12 | Tuần tự kích hoạt huấn luyện lại mô hình thủ công |
 | Hình 4.1 | Ma trận nhầm lẫn của mô hình dự báo rủi ro trên tập kiểm tra |
@@ -145,13 +145,13 @@ Kết quả kiểm thử phi chức năng cho độ trễ đầu–cuối p95 1,
 | Bảng 3.2 | Phân mức rủi ro lâm sàng từ điểm NEWS2 |
 | Bảng 3.3 | Tập đặc trưng đầu vào của mô hình dự báo rủi ro |
 | Bảng 4.1 | Quy mô dữ liệu sau tiền xử lý |
-| Bảng 4.2 | Chia dữ liệu theo bệnh nhân (`ml/splits/subject_split.json`, seed 42) |
+| Bảng 4.2 | Chia dữ liệu theo bệnh nhân thành bốn nhóm cố định |
 | Bảng 4.3 | Số giờ dữ liệu và số đợt ICU theo từng nhóm |
 | Bảng 4.4 | Công nghệ và phiên bản sử dụng |
 | Bảng 4.5 | Tiêu chí quality gate |
 | Bảng 4.6 | So sánh các thuật toán (cross-validation trên train ∪ validation) |
-| Bảng 4.7 | Kết quả `risk_classifier` v2 (Random Forest, τ_critical = 0,22) |
-| Bảng 4.8 | Kết quả `anomaly_detector` trên tập kiểm tra (10% cửa sổ bị tiêm bất thường) |
+| Bảng 4.7 | Kết quả mô hình dự báo rủi ro (Random Forest, ngưỡng τ = 0,22) |
+| Bảng 4.8 | Kết quả mô hình phát hiện bất thường trên tập kiểm tra (10% cửa sổ bị tiêm bất thường) |
 | Bảng 4.9 | Kết quả chạy end-to-end (20 bệnh nhân, 1.834 giờ dữ liệu) |
 | Bảng 4.10 | Kết quả kiểm chứng vòng vận hành MLOps |
 | Bảng 4.11 | Kết quả quality gate của bốn phiên bản sinh ra từ việc huấn luyện lại |
@@ -579,11 +579,11 @@ Một chi tiết quan trọng về cách so sánh: ở mỗi lần huấn luyệ
 
 ![DAG drift_check: phát hiện drift và quyết định kích hoạt](figures/activity_drift_a.png){width="9cm"}
 
-**Hình 3.9** Luồng `drift_check`: phát hiện drift và quyết định kích hoạt huấn luyện lại
+**Hình 3.9** Luồng kiểm tra drift: phát hiện drift và quyết định kích hoạt huấn luyện lại
 
 ![DAG retrain_pipeline: huấn luyện lại và quality gate](figures/activity_drift_b.png){width="8cm"}
 
-**Hình 3.10** Luồng `retrain_pipeline`: huấn luyện lại và quality gate
+**Hình 3.10** Luồng huấn luyện lại: huấn luyện challenger và quality gate
 
 ![Tuần tự phát hiện drift và thông báo Admin](figures/sequence_drift.png){width="15cm"}
 
@@ -624,7 +624,7 @@ MIMIC-III Demo là điểm cân bằng của ba tiêu chí trên, và vì có c�
 | Số giờ dữ liệu trên lưới 1 giờ | 14.138 |
 | Nhóm phát lại (stream) | 20 bệnh nhân, 1.834 giờ |
 
-**Bảng 4.2** Chia dữ liệu theo bệnh nhân (`ml/splits/subject_split.json`, seed 42)
+**Bảng 4.2** Chia dữ liệu theo bệnh nhân thành bốn nhóm cố định
 
 | Nhóm | Số bệnh nhân | Mục đích |
 |---|---|---|
@@ -730,7 +730,7 @@ Hệ thống được kiểm thử ở bốn tầng, mỗi tầng trả lời m�
 | XGBoost | 0,608 |
 | Baseline persistence | 0,565 |
 
-**Bảng 4.7** Kết quả `risk_classifier` v2 (Random Forest, τ_critical = 0,22)
+**Bảng 4.7** Kết quả mô hình dự báo rủi ro (Random Forest, ngưỡng τ = 0,22)
 
 | Tập dữ liệu | Macro F1 | Recall CRITICAL | Precision CRITICAL |
 |---|---|---|---|
@@ -765,7 +765,7 @@ Thứ hai, nhịp thở nổi lên như thông số sinh tồn có giá trị d�
 
 ### 4.5.2. Mô hình phát hiện bất thường
 
-**Bảng 4.8** Kết quả `anomaly_detector` trên tập kiểm tra (10% cửa sổ bị tiêm bất thường)
+**Bảng 4.8** Kết quả mô hình phát hiện bất thường trên tập kiểm tra (10% cửa sổ bị tiêm bất thường)
 
 | Chỉ số | Giá trị |
 |---|---|
