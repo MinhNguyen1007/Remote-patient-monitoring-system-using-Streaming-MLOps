@@ -1,0 +1,177 @@
+/* Phong cách theo mẫu `images/Ve_So_Do/Mau_Mo_Hinh_Tong_Quat_He_Thong.png`:
+ * lưu đồ ĐƠN SẮC (đen trắng), nhóm bọc trong khung nét đứt có tiêu đề, hộp chữ nhật viền mảnh,
+ * quyết định vẽ bằng hình thoi, logo công nghệ đặt rời trong nhóm, chú thích hình kiểu serif ở dưới.
+ *
+ * Ràng buộc của phong cách này: nhãn trong hộp phải NGẮN (1–2 dòng). Mọi diễn giải dài đẩy xuống
+ * phần ghi chú dưới hình — đúng như mẫu.
+ */
+
+:root {
+  --ink: #111;
+  --stroke: #333;
+  --soft: #6b6b6b;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: #fff;
+  color: var(--ink);
+  font: 12.5px/1.35 "Segoe UI", system-ui, sans-serif;
+}
+
+.sheet { padding: 30px 34px 22px; }
+
+.fig-title {
+  text-align: center;
+  font-size: 17px;
+  font-weight: 700;
+  margin: 0 0 20px;
+}
+
+/* --------------------------------------------------------------------- nhóm nét đứt */
+
+.group {
+  border: 1.6px dashed var(--stroke);
+  border-radius: 16px;
+  padding: 30px 14px 14px;
+  position: relative;
+  background: #fff;
+}
+
+.group > .g-title {
+  position: absolute;
+  top: -11px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fff;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.group.inner {
+  border-width: 1.2px;
+  border-radius: 12px;
+  padding: 24px 11px 11px;
+}
+.group.inner > .g-title { font-size: 11.5px; font-weight: 650; top: -9px; }
+
+/* --------------------------------------------------------------------- hộp */
+
+.box {
+  border: 1.1px solid var(--stroke);
+  background: #fff;
+  padding: 6px 9px;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.3;
+}
+.box.strong { font-weight: 650; }
+.sub { display: block; font-size: 10.5px; color: var(--soft); margin-top: 1px; }
+
+.terminal {
+  border: 1.1px solid var(--stroke);
+  border-radius: 999px;
+  background: #fff;
+  padding: 5px 13px;
+  text-align: center;
+  font-size: 11.5px;
+}
+
+.store {
+  border: 1.1px solid var(--stroke);
+  border-radius: 50% / 14px;
+  padding: 9px 11px;
+  text-align: center;
+  font-size: 11.5px;
+  background: #fff;
+}
+
+/* --------------------------------------------------------------------- hình thoi quyết định */
+
+.dia {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 0.62;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* Hình thoi vẽ bằng SVG chứ không bằng clip-path: clip-path cắt được hình nhưng KHÔNG vẽ được viền. */
+.dia > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.dia > svg polygon { fill: #fff; stroke: var(--stroke); stroke-width: 1.1; vector-effect: non-scaling-stroke; }
+.dia > .lbl {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  font-size: 11.5px;
+  line-height: 1.25;
+  padding: 0 14%;
+}
+
+/* --------------------------------------------------------------------- mũi tên */
+
+.a { display: flex; align-items: center; justify-content: center; }
+.a svg { display: block; overflow: visible; }
+.a path { fill: none; stroke: var(--stroke); stroke-width: 1.1; }
+.a .h { fill: var(--stroke); stroke: none; }
+.a.dash path { stroke-dasharray: 4 3; }
+
+.a-lbl { font-size: 10px; color: var(--soft); text-align: center; }
+
+/* --------------------------------------------------------------------- logo rời trong nhóm */
+
+.logos { display: flex; align-items: center; justify-content: center; gap: 9px; flex-wrap: wrap; }
+.logos img { height: 17px; }
+.logos .nm { font-size: 11px; color: var(--soft); }
+
+/* --------------------------------------------------------------------- bố cục */
+
+.col { display: flex; flex-direction: column; }
+.row { display: flex; }
+.cen { align-items: center; }
+
+/* --------------------------------------------------------------------- chú thích hình */
+
+.caption {
+  margin: 22px auto 0;
+  max-width: 1100px;
+  text-align: center;
+  font-family: "Times New Roman", Georgia, serif;
+  font-size: 16px;
+}
+
+.notes {
+  margin: 14px auto 0;
+  max-width: 1240px;
+  font-size: 11px;
+  color: var(--soft);
+  line-height: 1.5;
+}
+.notes b { color: var(--ink); }
+.notes ol { margin: 4px 0 0; padding-left: 20px; }
+.notes li { margin: 2px 0; }
+
+/* --------------------------------------------------------------- luồng hai làn trong một nhóm
+ * Làn 1 (cột 1) là luồng chính: mọi hộp và mũi tên dọc căn theo cùng một trục.
+ * Nhánh rẽ của quyết định đi sang cột 2–3. Nhờ vậy mũi tên dọc KHÔNG đi xuyên qua hộp kết cục —
+ * lỗi này làm người đọc hiểu là luồng chính chạy qua nhánh rẽ.
+ */
+.gflow {
+  display: grid;
+  grid-template-columns: 1fr 26px 0.8fr;
+  align-items: center;
+}
+.gflow > .m { grid-column: 1; }
+.gflow > .v { grid-column: 1; justify-self: center; padding: 7px 0; }
+.gflow > .b {
+  grid-column: 2 / span 2;
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  align-items: center;
+}
+.gflow > .b .box { text-align: left; }
+.gflow .dia-wrap { margin: 0 auto; }

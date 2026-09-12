@@ -1,301 +1,272 @@
 <!doctype html>
 <meta charset="utf-8">
-<link rel="stylesheet" href="diagram.css">
+<link rel="stylesheet" href="style_layered.css">
 <style>
-  .sheet { width: 1420px; }
-  .src-grid { display: grid; grid-template-columns: 1fr 26px 1fr 26px 1.05fr; align-items: center; }
-  .infer-grid { display: grid; grid-template-columns: 1fr 26px 1.25fr 26px 1fr; align-items: stretch; }
-  .store-grid { display: grid; grid-template-columns: 1.25fr 26px 1fr; align-items: stretch; }
-  .app-grid { display: grid; grid-template-columns: 1.15fr 26px 1fr 14px 1fr; align-items: stretch; }
-  .ops-grid { display: grid; grid-template-columns: 1fr 26px 1fr 26px 1fr; align-items: stretch; }
-  .models { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .sheet { width: 1500px; }
+  .top { display: grid; grid-template-columns: 0.82fr 26px 1.55fr 26px 1fr; align-items: stretch; margin-bottom: 15px; }
+  .flow4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  .mid { display: grid; grid-template-columns: 1.5fr 0.95fr 1fr; gap: 15px; margin-bottom: 15px; align-items: stretch; }
+  .bottom { display: grid; grid-template-columns: 1fr; gap: 15px; }
+  .chips8 { grid-template-columns: repeat(8, 1fr); }
+  .obs2 { display: grid; grid-template-columns: 1fr 26px 1fr; align-items: center; }
+  .actors { display: flex; flex-direction: column; gap: 8px; }
+  .actor { border: 1px solid var(--line); border-left: 3px solid var(--c-app); padding: 7px 10px; font-size: 11.5px; }
+  .actor b { display: block; font-size: 12.5px; }
 </style>
 
 <div class="sheet">
-  <h1 class="doc-title">Sơ đồ hệ thống tổng quát — Giám sát bệnh nhân từ xa bằng Streaming và MLOps</h1>
-  <p class="doc-sub">Sáu tầng chạy như sáu tiến trình độc lập, giao tiếp qua hàng đợi thông điệp và cơ sở dữ liệu — không tầng nào gọi trực tiếp tầng khác.</p>
+  <h1 class="doc-title">Sơ đồ hệ thống tổng quát — Giám sát bệnh nhân từ xa</h1>
+  <p class="doc-sub">Streaming + MLOps trên dữ liệu hồi sức tích cực MIMIC-III · sáu tầng chạy độc lập, giao tiếp qua hàng đợi thông điệp và cơ sở dữ liệu</p>
 
-  <!-- ---------------------------------------------------------------- nguồn dữ liệu -->
-  <div class="band">
-    <div class="band-head">
-      Nguồn dữ liệu và tiền xử lý
-      <span class="note">chạy một lần, ngoại tuyến</span>
-    </div>
-    <div class="band-body wash">
-      <div class="src-grid">
-        <div class="card">
-          <div class="card-head"><span class="t">MIMIC-III Clinical Database Demo v1.4</span></div>
-          <ul>
-            <li>100 bệnh nhân ICU, 136 đợt nằm</li>
-            <li>758.355 dòng giá trị đo</li>
-            <li>Giấy phép mở ODbL v1.0</li>
-          </ul>
-        </div>
-        <div class="arr"><svg width="26" height="12" viewBox="0 0 26 12"><path d="M0 6H17"/><path class="head" d="M17 2.5 26 6l-9 3.5z"/></svg></div>
-        <div class="card">
-          <div class="card-head"><img src="../logos/python.svg" alt=""><span class="t">Tiền xử lý <span class="mono">rpm_common</span></span></div>
-          <ul>
-            <li>Gộp itemid CareVue + MetaVision</li>
-            <li>Làm sạch, lưới thời gian 1 giờ</li>
-            <li>Forward-fill có giới hạn, <b>không nội suy</b></li>
-          </ul>
-        </div>
-        <div class="arr"><svg width="26" height="12" viewBox="0 0 26 12"><path d="M0 6H17"/><path class="head" d="M17 2.5 26 6l-9 3.5z"/></svg></div>
-        <div class="card soft">
-          <div class="card-head"><span class="t">Chia theo bệnh nhân — 4 nhóm cố định</span></div>
-          <ul>
-            <li><span class="kpi">train 48</span> · <span class="kpi">validation 15</span> · <span class="kpi">test 15</span> · <span class="kpi">stream 20</span></li>
-            <li>132 đợt ICU, 14.138 giờ dữ liệu</li>
-            <li>Không bệnh nhân nào ở hai nhóm</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- ================================================== hàng 1 -->
+  <div class="top">
 
-  <!-- ---------------------------------------------------------------- streaming + suy luận -->
-  <div class="band">
-    <div class="band-head">
-      Tầng streaming và suy luận thời gian thực
-      <span class="note">130–190 ms mỗi bản ghi</span>
-    </div>
-    <div class="band-body">
-      <div class="infer-grid">
-        <div class="col" style="justify-content:flex-start;gap:0">
-          <div class="card">
-            <div class="card-head"><img src="../logos/kafka.svg" alt=""><span class="t">Producer</span></div>
-            <ul>
-              <li>Phát lại nhóm <span class="mono">stream</span> theo từng giờ</li>
-              <li>Khoá thông điệp = mã bệnh nhân</li>
-              <li>Chế độ <span class="mono">--drift</span> để mô phỏng</li>
-            </ul>
-          </div>
-          <div class="arr" style="height:26px"><svg width="12" height="26" viewBox="0 0 12 26"><path d="M6 0V17"/><path class="head" d="M2.5 17 6 26l3.5-9z"/></svg></div>
-          <div class="queue">
-            <img src="../logos/kafka.svg" alt="">
-            <span class="q-name mono">vitals-stream</span>
-            <span class="q-note">3 partition</span>
-          </div>
+    <div class="blk app">
+      <div class="hd">Người dùng</div>
+      <div class="bd wash">
+        <div class="actors">
+          <div class="actor"><b>Bác sĩ</b>Xem bệnh nhân được phân công · xác nhận và xử lý cảnh báo</div>
+          <div class="actor"><b>Điều dưỡng</b>Theo dõi realtime · nhận cảnh báo</div>
+          <div class="actor"><b>Quản trị viên</b>Tài khoản · phân công · ngưỡng cảnh báo · giám sát mô hình</div>
         </div>
-
-        <div class="arr"><svg width="26" height="12" viewBox="0 0 26 12"><path d="M0 6H17"/><path class="head" d="M17 2.5 26 6l-9 3.5z"/></svg></div>
-
-        <div class="card dashed">
-          <div class="card-head"><span class="t">Stream Consumer</span><span class="tag">trình tự bắt buộc</span></div>
-          <ul>
-            <li>Cập nhật trạng thái bệnh nhân</li>
-            <li>Tính đặc trưng bằng <span class="mono">rpm_common</span></li>
-            <li>Chạy hai mô hình <span class="mono">@champion</span></li>
-            <li>Quyết định cảnh báo (chống trùng)</li>
-            <li><b>Ghi DB một transaction</b></li>
-            <li>Phát sự kiện</li>
-            <li><b>Rồi mới xác nhận thông điệp</b></li>
-          </ul>
-          <div class="models" style="margin-top:9px">
-            <div class="card soft" style="padding:8px 10px">
-              <div class="card-head" style="margin-bottom:3px"><img src="../logos/scikitlearn.svg" alt=""><span class="t" style="font-size:12px">Dự báo rủi ro</span></div>
-              <p>Random Forest · 4 giờ tới<br>τ = 0,22</p>
-            </div>
-            <div class="card soft" style="padding:8px 10px">
-              <div class="card-head" style="margin-bottom:3px"><img src="../logos/tensorflow.svg" alt=""><span class="t" style="font-size:12px">Bất thường</span></div>
-              <p>LSTM-Autoencoder<br>cửa sổ 12 giờ · τ = 0,99</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="arr"><svg width="26" height="12" viewBox="0 0 26 12"><path d="M0 6H17"/><path class="head" d="M17 2.5 26 6l-9 3.5z"/></svg></div>
-
-        <div class="col" style="justify-content:flex-start">
-          <div class="queue">
-            <img src="../logos/kafka.svg" alt="">
-            <span class="q-name mono">predictions-stream</span>
-          </div>
-          <div class="queue">
-            <img src="../logos/kafka.svg" alt="">
-            <span class="q-name mono">alerts-stream</span>
-          </div>
-          <div class="card">
-            <div class="card-head"><span class="t">Chống bão cảnh báo</span></div>
-            <ul>
-              <li>Không tạo khi còn cảnh báo cùng loại đang mở</li>
-              <li>Thời gian nguội tính bằng <b>giờ dữ liệu</b></li>
-              <li>Đo thật: 507 giờ nguy kịch → <span class="kpi">28 cảnh báo</span></li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ---------------------------------------------------------------- lưu trữ + ứng dụng -->
-  <div class="band">
-      <div class="band-head">Tầng lưu trữ</div>
-      <div class="band-body wash">
-        <div class="store-grid">
-          <div class="card">
-            <div class="card-head">
-              <img src="../logos/postgresql.svg" alt=""><img src="../logos/timescale.svg" alt="">
-              <span class="t">PostgreSQL 16 + TimescaleDB</span>
-            </div>
-            <ul>
-              <li>Hypertable <span class="mono">vital_records</span>, <span class="mono">predictions</span></li>
-              <li>10 bảng; khoá chính chứa cột thời gian</li>
-              <li>Lưu <b>giá trị đo chưa điền</b> để dựng lại đặc trưng khi huấn luyện lại</li>
-            </ul>
-          </div>
-          <div class="arr soft"><svg width="26" height="12" viewBox="0 0 26 12"><path d="M0 6H17"/><path class="head" d="M17 2.5 26 6l-9 3.5z"/></svg></div>
-          <div class="card">
-            <div class="card-head"><span class="t">Nguồn cho vòng vận hành</span></div>
-            <ul>
-              <li>Cửa sổ 24 giờ cho kiểm tra drift</li>
-              <li>Dữ liệu mới cho huấn luyện lại</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-  </div>
-
-  <div class="band">
-    <div class="band-head">
-      Tầng ứng dụng
-      <span class="note">phân quyền theo phân công, không theo vai trò đơn thuần</span>
-    </div>
-    <div class="band-body">
-      <div class="app-grid">
-        <div class="card">
-          <div class="card-head"><img src="../logos/fastapi.svg" alt=""><span class="t">FastAPI</span><span class="tag">25 route</span></div>
-          <ul>
-            <li>REST + WebSocket trong cùng tiến trình</li>
-            <li>JWT ba vai trò: Quản trị · Bác sĩ · Điều dưỡng</li>
-            <li>Luồng nền nghe Kafka, gửi email</li>
-            <li><b>Không chạy mô hình, không chạy job định kỳ</b></li>
-          </ul>
-        </div>
-        <div class="arr"><svg width="26" height="12" viewBox="0 0 26 12"><path d="M0 6H17"/><path class="head" d="M17 2.5 26 6l-9 3.5z"/></svg></div>
-        <div class="card">
-          <div class="card-head"><img src="../logos/react.svg" alt=""><span class="t">React Dashboard</span></div>
+        <div class="cd" style="margin-top:11px">
+          <div class="t"><img src="../logos/react.svg" alt=""><span>React + Vite</span></div>
           <ul>
             <li>8 màn hình, chặn route theo vai trò</li>
             <li>Cập nhật realtime qua WebSocket</li>
-            <li>Chỉ thấy bệnh nhân được phân công</li>
-          </ul>
-        </div>
-        <div></div>
-        <div class="card">
-          <div class="card-head"><span class="t">Thông báo</span></div>
-          <ul>
-            <li>Email tới đúng bác sĩ và điều dưỡng được phân công</li>
-            <li>Bảng log chặn gửi trùng khi đọc lại sự kiện cũ</li>
           </ul>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- ---------------------------------------------------------------- MLOps + giám sát -->
-  <div class="band">
-    <div class="band-head">
-      Tầng vận hành MLOps và giám sát hạ tầng
-      <span class="note">vòng khép kín, có cửa kiểm soát</span>
-    </div>
-    <div class="band-body wash">
-      <div class="ops-grid">
-        <div class="card">
-          <div class="card-head"><img src="../logos/airflow.svg" alt=""><span class="t">Airflow <span class="mono">drift_check</span></span></div>
-          <ul>
-            <li>Chạy 2 phút một lần</li>
-            <li>PSI cho 7 đặc trưng</li>
-            <li><b>Ngưỡng hiệu chỉnh riêng từng đặc trưng</b>, không dùng 0,25 chung</li>
-          </ul>
-        </div>
-        <div class="arr"><svg width="26" height="12" viewBox="0 0 26 12"><path d="M0 6H17"/><path class="head" d="M17 2.5 26 6l-9 3.5z"/></svg></div>
-        <div class="card">
-          <div class="card-head"><img src="../logos/airflow.svg" alt=""><span class="t">Airflow <span class="mono">retrain_pipeline</span></span></div>
-          <ul>
-            <li>Huấn luyện lại hai mô hình song song</li>
-            <li>Chấm lại <b>cả</b> mô hình mới và mô hình đang dùng trên cùng tập kiểm tra</li>
-            <li>Quality gate ba điều kiện</li>
-          </ul>
-        </div>
-        <div class="arr"><svg width="26" height="12" viewBox="0 0 26 12"><path d="M0 6H17"/><path class="head" d="M17 2.5 26 6l-9 3.5z"/></svg></div>
-        <div class="col">
-          <div class="card fill">
-            <div class="card-head"><img src="../logos/mlflow.svg" alt=""><span class="t">MLflow Registry</span></div>
+    <div class="ar" style="grid-column:2"><svg width="26" height="12" viewBox="0 0 26 12"><path d="M0 6H17"/><path class="h" d="M17 2.5 26 6l-9 3.5z"/></svg></div>
+
+    <div class="blk app">
+      <div class="hd">Tầng ứng dụng<span class="rt">phân quyền theo phân công, không theo vai trò đơn thuần</span></div>
+      <div class="bd">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="cd" style="margin:0">
+            <div class="t"><img src="../logos/fastapi.svg" alt=""><span>FastAPI</span><span class="n">25 route</span></div>
             <ul>
-              <li>Alias <span class="mono">champion</span> chỉ mô hình đang dùng</li>
-              <li>Consumer tự nạp lại khi alias đổi — <b>không triển khai lại</b></li>
+              <li>REST + WebSocket trong cùng tiến trình</li>
+              <li>JWT ba vai trò</li>
+              <li>Luồng nền nghe Kafka</li>
+              <li>Gửi email tới người được phân công</li>
+              <li><b>Không chạy mô hình, không chạy job định kỳ</b></li>
             </ul>
           </div>
-          <div class="queue">
-            <img src="../logos/kafka.svg" alt="">
-            <span class="q-name mono">mlops-events</span>
-            <span class="q-note">tới Quản trị</span>
+          <div class="cd" style="margin:0">
+            <div class="t"><span>Quy tắc phạm vi dữ liệu</span></div>
+            <ul>
+              <li>Bác sĩ và điều dưỡng chỉ đọc bệnh nhân trong bảng phân công — khác thì trả 403</li>
+              <li>WebSocket cũng chỉ đẩy sự kiện của bệnh nhân được phân công</li>
+              <li>Quản trị viên <b>không</b> xem dữ liệu lâm sàng</li>
+            </ul>
           </div>
         </div>
+        <div class="cd">
+          <div class="t"><span>Chuỗi trạng thái cảnh báo</span></div>
+          <p><span class="mono">OPEN</span> → <span class="mono">ACKNOWLEDGED</span> → <span class="mono">RESOLVED</span> · gọi sai thứ tự trả 409 · mỗi lần đổi trạng thái đẩy sự kiện cho những người cùng phụ trách</p>
+        </div>
       </div>
+    </div>
 
-      <div class="row gap" style="margin-top:14px">
-        <div class="card fill">
-          <div class="card-head">
+    <div class="ar dash" style="grid-column:4"><svg width="26" height="12" viewBox="0 0 26 12"><path d="M0 6H17"/><path class="h" d="M17 2.5 26 6l-9 3.5z"/></svg></div>
+
+    <div class="blk store">
+      <div class="hd">Tầng lưu trữ &amp; mô hình</div>
+      <div class="bd wash">
+        <div class="cd" style="margin:0">
+          <div class="t">
+            <img src="../logos/postgresql.svg" alt=""><img src="../logos/timescale.svg" alt="">
+            <span>PostgreSQL 16 + TimescaleDB</span>
+          </div>
+          <ul>
+            <li>Hypertable <span class="mono">vital_records</span>, <span class="mono">predictions</span></li>
+            <li>10 bảng; khoá chính chứa cột thời gian</li>
+            <li>Lưu <b>giá trị đo chưa điền</b></li>
+          </ul>
+        </div>
+        <div class="cd">
+          <div class="t"><img src="../logos/mlflow.svg" alt=""><span>MLflow</span></div>
+          <ul>
+            <li>Tracking: tham số, chỉ số, artifact</li>
+            <li>Registry: alias <span class="mono">champion</span></li>
+            <li>Kèm phân phối tham chiếu cho drift</li>
+          </ul>
+        </div>
+        <div class="cd">
+          <div class="t"><img src="../logos/kafka.svg" alt=""><span>Ba topic Kafka</span></div>
+          <ul>
+            <li><span class="mono">vitals-stream</span> — 3 partition</li>
+            <li><span class="mono">predictions-stream</span> · <span class="mono">alerts-stream</span></li>
+            <li><span class="mono">mlops-events</span> — 1 partition</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================== hàng 2 -->
+  <div class="blk flow" style="margin-bottom:15px">
+    <div class="hd">Tầng streaming và suy luận thời gian thực<span class="rt">130–190 ms mỗi bản ghi · thứ tự bốn bước là bắt buộc</span></div>
+    <div class="bd wash">
+      <div class="steps flow4">
+        <div class="step">
+          <div class="sh"><span class="num">1</span><img src="../logos/kafka.svg" alt=""><span class="st">Nạp dữ liệu</span></div>
+          <ul>
+            <li>Producer phát lại nhóm <span class="mono">stream</span> theo từng giờ</li>
+            <li>Khoá thông điệp = mã bệnh nhân, giữ đúng thứ tự thời gian</li>
+            <li>Chế độ <span class="mono">--drift</span> để mô phỏng lệch phân phối</li>
+          </ul>
+        </div>
+        <div class="step">
+          <div class="sh"><span class="num">2</span><img src="../logos/python.svg" alt=""><span class="st">Tính đặc trưng</span></div>
+          <ul>
+            <li>Thư viện dùng chung <span class="mono">rpm_common</span></li>
+            <li>NEWS2 rút gọn · cửa sổ 6 giờ · nền tảng cá nhân</li>
+            <li>Đặc trưng tại <i>t</i> chỉ dùng dữ liệu ≤ <i>t</i></li>
+          </ul>
+        </div>
+        <div class="step">
+          <div class="sh"><span class="num">3</span><img src="../logos/scikitlearn.svg" alt=""><img src="../logos/tensorflow.svg" alt=""><span class="st">Hai mô hình</span></div>
+          <ul>
+            <li>Dự báo rủi ro 4 giờ tới — Random Forest, τ = 0,22</li>
+            <li>Phát hiện bất thường — LSTM-Autoencoder, cửa sổ 12 giờ</li>
+            <li>Nạp theo alias <span class="mono">champion</span>, tự đổi khi alias đổi</li>
+          </ul>
+        </div>
+        <div class="step">
+          <div class="sh"><span class="num">4</span><span class="st">Cảnh báo và ghi dữ liệu</span></div>
+          <ul>
+            <li>Chỉ tạo khi vượt ngưỡng, không còn cảnh báo cùng loại đang mở và đã qua thời gian nguội</li>
+            <li>Ghi DB <b>một transaction</b>, phát sự kiện, rồi mới xác nhận thông điệp</li>
+            <li>Đo thật: 507 giờ nguy kịch → <span class="kpi">28 cảnh báo</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================== hàng 3 -->
+  <div class="mid">
+    <div class="blk obs">
+      <div class="hd">Vòng vận hành MLOps &amp; giám sát</div>
+      <div class="bd wash">
+        <div class="obs2">
+          <div class="cd" style="margin:0">
+            <div class="t"><img src="../logos/airflow.svg" alt=""><span class="mono" style="font-size:12px">drift_check</span><span class="n">2 phút/lần</span></div>
+            <ul>
+              <li>Cửa sổ 24 giờ dữ liệu mới nhất</li>
+              <li>PSI cho 7 đặc trưng</li>
+              <li><b>Ngưỡng hiệu chỉnh riêng từng đặc trưng</b></li>
+            </ul>
+          </div>
+          <div class="ar obsline"><svg width="26" height="12" viewBox="0 0 26 12"><path d="M0 6H17"/><path class="h" d="M17 2.5 26 6l-9 3.5z"/></svg></div>
+          <div class="cd" style="margin:0">
+            <div class="t"><img src="../logos/airflow.svg" alt=""><span class="mono" style="font-size:12px">retrain_pipeline</span></div>
+            <ul>
+              <li>Huấn luyện lại hai mô hình song song</li>
+              <li>Chấm lại <b>cả</b> mô hình mới và mô hình đang dùng trên cùng tập kiểm tra</li>
+              <li>Quality gate ba điều kiện</li>
+            </ul>
+          </div>
+        </div>
+        <div class="cd">
+          <div class="t">
             <img src="../logos/prometheus.svg" alt=""><img src="../logos/grafana.svg" alt="">
-            <span class="t">Prometheus + Grafana</span>
-            <span class="tag">giám sát hạ tầng</span>
+            <span>Prometheus + Grafana</span>
+            <span class="n">giám sát hạ tầng</span>
           </div>
-          <p>Thu thập <span class="mono">/metrics</span> của backend; dashboard theo dõi lưu lượng, tỷ lệ lỗi và độ trễ API.</p>
+          <p>Thu thập <span class="mono">/metrics</span> của backend; dashboard theo dõi lưu lượng, tỷ lệ lỗi và độ trễ API. Tách hẳn khỏi việc giám sát chất lượng mô hình.</p>
         </div>
-        <div class="card fill">
-          <div class="card-head"><img src="../logos/docker.svg" alt=""><span class="t">Docker Compose</span><span class="tag">11 service</span></div>
-          <p>Toàn bộ hệ thống chạy cục bộ; các service ứng dụng nằm trong profile riêng để bật độc lập.</p>
+      </div>
+    </div>
+
+    <div class="blk obs">
+      <div class="hd">Hệ thống theo dõi gì?</div>
+      <div class="bd">
+        <ul class="chk">
+          <li>Lệch phân phối của 6 thông số sinh tồn và tổng NEWS2</li>
+          <li>Kết quả quality gate của từng phiên bản mô hình, kèm lý do bị từ chối</li>
+          <li>Phiên bản mô hình đã dùng cho từng bản ghi dự đoán</li>
+          <li>Cảnh báo đã gửi cho ai, đã gửi chưa (chống gửi trùng)</li>
+          <li>Lưu lượng, tỷ lệ lỗi và độ trễ của API</li>
+          <li>Độ trễ đầu–cuối tới giao diện</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="blk dark legend">
+      <div class="hd">Chú giải</div>
+      <div class="bd">
+        <div class="row">
+          <svg width="34" height="10" viewBox="0 0 34 10"><path d="M0 5H25" fill="none" stroke="#1f4e79" stroke-width="1.5"/><path d="M25 1.5 34 5l-9 3.5z" fill="#1f4e79"/></svg>
+          <span><b>Luồng chính</b> — dữ liệu hoặc lệnh</span>
+        </div>
+        <div class="row">
+          <svg width="34" height="10" viewBox="0 0 34 10"><path d="M0 5H25" fill="none" stroke="#8f7bb5" stroke-width="1.5" stroke-dasharray="4 3"/><path d="M25 1.5 34 5l-9 3.5z" fill="#8f7bb5"/></svg>
+          <span><b>Đọc dữ liệu đã lưu</b></span>
+        </div>
+        <div class="row">
+          <svg width="34" height="10" viewBox="0 0 34 10"><path d="M0 5H25" fill="none" stroke="#14766a" stroke-width="1.5" stroke-dasharray="4 3"/><path d="M25 1.5 34 5l-9 3.5z" fill="#14766a"/></svg>
+          <span><b>Kích hoạt theo lịch</b></span>
+        </div>
+        <hr>
+        <div class="row"><span style="display:inline-block;width:24px;height:12px;background:#1f4e79"></span><span>Ứng dụng và người dùng</span></div>
+        <div class="row"><span style="display:inline-block;width:24px;height:12px;background:#614a96"></span><span>Streaming và suy luận</span></div>
+        <div class="row"><span style="display:inline-block;width:24px;height:12px;background:#b5741a"></span><span>Lưu trữ và mô hình</span></div>
+        <div class="row"><span style="display:inline-block;width:24px;height:12px;background:#14766a"></span><span>Vận hành và giám sát</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================== hàng 4 -->
+  <div class="bottom">
+    <div class="blk dark">
+      <div class="hd">Hạ tầng<span class="rt">Docker Compose</span></div>
+      <div class="bd">
+        <div class="chips chips8">
+          <div class="chip"><img src="../logos/kafka.svg" alt=""><span>kafka<small>+ zookeeper</small></span></div>
+          <div class="chip"><img src="../logos/postgresql.svg" alt=""><span>postgres<small>+ timescaledb</small></span></div>
+          <div class="chip"><img src="../logos/mlflow.svg" alt=""><span>mlflow<small>tracking server</small></span></div>
+          <div class="chip"><img src="../logos/airflow.svg" alt=""><span>airflow<small>web + scheduler</small></span></div>
+          <div class="chip"><img src="../logos/fastapi.svg" alt=""><span>backend<small>uvicorn</small></span></div>
+          <div class="chip"><img src="../logos/react.svg" alt=""><span>frontend<small>nginx</small></span></div>
+          <div class="chip"><img src="../logos/python.svg" alt=""><span>stream-consumer<small>+ producer</small></span></div>
+          <div class="chip"><img src="../logos/grafana.svg" alt=""><span>grafana<small>+ prometheus</small></span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="blk dark">
+      <div class="hd">Luồng đầu–cuối của một giờ dữ liệu<span class="rt">phân vị 95 đo được 1,30–1,62 giây với 20 bệnh nhân đồng thời</span></div>
+      <div class="bd">
+        <div class="strip">
+          <div class="s"><span class="n">1</span><span class="l">Phát bản ghi<small>producer</small></span></div>
+          <span class="sep"></span>
+          <div class="s"><span class="n">2</span><span class="l">Vào hàng đợi<small>vitals-stream</small></span></div>
+          <span class="sep"></span>
+          <div class="s"><span class="n">3</span><span class="l">Tính đặc trưng<small>rpm_common</small></span></div>
+          <span class="sep"></span>
+          <div class="s"><span class="n">4</span><span class="l">Hai mô hình<small>rủi ro + bất thường</small></span></div>
+          <span class="sep"></span>
+          <div class="s"><span class="n">5</span><span class="l">Quyết định cảnh báo<small>chống trùng</small></span></div>
+          <span class="sep"></span>
+          <div class="s"><span class="n">6</span><span class="l">Ghi cơ sở dữ liệu<small>một transaction</small></span></div>
+          <span class="sep"></span>
+          <div class="s"><span class="n">7</span><span class="l">Phát sự kiện<small>2 topic</small></span></div>
+          <span class="sep"></span>
+          <div class="s"><span class="n">8</span><span class="l">Tới người phụ trách<small>WebSocket + email</small></span></div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ---------------------------------------------------------------- chú giải -->
-  <div class="legend" style="margin-bottom:14px">
-    <div class="item">
-      <svg width="34" height="10" viewBox="0 0 34 10"><path d="M0 5H25" fill="none" stroke="#1d4e89" stroke-width="1.6"/><path d="M25 1.5 34 5l-9 3.5z" fill="#1d4e89"/></svg>
-      <b>Luồng chính</b> — dữ liệu hoặc lệnh đi theo hướng mũi tên
-    </div>
-    <div class="item">
-      <svg width="34" height="10" viewBox="0 0 34 10"><path d="M0 5H25" fill="none" stroke="#8a99a8" stroke-width="1.6" stroke-dasharray="4 3"/><path d="M25 1.5 34 5l-9 3.5z" fill="#8a99a8"/></svg>
-      <b>Luồng phụ trợ</b> — đọc dữ liệu đã lưu
-    </div>
-    <div class="item">
-      <span style="display:inline-block;width:26px;height:13px;border:1px solid #cfdcea;background:#eef3f9"></span>
-      <b>Hàng đợi Kafka</b>
-    </div>
-    <div class="item">
-      <span style="display:inline-block;width:26px;height:13px;border:1px dashed #d4dde6;background:#fff"></span>
-      <b>Tiến trình suy luận</b>
-    </div>
+  <div class="info">
+    <span class="ic">i</span>
+    <span>
+      Toàn bộ đặc trưng đi qua <b>một thư viện dùng chung duy nhất</b> (<span class="mono">rpm_common</span>) cho cả lúc huấn luyện và lúc suy luận trực tuyến — biện pháp trực tiếp chống lệch giữa huấn luyện và vận hành, có kiểm thử so từng giờ trên dữ liệu thật. Dữ liệu là MIMIC-III Clinical Database Demo v1.4 (100 bệnh nhân ICU, giấy phép mở ODbL v1.0); sau tiền xử lý còn 132 đợt hồi sức và 14.138 giờ trên lưới thời gian 1 giờ, chia theo bệnh nhân thành bốn nhóm cố định 48/15/15/20.
+    </span>
   </div>
-
-  <!-- ---------------------------------------------------------------- luồng end-to-end -->
-  <div class="band" style="margin-bottom:0">
-    <div class="band-head">Luồng đầu–cuối của một giờ dữ liệu<span class="note">phân vị 95 đo được: 1,30–1,62 giây với 20 bệnh nhân đồng thời</span></div>
-    <div class="band-body" style="padding:0">
-      <div class="flowstrip" style="border:none">
-        <div class="step"><span class="num">1</span><span class="lbl">Phát bản ghi<small>producer</small></span></div>
-        <span class="sep"></span>
-        <div class="step"><span class="num">2</span><span class="lbl">Vào hàng đợi<small>vitals-stream</small></span></div>
-        <span class="sep"></span>
-        <div class="step"><span class="num">3</span><span class="lbl">Tính đặc trưng<small>rpm_common</small></span></div>
-        <span class="sep"></span>
-        <div class="step"><span class="num">4</span><span class="lbl">Hai mô hình<small>rủi ro + bất thường</small></span></div>
-        <span class="sep"></span>
-        <div class="step"><span class="num">5</span><span class="lbl">Quyết định cảnh báo<small>chống trùng</small></span></div>
-        <span class="sep"></span>
-        <div class="step"><span class="num">6</span><span class="lbl">Ghi cơ sở dữ liệu<small>một transaction</small></span></div>
-        <span class="sep"></span>
-        <div class="step"><span class="num">7</span><span class="lbl">Phát sự kiện<small>2 topic</small></span></div>
-        <span class="sep"></span>
-        <div class="step"><span class="num">8</span><span class="lbl">Tới người phụ trách<small>WebSocket + email</small></span></div>
-      </div>
-    </div>
-  </div>
-
-  <p class="footnote">
-    Toàn bộ đặc trưng đi qua <b>một thư viện dùng chung duy nhất</b> (<span class="mono">rpm_common</span>) cho cả lúc huấn luyện và lúc suy luận trực tuyến — biện pháp trực tiếp chống lệch giữa huấn luyện và vận hành, có kiểm thử so từng giờ trên dữ liệu thật.
-  </p>
 </div>

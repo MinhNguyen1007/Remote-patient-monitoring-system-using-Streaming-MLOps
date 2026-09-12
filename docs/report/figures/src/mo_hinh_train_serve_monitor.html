@@ -1,257 +1,141 @@
 <!doctype html>
 <meta charset="utf-8">
-<link rel="stylesheet" href="diagram.css">
+<link rel="stylesheet" href="style_sketch.css">
 <style>
-  .sheet { width: 1420px; }
-  .three { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; align-items: start; }
-  .band.pane { margin: 0; display: flex; flex-direction: column; }
-  .band.pane .band-body { flex: 1; }
-  .users { display: flex; align-items: center; justify-content: center; gap: 26px; }
-  .actor { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); padding: 7px 13px; font-size: 12px; }
-  .actor b { font-weight: 650; }
-  .actor small { color: var(--faint); font-size: 10.5px; }
-  .bridge { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; }
-  .foundation { border: 1px solid var(--accent); background: var(--accent-soft); padding: 0; }
-  .foundation .fh {
-    background: var(--accent); color: #fff; padding: 7px 13px; font-size: 11px;
-    font-weight: 700; letter-spacing: 0.13em; text-transform: uppercase;
-    display: flex; align-items: center; gap: 10px;
-  }
-  .foundation .fb { display: grid; grid-template-columns: 1.15fr 1fr 1fr 1fr; gap: 14px; padding: 14px; }
-  .updown { display: flex; justify-content: space-around; padding: 6px 0 0; }
-  .updown .u { display: flex; flex-direction: column; align-items: center; gap: 3px; }
-  .updown .cap { font-size: 10.5px; color: var(--muted); }
+  .sheet { width: 1440px; }
+  .three { grid-template-columns: 1fr 1.05fr 1fr; }
+  .users { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-bottom: 4px; }
+  .users .row { display: flex; gap: 16px; }
+  .bridge { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; margin: 16px 0; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .shared-body { display: grid; grid-template-columns: 1.2fr 1fr 1fr 1.1fr; gap: 13px; }
 </style>
 
 <div class="sheet">
-  <h1 class="doc-title">Mô hình Training – Serving – Monitoring</h1>
-  <p class="doc-sub">Ba giai đoạn nối với nhau qua hai điểm duy nhất: <b>thư viện đặc trưng dùng chung</b> ở dưới và <b>alias <span class="mono">champion</span> của MLflow</b> ở giữa. Không giai đoạn nào gọi trực tiếp giai đoạn khác.</p>
+  <h1 class="title">Mô hình Training – Serving – Monitoring</h1>
+  <p class="subtitle">Ba giai đoạn chỉ nối với nhau qua hai điểm: alias <b>champion</b> của MLflow ở giữa, và thư viện đặc trưng dùng chung <b>rpm_common</b> ở dưới</p>
 
   <!-- người dùng -->
-  <div class="users" style="margin-bottom:10px">
-    <div class="actor"><b>Bác sĩ</b><small>xác nhận, xử lý cảnh báo</small></div>
-    <div class="actor"><b>Điều dưỡng</b><small>theo dõi realtime</small></div>
-    <div class="actor"><b>Quản trị viên</b><small>ngưỡng, mô hình, phân công</small></div>
-  </div>
-  <div class="arr" style="height:24px;margin-bottom:10px">
-    <svg width="12" height="24" viewBox="0 0 12 24"><path d="M6 0V15"/><path class="head" d="M2.5 15 6 24l3.5-9z"/></svg>
+  <div class="users">
+    <svg width="72" height="34" viewBox="0 0 72 34">
+      <g fill="none" stroke="#2b2f36" stroke-width="1.7" stroke-linecap="round">
+        <circle cx="16" cy="11" r="6"/><path d="M5 32c0-7 5-12 11-12s11 5 11 12"/>
+        <circle cx="36" cy="8" r="7"/><path d="M24 32c0-8 5-14 12-14s12 6 12 14"/>
+        <circle cx="56" cy="11" r="6"/><path d="M45 32c0-7 5-12 11-12s11 5 11 12"/>
+      </g>
+    </svg>
+    <div class="row">
+      <span class="pill">Bác sĩ</span>
+      <span class="pill">Điều dưỡng</span>
+      <span class="pill">Quản trị viên</span>
+    </div>
+    <div class="ar"><svg width="14" height="26" viewBox="0 0 14 26"><path d="M7 0C7 8 6 12 7 17"/><path class="h" d="M3 17 7 26l4-9z"/></svg></div>
   </div>
 
-  <!-- ba khối -->
-  <div class="three" style="margin-bottom:16px">
+  <!-- ba panel -->
+  <div class="cols three">
 
-    <!-- TRAINING -->
-    <div class="band pane">
-      <div class="band-head">Training<span class="note">ngoại tuyến</span></div>
-      <div class="band-body wash">
-        <div class="col">
-          <div class="card">
-            <div class="card-head"><span class="t">Tập huấn luyện cố định</span></div>
-            <ul>
-              <li><span class="mono">train</span> 48 bệnh nhân · 6.286 giờ</li>
-              <li><span class="mono">validation</span> 15 · <span class="mono">test</span> 15</li>
-              <li>Bốn nhóm chia theo bệnh nhân, <b>không bao giờ đổi</b></li>
-            </ul>
-          </div>
-          <div class="arr"><svg width="12" height="22" viewBox="0 0 12 22"><path d="M6 0V13"/><path class="head" d="M2.5 13 6 22l3.5-9z"/></svg></div>
-          <div class="card">
-            <div class="card-head"><img src="../logos/scikitlearn.svg" alt=""><span class="t">Huấn luyện mô hình rủi ro</span></div>
-            <ul>
-              <li>GroupKFold theo bệnh nhân để chọn họ mô hình</li>
-              <li>Chọn ngưỡng τ trên <b>dự đoán out-of-fold</b>, không trên validation</li>
-              <li>Random Forest thắng: Macro F1 0,622</li>
-            </ul>
-          </div>
-          <div class="card">
-            <div class="card-head"><img src="../logos/tensorflow.svg" alt=""><span class="t">Huấn luyện mô hình bất thường</span></div>
-            <ul>
-              <li>Chỉ dùng cửa sổ 12 giờ <b>toàn NORMAL</b></li>
-              <li>Căn giữa cửa sổ theo từng kênh</li>
-              <li>Điểm chuẩn hoá bằng ECDF trên validation</li>
-            </ul>
-          </div>
-          <div class="arr"><svg width="12" height="22" viewBox="0 0 12 22"><path d="M6 0V13"/><path class="head" d="M2.5 13 6 22l3.5-9z"/></svg></div>
-          <div class="card">
-            <div class="card-head"><img src="../logos/mlflow.svg" alt=""><span class="t">MLflow Tracking</span></div>
-            <ul>
-              <li>Tham số, chỉ số, artifact của mọi lần chạy</li>
-              <li>Kèm <span class="mono">reference_stats.json</span> và <span class="mono">drift_thresholds.json</span> cho drift</li>
-            </ul>
-          </div>
-        </div>
+    <!-- MONITORING -->
+    <div class="panel monitor">
+      <p class="p-title">Monitoring</p>
+      <div class="stack">
+        <div class="bx">Kiểm tra drift<span class="s">2 phút/lần · cửa sổ 24 giờ dữ liệu</span></div>
+        <div class="ar"><svg width="14" height="24" viewBox="0 0 14 24"><path d="M7 0C7 7 6 11 7 15"/><path class="h" d="M3 15 7 24l4-9z"/></svg></div>
+        <div class="bx">PSI cho 7 đặc trưng<span class="s">so với phân phối huấn luyện của champion</span></div>
+        <div class="ar"><svg width="14" height="24" viewBox="0 0 14 24"><path d="M7 0C7 7 8 11 7 15"/><path class="h" d="M3 15 7 24l4-9z"/></svg></div>
+        <div class="bx key">Ngưỡng hiệu chỉnh<br>từng đặc trưng<span class="s">Ngưỡng 0,25 thông dụng gắn cờ 93% cửa sổ KHÔNG drift ở quy mô ~20 bệnh nhân</span></div>
+        <div class="ar"><svg width="14" height="24" viewBox="0 0 14 24"><path d="M7 0C7 7 6 11 7 15"/><path class="h" d="M3 15 7 24l4-9z"/></svg></div>
+        <div class="bx">Báo cáo drift<span class="s">hiện trên tab Giám sát mô hình; email Admin chỉ khi bắt đầu đợt drift mới</span></div>
+      </div>
+      <div class="brand sm" style="margin-top:14px">
+        <img src="../logos/airflow.svg" alt=""><span>Airflow</span>
+        <img src="../logos/prometheus.svg" alt=""><span>Prometheus</span>
+        <img src="../logos/grafana.svg" alt=""><span>Grafana</span>
       </div>
     </div>
 
     <!-- SERVING -->
-    <div class="band pane">
-      <div class="band-head">Serving<span class="note">thời gian thực</span></div>
-      <div class="band-body">
-        <div class="col">
-          <div class="card">
-            <div class="card-head"><img src="../logos/kafka.svg" alt=""><span class="t">Dòng dữ liệu vào</span></div>
-            <ul>
-              <li>Một bản ghi = một giờ dữ liệu của một bệnh nhân</li>
-              <li>Khoá = mã bệnh nhân, giữ đúng thứ tự thời gian</li>
-            </ul>
-          </div>
-          <div class="arr"><svg width="12" height="22" viewBox="0 0 12 22"><path d="M6 0V13"/><path class="head" d="M2.5 13 6 22l3.5-9z"/></svg></div>
-          <div class="card dashed">
-            <div class="card-head"><span class="t">Stream Consumer</span><span class="tag">suy luận</span></div>
-            <ul>
-              <li>Nạp <span class="mono">models:/…@champion</span> lúc khởi động</li>
-              <li>Kiểm tra lại alias theo chu kỳ</li>
-              <li>Hai mô hình chạy trên cùng một bộ đặc trưng</li>
-              <li>Ghi DB một transaction rồi mới xác nhận thông điệp</li>
-            </ul>
-          </div>
-          <div class="arr"><svg width="12" height="22" viewBox="0 0 12 22"><path d="M6 0V13"/><path class="head" d="M2.5 13 6 22l3.5-9z"/></svg></div>
-          <div class="card">
-            <div class="card-head">
-              <img src="../logos/postgresql.svg" alt=""><img src="../logos/timescale.svg" alt="">
-              <span class="t">Lưu kết quả</span>
-            </div>
-            <ul>
-              <li><span class="mono">vital_records</span> giữ giá trị đo chưa điền</li>
-              <li><span class="mono">predictions</span> ghi cả mã phiên bản mô hình đã dùng</li>
-            </ul>
-          </div>
-          <div class="arr"><svg width="12" height="22" viewBox="0 0 12 22"><path d="M6 0V13"/><path class="head" d="M2.5 13 6 22l3.5-9z"/></svg></div>
-          <div class="card">
-            <div class="card-head">
-              <img src="../logos/fastapi.svg" alt=""><img src="../logos/react.svg" alt="">
-              <span class="t">Tới người phụ trách</span>
-            </div>
-            <ul>
-              <li>WebSocket chỉ đẩy cho người được phân công</li>
-              <li>Email cảnh báo, chống gửi trùng</li>
-              <li>Phân vị 95 đầu–cuối: <span class="kpi">1,30–1,62 giây</span></li>
-            </ul>
-          </div>
+    <div class="panel serve">
+      <p class="p-title">Serving</p>
+      <div class="stack">
+        <div class="cyl">Dòng dữ liệu vào<span class="s">1 bản ghi = 1 giờ của 1 bệnh nhân</span></div>
+        <div class="ar"><svg width="14" height="24" viewBox="0 0 14 24"><path d="M7 0C7 7 6 11 7 15"/><path class="h" d="M3 15 7 24l4-9z"/></svg></div>
+        <div class="bx key">Stream Consumer<span class="s">nạp models:/…@champion, kiểm tra lại alias theo chu kỳ</span></div>
+        <div class="ar"><svg width="14" height="24" viewBox="0 0 14 24"><path d="M7 0C7 7 8 11 7 15"/><path class="h" d="M3 15 7 24l4-9z"/></svg></div>
+        <div class="two">
+          <div class="bx">Dự báo rủi ro<span class="s">4 giờ tới</span></div>
+          <div class="bx">Bất thường<span class="s">cửa sổ 12 giờ</span></div>
         </div>
+        <div class="ar"><svg width="14" height="24" viewBox="0 0 14 24"><path d="M7 0C7 7 6 11 7 15"/><path class="h" d="M3 15 7 24l4-9z"/></svg></div>
+        <div class="cyl">PostgreSQL + TimescaleDB<span class="s">lưu giá trị đo chưa điền</span></div>
+        <div class="ar"><svg width="14" height="24" viewBox="0 0 14 24"><path d="M7 0C7 7 8 11 7 15"/><path class="h" d="M3 15 7 24l4-9z"/></svg></div>
+        <div class="bx">Dashboard + email<span class="s">chỉ tới người được phân công · p95 đầu–cuối 1,30–1,62 giây</span></div>
+      </div>
+      <div class="brand sm" style="margin-top:14px">
+        <img src="../logos/kafka.svg" alt=""><span>Kafka</span>
+        <img src="../logos/fastapi.svg" alt=""><span>FastAPI</span>
+        <img src="../logos/react.svg" alt=""><span>React</span>
+        <img src="../logos/docker.svg" alt=""><span>Docker</span>
       </div>
     </div>
 
-    <!-- MONITORING -->
-    <div class="band pane">
-      <div class="band-head">Monitoring<span class="note">định kỳ</span></div>
-      <div class="band-body wash">
-        <div class="col">
-          <div class="card">
-            <div class="card-head"><img src="../logos/airflow.svg" alt=""><span class="t">Kiểm tra drift dữ liệu</span></div>
-            <ul>
-              <li>Chạy 2 phút một lần, cửa sổ 24 giờ dữ liệu</li>
-              <li>PSI của 7 đặc trưng so với phân phối huấn luyện của mô hình đang dùng</li>
-              <li>Bỏ qua khi cửa sổ chưa đủ 24 nhịp hoặc dưới 200 bản ghi</li>
-            </ul>
-          </div>
-          <div class="arr"><svg width="12" height="22" viewBox="0 0 12 22"><path d="M6 0V13"/><path class="head" d="M2.5 13 6 22l3.5-9z"/></svg></div>
-          <div class="card soft">
-            <div class="card-head"><span class="t">Ngưỡng hiệu chỉnh từng đặc trưng</span></div>
-            <ul>
-              <li>Ngưỡng 0,25 thông dụng gắn cờ <b>93%</b> cửa sổ không drift ở quy mô ~20 bệnh nhân</li>
-              <li>Hiệu chỉnh trên dữ liệu phát triển cho tỷ lệ báo nhầm ≈ 5%</li>
-              <li>Kết quả: 0,53 (DBP) → 1,78 (nhịp tim)</li>
-            </ul>
-          </div>
-          <div class="arr"><svg width="12" height="22" viewBox="0 0 12 22"><path d="M6 0V13"/><path class="head" d="M2.5 13 6 22l3.5-9z"/></svg></div>
-          <div class="card">
-            <div class="card-head"><span class="t">Báo cáo drift + thông báo</span></div>
-            <ul>
-              <li>Ghi <span class="mono">drift_reports</span>, hiện trên tab Giám sát mô hình</li>
-              <li>Email Quản trị chỉ khi <b>bắt đầu đợt drift mới</b> hoặc đã kích hoạt huấn luyện lại</li>
-            </ul>
-          </div>
-          <div class="card">
-            <div class="card-head">
-              <img src="../logos/prometheus.svg" alt=""><img src="../logos/grafana.svg" alt="">
-              <span class="t">Giám sát hạ tầng</span>
-            </div>
-            <ul>
-              <li>Lưu lượng, tỷ lệ lỗi, độ trễ API của backend</li>
-              <li>Tách hẳn khỏi việc giám sát chất lượng mô hình</li>
-            </ul>
-          </div>
-        </div>
+    <!-- TRAINING -->
+    <div class="panel train">
+      <p class="p-title">Training</p>
+      <div class="stack">
+        <div class="cyl">4 nhóm chia theo bệnh nhân<span class="s">train 48 · validation 15 · test 15 · stream 20 — cố định, không đổi</span></div>
+        <div class="ar"><svg width="14" height="24" viewBox="0 0 14 24"><path d="M7 0C7 7 6 11 7 15"/><path class="h" d="M3 15 7 24l4-9z"/></svg></div>
+        <div class="bx">Huấn luyện mô hình rủi ro<span class="s">GroupKFold theo bệnh nhân; chọn ngưỡng τ trên dự đoán out-of-fold</span></div>
+        <div class="ar"><svg width="14" height="24" viewBox="0 0 14 24"><path d="M7 0C7 7 8 11 7 15"/><path class="h" d="M3 15 7 24l4-9z"/></svg></div>
+        <div class="bx">Huấn luyện mô hình bất thường<span class="s">chỉ dùng cửa sổ 12 giờ toàn NORMAL, căn giữa theo kênh</span></div>
+        <div class="ar"><svg width="14" height="24" viewBox="0 0 14 24"><path d="M7 0C7 7 6 11 7 15"/><path class="h" d="M3 15 7 24l4-9z"/></svg></div>
+        <div class="bx">Quality gate<span class="s">chấm lại cả mô hình mới và mô hình đang dùng trên cùng tập test</span></div>
+        <div class="ar"><svg width="14" height="24" viewBox="0 0 14 24"><path d="M7 0C7 7 8 11 7 15"/><path class="h" d="M3 15 7 24l4-9z"/></svg></div>
+        <div class="bx">MLflow Tracking<span class="s">tham số, chỉ số, artifact; kèm reference_stats cho drift</span></div>
+      </div>
+      <div class="brand sm" style="margin-top:14px">
+        <img src="../logos/scikitlearn.svg" alt=""><span>scikit-learn</span>
+        <img src="../logos/tensorflow.svg" alt=""><span>TensorFlow</span>
       </div>
     </div>
   </div>
 
-  <!-- cầu nối MLflow: Training ghi vào registry; Serving và Monitoring đọc ra -->
-  <div class="bridge" style="margin-bottom:16px">
+  <!-- cầu nối: MLflow Registry -->
+  <div class="bridge">
     <div>
-      <div class="arr-label" style="text-align:right;padding-right:2px">đăng ký phiên bản mới ▸</div>
-      <div class="arr"><svg width="100%" height="12" viewBox="0 0 200 12" preserveAspectRatio="none"><path d="M0 6H186" vector-effect="non-scaling-stroke"/><path class="head" d="M186 2.5 200 6l-14 3.5z"/></svg></div>
+      <div class="ar-lbl">Monitoring đọc phân phối tham chiếu</div>
+      <div class="ar"><svg width="100%" height="14" viewBox="0 0 200 14" preserveAspectRatio="none"><path d="M200 7C150 3 60 11 14 7" vector-effect="non-scaling-stroke"/><path class="h" d="M14 3 0 7l14 4z"/></svg></div>
     </div>
     <div>
-      <div class="arr" style="height:22px"><svg width="12" height="22" viewBox="0 0 12 22"><path d="M6 22V9"/><path class="head" d="M2.5 9 6 0l3.5 9z"/></svg></div>
-      <div class="arr-label" style="margin-bottom:4px">consumer nạp <span class="mono">@champion</span></div>
-      <div class="card soft" style="text-align:center;padding:10px 18px">
-        <div class="card-head" style="justify-content:center;margin-bottom:3px">
-          <img src="../logos/mlflow.svg" alt=""><span class="t">MLflow Model Registry — alias <span class="mono">champion</span></span>
-        </div>
-        <p>Điểm nối duy nhất giữa Training và Serving. Đổi mô hình đang dùng = <b>đổi alias</b>, không triển khai lại, không dừng tiến trình.</p>
-      </div>
+      <div class="ar" style="padding-bottom:2px"><svg width="14" height="26" viewBox="0 0 14 26"><path d="M7 26C7 18 6 14 7 9"/><path class="h" d="M3 9 7 0l4 9z"/></svg></div>
+      <div class="ar-lbl" style="margin-bottom:5px">consumer nạp <b>@champion</b></div>
+    <div class="bx key wide" style="max-width:520px;text-align:center">
+      <div class="brand" style="margin-bottom:4px"><img src="../logos/mlflow.svg" alt=""><span style="color:var(--ink)">MLflow Model Registry</span></div>
+      alias <b>champion</b>
+      <span class="s">Đổi mô hình đang dùng = đổi alias. Không triển khai lại, không dừng tiến trình.</span>
+    </div>
     </div>
     <div>
-      <div class="arr-label" style="text-align:left;padding-left:2px">▸ đọc phân phối tham chiếu của champion</div>
-      <div class="arr"><svg width="100%" height="12" viewBox="0 0 200 12" preserveAspectRatio="none"><path d="M0 6H186" vector-effect="non-scaling-stroke"/><path class="head" d="M186 2.5 200 6l-14 3.5z"/></svg></div>
+      <div class="ar-lbl">Training đăng ký phiên bản mới</div>
+      <div class="ar"><svg width="100%" height="14" viewBox="0 0 200 14" preserveAspectRatio="none"><path d="M200 7C150 11 60 3 14 7" vector-effect="non-scaling-stroke"/><path class="h" d="M14 3 0 7l14 4z"/></svg></div>
     </div>
   </div>
 
-  <!-- nền tảng: rpm_common -->
-  <div class="foundation" style="margin-bottom:14px">
-    <div class="fh">
-      <img src="../logos/python.svg" alt="" style="height:15px">
-      <span class="mono" style="font-size:11px;letter-spacing:.1em">rpm_common</span>
-      — một nguồn tính đặc trưng duy nhất cho cả Training và Serving
+  <!-- nền tảng dùng chung -->
+  <div class="panel shared">
+    <p class="p-title">rpm_common — một nguồn tính đặc trưng duy nhất cho cả Training và Serving</p>
+    <div class="shared-body">
+      <div class="bx" style="text-align:left">Vì sao bắt buộc<span class="s">Nếu đặc trưng lúc huấn luyện và lúc suy luận lệch nhau, hệ thống <b>không báo lỗi</b> — chất lượng dự đoán chỉ âm thầm giảm.</span></div>
+      <div class="bx" style="text-align:left">Làm sạch dữ liệu<span class="s">Gộp itemid · lưới 1 giờ · forward-fill có giới hạn, không nội suy</span></div>
+      <div class="bx" style="text-align:left">Tính đặc trưng<span class="s">NEWS2 rút gọn · cửa sổ 6 giờ · nền tảng cá nhân · điểm z · cửa sổ 12 giờ</span></div>
+      <div class="bx" style="text-align:left">Cách bảo đảm<span class="s">Không có bản sao thứ hai của bất kỳ công thức nào. Kiểm thử so <b>từng giờ</b> trên dữ liệu thật.</span></div>
     </div>
-    <div class="fb">
-      <div class="card">
-        <div class="card-head"><span class="t">Vì sao bắt buộc</span></div>
-        <p>Nếu đặc trưng lúc huấn luyện và lúc suy luận lệch nhau, hệ thống <b>không báo lỗi</b> — chất lượng dự đoán chỉ âm thầm giảm. Đây là loại lỗi khó phát hiện nhất của hệ thống học máy vận hành.</p>
-      </div>
-      <div class="card">
-        <div class="card-head"><span class="t">Nội dung</span></div>
-        <ul>
-          <li>Gộp itemid, làm sạch, lưới 1 giờ</li>
-          <li>Forward-fill có giới hạn</li>
-          <li>NEWS2 rút gọn 5 thông số</li>
-        </ul>
-      </div>
-      <div class="card">
-        <div class="card-head"><span class="t">Nội dung (tiếp)</span></div>
-        <ul>
-          <li>Đặc trưng cửa sổ 6 giờ</li>
-          <li>Nền tảng cá nhân, điểm z</li>
-          <li>Cắt cửa sổ 12 giờ cho LSTM-AE</li>
-        </ul>
-      </div>
-      <div class="card">
-        <div class="card-head"><span class="t">Cách bảo đảm</span></div>
-        <ul>
-          <li>Không tồn tại bản sao thứ hai của bất kỳ công thức nào</li>
-          <li>Kiểm thử so <b>từng giờ</b> trên dữ liệu thật: đặc trưng trực tuyến phải trùng khít đặc trưng lúc huấn luyện</li>
-        </ul>
-      </div>
+    <div class="brand sm" style="margin-top:14px">
+      <img src="../logos/python.svg" alt=""><span>Python · package dùng chung cho ml/ và services/streaming</span>
     </div>
   </div>
 
-  <div class="legend">
-    <div class="item">
-      <svg width="34" height="10" viewBox="0 0 34 10"><path d="M0 5H25" fill="none" stroke="#1d4e89" stroke-width="1.6"/><path d="M25 1.5 34 5l-9 3.5z" fill="#1d4e89"/></svg>
-      <b>Luồng trong một giai đoạn</b>
-    </div>
-    <div class="item">
-      <span style="display:inline-block;width:26px;height:13px;border:1px solid #cfdcea;background:#eef3f9"></span>
-      <b>Điểm nối giữa các giai đoạn</b> — alias champion và thư viện đặc trưng
-    </div>
-    <div class="item">
-      <span style="display:inline-block;width:26px;height:13px;border:1px dashed #d4dde6;background:#fff"></span>
-      <b>Tiến trình suy luận</b>
-    </div>
-  </div>
-
-  <p class="footnote">
-    Huấn luyện lại dùng lại <b>nguyên quy trình huấn luyện ban đầu</b>, chỉ thêm dữ liệu đã tích luỹ từ dòng thời gian thực. Tập <span class="mono">validation</span> và <span class="mono">test</span> không bao giờ đổi — điều kiện để so sánh được mô hình mới với mô hình đang dùng.
+  <p class="note">
+    <b>Huấn luyện lại</b> dùng lại nguyên quy trình Training ở trên, chỉ thêm dữ liệu đã tích luỹ từ dòng thời gian thực. Tập <b>validation</b> và <b>test</b> không bao giờ đổi — đó là điều kiện để so sánh được mô hình mới với mô hình đang dùng.
   </p>
 </div>

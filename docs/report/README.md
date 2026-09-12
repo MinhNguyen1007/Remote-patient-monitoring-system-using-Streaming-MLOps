@@ -10,8 +10,10 @@
 | `BaoCao_GiaoDichDinhLuong.md`, `Mau_Bai_bao_Project_NLP.md` | Hai tệp mẫu của người dùng (chỉ để tham khảo sườn, **không sửa**) |
 | [`build_docx.py`](build_docx.py) | Xuất `.docx` bằng Pandoc (tuỳ chọn — bản giao hiện tại là Markdown) |
 | [`tools/render_figures.py`](tools/render_figures.py) | Render sơ đồ Mermaid → PNG |
+| [`tools/render_html_figures.py`](tools/render_html_figures.py) | Render 3 sơ đồ tổng quát viết bằng HTML/CSS → PNG |
+| [`tools/fetch_logos.py`](tools/fetch_logos.py) | Tải logo công nghệ (SVG, CC0) về `figures/logos/` |
 | [`tools/check_report.py`](tools/check_report.py) | Soát nhất quán hình/bảng/trích dẫn/ảnh; `--renumber` để đánh số lại |
-| `figures/` | 17 hình sơ đồ đã render sẵn thành PNG; `figures/src/` chứa nguồn Mermaid của hình không lấy từ `docs/design/` |
+| `figures/` | Hình đã render thành PNG; `figures/src/` chứa nguồn HTML/CSS của 3 sơ đồ tổng quát; `figures/logos/` chứa logo công nghệ |
 
 Ảnh khác được tham chiếu trực tiếp từ chỗ chúng đang nằm, không sao chép: 3 hình kết quả mô hình ở `ml/reports/`, 9 ảnh chụp giao diện ở `images/`.
 
@@ -59,6 +61,32 @@ python docs/report/tools/check_report.py --renumber   # đánh số lại Hình/
 5. ảnh được tham chiếu nhưng không tồn tại trên đĩa.
 
 Cả năm lỗi này đều **đã từng xảy ra** trong lần viết đầu (Hình 3.10 nằm giữa 3.6 và 3.7; 10 chú thích lệch danh mục; 4 bảng chưa đánh số; 3 tài liệu có trong danh mục mà chưa được trích dẫn), nên hãy chạy script sau mỗi lần sửa nội dung.
+
+## Ba sơ đồ tổng quát vẽ bằng HTML/CSS
+
+Khác với các sơ đồ UML sinh từ Mermaid, ba sơ đồ tổng quát được viết tay bằng HTML/CSS rồi render bằng
+Chrome headless (`tools/render_html_figures.py`). Mỗi sơ đồ theo **một phong cách riêng**, bám theo ba
+tệp mẫu người dùng đưa ở `images/Ve_So_Do/`:
+
+| Sơ đồ | Phong cách (mẫu tương ứng) | CSS |
+|---|---|---|
+| `so_do_tong_quat.png` | Nhiều lớp, thanh tiêu đề màu đặc theo nhóm chức năng, thẻ có bullet, ô chú giải, dải hạ tầng và luồng đầu–cuối ở chân (`SoDoHeThongTongQuat.png`) | `style_layered.css` |
+| `mo_hinh_train_serve_monitor.png` | Vẽ tay: font Segoe Print, panel pastel có gạch chéo, hộp bo góc không đều (`MoHinh_Trainiing_Serving_Monitoring.png`) | `style_sketch.css` |
+| `vong_lap_mlops.png` | Lưu đồ đơn sắc: khung nét đứt có tiêu đề, hình thoi quyết định, logo đặt rời, chú thích serif dưới hình (`Mau_Mo_Hinh_Tong_Quat_He_Thong.png`) | `style_flow.css` |
+
+Logo lấy từ [Simple Icons](https://simpleicons.org) — giấy phép **CC0**, mỗi logo là một path đơn sắc đã
+mang màu thương hiệu chính thức, nên nét đồng đều giữa các hãng thay vì mỗi logo một phong cách.
+
+Ba điều đã mắc phải khi làm, ghi lại để khỏi lặp:
+
+- **Khai báo `.s` / `.sub` (nhãn phụ) phải ở phạm vi toàn cục, không bó trong một lớp hộp.** Bó trong
+  `.box` hay `.bx` thì ở các loại hộp khác nhãn phụ mất `display:block` và chữ dính liền dòng trên. Lỗi
+  này đã xảy ra ở hai style khác nhau.
+- **Mũi tên dọc không được đi xuyên qua hộp kết cục của nhánh rẽ** — người đọc sẽ hiểu là luồng chính
+  chạy qua nhánh. Dùng bố cục hai làn (`.gflow` trong `style_flow.css`): luồng chính ở cột 1, nhánh rẽ
+  sang cột 2–3.
+- **Kiểm lại chiều mũi tên bằng cách đọc thành câu.** Nhánh phải của MLflow Registry từng chỉ sai chiều,
+  đọc thành “Monitoring → Registry” trong khi thực tế Monitoring *đọc* phân phối tham chiếu từ registry.
 
 ## Về việc hình có lọt trang in hay không
 

@@ -1,0 +1,146 @@
+/* Phong cách theo mẫu `images/Ve_So_Do/MoHinh_Trainiing_Serving_Monitoring.png`:
+ * nét VẼ TAY, font viết tay, panel nền pastel có gạch chéo, hộp bo góc không đều, logo kèm tên hãng
+ * viết lớn. Mục đích của phong cách này là dễ nhìn và ít chữ — nên nhãn phải ngắn.
+ *
+ * Cảm giác "vẽ tay" tạo bằng ba thứ cộng lại, không cần thư viện JS:
+ *   1. font Segoe Print (có sẵn trên Windows, đủ dấu tiếng Việt);
+ *   2. bán kính bo góc KHÔNG đều ở 4 góc, khác nhau giữa trục ngang và trục dọc;
+ *   3. mỗi hộp lệch một góc rất nhỏ (dưới 0,6°) để không hộp nào thẳng hàng tuyệt đối.
+ */
+
+:root {
+  --ink: #1f2328;
+  --stroke: #2b2f36;
+  --soft: #5c646e;
+  --train: #f2f3f5;
+  --serve: #e8f4f8;
+  --monitor: #eaf5ec;
+  --shared: #f6f1e8;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: #fff;
+  color: var(--ink);
+  font: 14px/1.4 "Segoe Print", "Comic Sans MS", cursive;
+}
+
+.sheet { padding: 30px 34px 26px; }
+
+.title {
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+.subtitle {
+  text-align: center;
+  font-size: 13px;
+  color: var(--soft);
+  margin: 0 0 22px;
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+/* ------------------------------------------------------------------- panel có gạch chéo */
+
+.panel {
+  border: 1.8px solid var(--stroke);
+  border-radius: 18px 13px 20px 11px / 12px 19px 10px 17px;
+  padding: 15px 16px 16px;
+  position: relative;
+}
+.panel > .p-title {
+  text-align: center;
+  font-size: 16px;
+  margin: 0 0 13px;
+}
+.panel.train    { background: var(--train);    background-image: repeating-linear-gradient(45deg, rgba(43,47,54,.05) 0 5px, transparent 5px 11px); }
+.panel.serve    { background: var(--serve);    background-image: repeating-linear-gradient(45deg, rgba(23,105,140,.06) 0 5px, transparent 5px 11px); }
+.panel.monitor  { background: var(--monitor);  background-image: repeating-linear-gradient(45deg, rgba(31,110,60,.06) 0 5px, transparent 5px 11px); }
+.panel.shared   { background: var(--shared);   background-image: repeating-linear-gradient(45deg, rgba(140,105,40,.07) 0 5px, transparent 5px 11px); }
+
+/* ------------------------------------------------------------------- hộp vẽ tay */
+
+.bx {
+  background: #fff;
+  border: 1.6px solid var(--stroke);
+  border-radius: 12px 8px 14px 7px / 8px 13px 6px 11px;
+  padding: 9px 12px;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.3;
+}
+/* Khai báo toàn cục, KHÔNG bó trong .bx: nhãn phụ còn dùng trong .cyl và .pill, và khi bó trong .bx
+ * thì ở các khối khác chữ bị dính liền vào dòng trên. */
+.s {
+  display: block;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-size: 11.5px;
+  color: var(--soft);
+  margin-top: 3px;
+  line-height: 1.35;
+}
+/* Mỗi hộp lệch một chút, luân phiên hai chiều — đủ để mất cảm giác "máy vẽ" mà không thành lệch lạc */
+.bx:nth-of-type(odd)  { transform: rotate(-0.35deg); }
+.bx:nth-of-type(even) { transform: rotate(0.3deg); }
+
+.bx.wide { border-radius: 14px 10px 16px 9px / 9px 15px 8px 13px; }
+.bx.key  { background: #fffdf6; border-width: 2px; }
+
+.cyl {
+  background: #fff;
+  border: 1.6px solid var(--stroke);
+  border-radius: 50% / 18px;
+  padding: 11px 13px;
+  text-align: center;
+  font-size: 13.5px;
+}
+
+.pill {
+  display: inline-block;
+  background: #fff;
+  border: 1.6px solid var(--stroke);
+  border-radius: 999px;
+  padding: 6px 15px;
+  font-size: 13.5px;
+}
+
+/* ------------------------------------------------------------------- mũi tên vẽ tay */
+
+.ar { display: flex; align-items: center; justify-content: center; }
+.ar svg { display: block; overflow: visible; }
+.ar path { fill: none; stroke: var(--stroke); stroke-width: 1.7; stroke-linecap: round; }
+.ar .h { fill: var(--stroke); stroke: none; }
+.ar-lbl {
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-size: 11px;
+  color: var(--soft);
+  text-align: center;
+}
+
+/* ------------------------------------------------------------------- logo + tên hãng */
+
+.brand { display: flex; align-items: center; justify-content: center; gap: 9px; flex-wrap: wrap; }
+.brand img { height: 22px; }
+.brand span { font-size: 15px; color: var(--soft); }
+.brand.sm img { height: 17px; }
+.brand.sm span { font-size: 12.5px; }
+
+/* ------------------------------------------------------------------- bố cục */
+
+.cols { display: grid; gap: 18px; align-items: start; }
+.stack { display: flex; flex-direction: column; }
+.stack > .ar { padding: 6px 0; }
+
+.note {
+  margin-top: 18px;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-size: 11.5px;
+  color: var(--soft);
+  border-left: 3px solid var(--stroke);
+  padding-left: 12px;
+  line-height: 1.55;
+}
+.note b { color: var(--ink); }
