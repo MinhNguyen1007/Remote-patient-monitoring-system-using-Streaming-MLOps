@@ -132,9 +132,17 @@
   - ⚠ Bộ E2E **xóa dữ liệu phát lại** trong `rpm_db` khi bắt đầu (như `reset_demo`), giữ users/model_versions/alert_settings/drift_reports.
   - **Lỗi thật bộ E2E tìm ra**: `sync_champion` của consumer ghi đè `model_versions.gate_status = 'PROMOTED'` mỗi lần đồng bộ, nên trỏ alias `champion` sang version đã bị gate từ chối làm tab Giám sát mô hình báo sai (dòng vẫn giữ `gate_reasons` từ chối). Đã sửa (`ON CONFLICT` không ghi `gate_status` nữa), sửa dòng sai trong DB, rebuild `rpm-streaming`, thêm khẳng định chống hồi quy trong `test_3_model_reload.py`.
   - Ba điểm đáng nhớ khi sửa bộ test (đã ghi trong README): group Kafka phải riêng từng phiên (stream consumer dùng `earliest` nên được commit sẵn offset cuối topic); khẳng định dựa trên log phải dùng `log_since_last_start()`; test cần thấy cảnh báo **mới** phải đi qua fixture `alert_slate` (cảnh báo OPEN cũ + cooldown sẽ chặn).
-- **Việc tiếp theo**:
-  1. **Còn lại của H**: soát giao diện thật (người dùng đăng nhập; chụp ảnh các màn hình, gồm tab Giám sát mô hình sau drift) cho báo cáo mục 3.4 — Claude không tự nhập mật khẩu vào trang web.
-  2. Giai đoạn I: viết báo cáo mục 1–5 theo `docs/report/ghi_chu_bao_cao.md`, rồi mục 6 khi có mẫu Word.
+  - **Ảnh giao diện thật: XONG (2026-09-12)** — người dùng tự đăng nhập và chụp 9 màn hình, đặt ở `images/` (đã commit). Soát ảnh phát hiện thêm 1 lỗi frontend (thẻ "Diễn biến bất thường" nói sai lý do thiếu điểm), đã sửa → **`images/3_patient_detail.png` nên chụp lại**.
+- **Giai đoạn I — viết bài báo & báo cáo: ĐANG LÀM (từ 2026-09-12)**. Mọi thứ liên quan ở [`docs/report/README.md`](docs/report/README.md).
+  - Người dùng đưa **2 tệp mẫu** ở `docs/report/`: `Mau_Bai_bao_Project_NLP.md` (bài báo 5 mục) và `BaoCao_GiaoDichDinhLuong.md` (báo cáo đồ án 5 chương + phần đầu/cuối). Mẫu thứ hai là đồ án trước của chính người dùng → dùng lại được trường/khoa/khoá/thể thức cam đoan.
+  - **Quyết định của người dùng 2026-09-12**: giữ đúng 5 chương của mẫu, nhét 10 mục thiết kế vào Ch2 (chức năng, use case, DFD, ERD) + Ch3 (activity, sequence, class, giải thuật, giao diện), thiết kế test vào 4.4 — **không** thêm chương mới, **không** đẩy xuống phụ lục.
+  - Đã xong: `bao_cao_do_an.md` + `bai_bao.md` (khung đầy đủ; Chương 1, các bảng kết quả, Chương 5 đã viết bằng số liệu thật), 15 hình PNG ở `docs/report/figures/`, `build_docx.py` (pandoc → .docx, đã thử: 27 hình nhúng, 13 bảng, 15 ngắt trang).
+  - **Việc tiếp theo**:
+    1. Viết nội dung các mục còn đánh dấu `⟨…⟩` (Ch2, Ch3, 4.1–4.4, phần bàn luận).
+    2. **Tra cứu tài liệu tham khảo thật** cho mục 2.2 báo cáo / mục 2 bài báo (NEWS2, MIMIC-III, PSI/drift, LSTM-AE) — chưa có, `ghi_chu_bao_cao.md` mục 5 chỉ là danh sách nền.
+    3. Xử lý 3 hình chưa lọt trang A4 (`activity_drift` tỉ lệ 0,35, `activity_streaming` 0,41, `usecase` 0,50) — nên tách mỗi sơ đồ hoạt động dài thành 2 hình.
+    4. Tạo `docs/report/reference.docx` theo thể thức của trường để pandoc dùng đúng font/heading.
+  - **Chặn ở người dùng**: thông tin hành chính phần đầu (tên môn học, mã lớp, giảng viên hướng dẫn + email, thành viên nhóm + MSSV hoặc xác nhận làm một mình), và logo trường cho trang bìa.
 - **Quyết định đã chốt sau rà soát 2026-09-10** (người dùng đã duyệt):
   - Model rủi ro là **dự báo** mức NEWS2 cao nhất trong 4 giờ tới, không phân loại tức thời. Phân loại tức thời bị rò rỉ nhãn vì nhãn là hàm tất định của đặc trưng. Model phải thắng baseline persistence.
   - Drift → **tự động** kích hoạt retrain; quality gate chặn model kém; Admin vẫn retrain thủ công được. (Ngưỡng drift đổi thành ngưỡng hiệu chỉnh theo từng đặc trưng ngày 2026-09-11, xem Giai đoạn G.)
@@ -146,7 +154,7 @@
   - Airflow: `airflow-init` chạy xong trước webserver/scheduler; REST API với basic auth → 200; không còn DAG ví dụ.
   - Đã nâng schema `mlflow_db` lên 3.x và sửa `artifact_location` của experiment `Default`. **Khi đổi phiên bản MLflow phải chạy `mlflow db upgrade`** trên `mlflow_db` trước khi khởi động server.
   - File `.env` trên máy đã có đủ biến của `.env.example` (bổ sung ở Giai đoạn D/E/G); chưa đặt `ADMIN_*` nên Admin dùng mật khẩu mặc định.
-- **Còn phụ thuộc người dùng**: file mẫu báo cáo Word (.docx) của trường — chưa có, chỉ chặn bước cuối cùng (mục 6), không chặn code.
+- **Còn phụ thuộc người dùng**: thông tin hành chính trang bìa + logo trường (xem Giai đoạn I). Hai tệp mẫu báo cáo/bài báo đã có ở `docs/report/`.
 
 ## Kiến trúc tổng quan
 
