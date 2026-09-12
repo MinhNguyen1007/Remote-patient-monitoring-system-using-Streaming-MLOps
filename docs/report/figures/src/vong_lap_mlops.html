@@ -1,0 +1,285 @@
+<!doctype html>
+<meta charset="utf-8">
+<link rel="stylesheet" href="diagram.css">
+<style>
+  .sheet { width: 1520px; }
+
+  /* Lưới luồng: mỗi bước một cột, mũi tên nằm ở cột hẹp giữa hai bước.
+     Hàng 1 = các bước; hàng 2 = mũi tên rẽ xuống; hàng 3 = kết cục của nhánh rẽ. */
+  .flow {
+    display: grid;
+    grid-template-columns: 1.05fr 24px 1.15fr 24px 1.1fr 24px 1.1fr 24px 1fr;
+    grid-template-rows: auto auto auto;
+    align-items: stretch;
+    row-gap: 0;
+  }
+  .flow > .r1 { grid-row: 1; display: flex; align-items: center; }
+  .flow > .r2 { grid-row: 2; display: flex; justify-content: center; padding: 4px 0 2px; }
+  .flow > .r3 { grid-row: 3; display: flex; align-items: flex-start; }
+  .flow .card, .flow .decision, .flow .outcome { width: 100%; }
+
+  .branch-lbl { font-size: 10px; color: var(--faint); text-align: center; }
+
+  .results { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .res {
+    border: 1px solid var(--line);
+    background: #fff;
+    padding: 10px 12px;
+  }
+  .res .name { font-size: 12px; font-weight: 650; margin-bottom: 3px; }
+  .res .met { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+  .res .verdict { font-size: 11px; font-weight: 650; }
+  .res.fail { border-left: 3px solid var(--crit); }
+  .res.fail .verdict { color: var(--crit); }
+  .res.tie { border-left: 3px solid var(--warn); }
+  .res.tie .verdict { color: var(--warn); }
+</style>
+
+<div class="sheet">
+  <h1 class="doc-title">Vòng lặp MLOps — phát hiện drift, huấn luyện lại và cửa kiểm định chất lượng</h1>
+  <p class="doc-sub">Hệ thống tự huấn luyện lại, nhưng <b>không tự thay mô hình đang dùng</b>. Mô hình mới phải vượt cửa kiểm định trên tập dữ liệu kiểm tra cố định — cơ chế bảo vệ khỏi kịch bản nguy hiểm nhất của MLOps tự động: huấn luyện lại trên dữ liệu nhiễu rồi tự hạ cấp chính mình.</p>
+
+  <!-- ============================================ giai đoạn 1: phát hiện drift -->
+  <div class="band">
+    <div class="band-head">
+      <img src="../logos/airflow.svg" alt="" style="height:14px">
+      Giai đoạn 1 — luồng <span class="mono" style="letter-spacing:0">drift_check</span>
+      <span class="note">chạy 2 phút một lần; ở tốc độ phát lại mặc định, 2 phút = đúng 24 giờ dữ liệu</span>
+    </div>
+    <div class="band-body wash">
+      <div class="flow">
+
+        <!-- bước 1 -->
+        <div class="r1" style="grid-column:1">
+          <div class="card">
+            <div class="card-head"><span class="t">Lấy cửa sổ dữ liệu</span></div>
+            <ul>
+              <li>24 nhịp <span class="mono">recorded_at</span> mới nhất</li>
+              <li>Dựng lại đặc trưng từ <span class="mono">vital_records</span></li>
+            </ul>
+          </div>
+        </div>
+        <div class="r1 arr" style="grid-column:2"><svg width="24" height="12" viewBox="0 0 24 12"><path d="M0 6H15"/><path class="head" d="M15 2.5 24 6l-9 3.5z"/></svg></div>
+
+        <!-- quyết định 1 -->
+        <div class="r1" style="grid-column:3">
+          <div class="decision">
+            Cửa sổ đủ điều kiện?
+            <small>có champion · đủ 24 nhịp · ≥ 200 bản ghi · có dữ liệu mới</small>
+          </div>
+        </div>
+        <div class="r2" style="grid-column:3">
+          <div style="text-align:center">
+            <div class="branch-lbl">không</div>
+            <div class="arr"><svg width="12" height="20" viewBox="0 0 12 20"><path d="M6 0V11"/><path class="head" d="M2.5 11 6 20l3.5-9z"/></svg></div>
+          </div>
+        </div>
+        <div class="r3" style="grid-column:3">
+          <div class="outcome stop"><b>Bỏ qua lần kiểm tra</b><br>Không ghi báo cáo, không thông báo. Đầu mỗi lần phát lại luôn rơi vào nhánh này.</div>
+        </div>
+        <div class="r1 arr" style="grid-column:4"><svg width="24" height="12" viewBox="0 0 24 12"><path d="M0 6H15"/><path class="head" d="M15 2.5 24 6l-9 3.5z"/></svg></div>
+
+        <!-- bước 2 -->
+        <div class="r1" style="grid-column:5">
+          <div class="card">
+            <div class="card-head"><span class="t">Tính PSI cho 7 đặc trưng</span></div>
+            <ul>
+              <li>So với phân phối huấn luyện của mô hình đang dùng</li>
+              <li>10 khoảng theo thập phân vị</li>
+              <li>Kiểm định KS tính kèm để đối chiếu, <b>không dùng p-value để quyết định</b></li>
+              <li><b>Ghi <span class="mono">drift_reports</span> ở mọi lần kiểm tra đủ điều kiện</b>, trước khi xét có drift hay không</li>
+            </ul>
+          </div>
+        </div>
+        <div class="r1 arr" style="grid-column:6"><svg width="24" height="12" viewBox="0 0 24 12"><path d="M0 6H15"/><path class="head" d="M15 2.5 24 6l-9 3.5z"/></svg></div>
+
+        <!-- quyết định 2 -->
+        <div class="r1" style="grid-column:7">
+          <div class="decision">
+            Có đặc trưng nào vượt ngưỡng riêng của nó?
+            <small>ngưỡng hiệu chỉnh từng đặc trưng, sàn 0,25</small>
+          </div>
+        </div>
+        <div class="r2" style="grid-column:7">
+          <div style="text-align:center">
+            <div class="branch-lbl">không</div>
+            <div class="arr"><svg width="12" height="20" viewBox="0 0 12 20"><path d="M6 0V11"/><path class="head" d="M2.5 11 6 20l3.5-9z"/></svg></div>
+          </div>
+        </div>
+        <div class="r3" style="grid-column:7">
+          <div class="outcome stop"><b>Kết luận không drift</b><br>Báo cáo đã ghi ở bước trước, chỉ không kích hoạt gì thêm. Đo thật trên dữ liệu sạch: PSI lớn nhất 0,235 và 0,340 — quy tắc 0,25 thông dụng sẽ kết luận drift <b>sai</b> ở lần thứ hai.</div>
+        </div>
+        <div class="r1 arr" style="grid-column:8"><svg width="24" height="12" viewBox="0 0 24 12"><path d="M0 6H15"/><path class="head" d="M15 2.5 24 6l-9 3.5z"/></svg></div>
+
+        <!-- quyết định 3 -->
+        <div class="r1" style="grid-column:9">
+          <div class="decision">
+            Chống vòng lặp: đang chạy hoặc mới xong &lt; 1 giờ?
+            <small>tính cả lần thủ công và lần thất bại</small>
+          </div>
+        </div>
+        <div class="r2" style="grid-column:9">
+          <div style="text-align:center">
+            <div class="branch-lbl">có</div>
+            <div class="arr"><svg width="12" height="20" viewBox="0 0 12 20"><path d="M6 0V11"/><path class="head" d="M2.5 11 6 20l3.5-9z"/></svg></div>
+          </div>
+        </div>
+        <div class="r3" style="grid-column:9">
+          <div class="outcome stop"><b>Chỉ thông báo, không kích hoạt</b><br>Email Quản trị chỉ gửi khi <b>bắt đầu đợt drift mới</b>; drift kéo dài không gửi lặp.</div>
+        </div>
+      </div>
+
+      <div class="row center" style="gap:10px;margin-top:14px;padding-top:12px;border-top:1px dashed var(--line)">
+        <div class="branch-lbl" style="color:var(--muted)">nhánh &ldquo;không&rdquo; của quyết định chống vòng lặp</div>
+        <div class="arr"><svg width="40" height="12" viewBox="0 0 40 12"><path d="M0 6H31"/><path class="head" d="M31 2.5 40 6l-9 3.5z"/></svg></div>
+        <div class="card soft" style="flex:1">
+          <div class="card-head">
+            <img src="../logos/kafka.svg" alt=""><span class="t">Kích hoạt <span class="mono">retrain_pipeline</span> và phát sự kiện <span class="mono">drift_report</span></span>
+          </div>
+          <p>Sự kiện đi qua topic <span class="mono">mlops-events</span> → backend đẩy WebSocket cho mọi Quản trị đang hoạt động và gửi email khi cần. Airflow <b>không tự gửi email</b>.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ giai đoạn 2: huấn luyện lại -->
+  <div class="band">
+    <div class="band-head">
+      <img src="../logos/airflow.svg" alt="" style="height:14px">
+      Giai đoạn 2 — luồng <span class="mono" style="letter-spacing:0">retrain_pipeline</span>
+      <span class="note">kích hoạt tự động từ giai đoạn 1, hoặc thủ công bởi Quản trị viên (UC10)</span>
+    </div>
+    <div class="band-body">
+      <div class="flow" style="grid-template-columns:1.05fr 24px 1.15fr 24px 1.25fr 24px 1fr 24px 1fr">
+
+        <div class="r1" style="grid-column:1">
+          <div class="card">
+            <div class="card-head"><span class="t">Dựng tập dữ liệu</span></div>
+            <ul>
+              <li>Nhóm <span class="mono">train</span> cố định + dữ liệu đã tích luỹ từ dòng thời gian thực</li>
+              <li>Chỉ giờ đã &ldquo;chín&rdquo; (đủ 4 giờ phía sau) mới có nhãn</li>
+              <li><span class="mono">validation</span> và <span class="mono">test</span> <b>không đổi</b></li>
+            </ul>
+          </div>
+        </div>
+        <div class="r1 arr" style="grid-column:2"><svg width="24" height="12" viewBox="0 0 24 12"><path d="M0 6H15"/><path class="head" d="M15 2.5 24 6l-9 3.5z"/></svg></div>
+
+        <div class="r1" style="grid-column:3">
+          <div class="col" style="gap:10px;width:100%">
+            <div class="card">
+              <div class="card-head"><img src="../logos/scikitlearn.svg" alt=""><span class="t">Huấn luyện mô hình rủi ro</span></div>
+              <p>Dùng lại <b>nguyên quy trình ban đầu</b>, kể cả cách chọn ngưỡng τ</p>
+            </div>
+            <div class="card">
+              <div class="card-head"><img src="../logos/tensorflow.svg" alt=""><span class="t">Huấn luyện mô hình bất thường</span></div>
+              <p>σ của phần tiêm bất thường vẫn lấy từ nhóm <span class="mono">train</span> cố định</p>
+            </div>
+            <div class="branch-lbl">hai bước chạy song song</div>
+          </div>
+        </div>
+        <div class="r1 arr" style="grid-column:4"><svg width="24" height="12" viewBox="0 0 24 12"><path d="M0 6H15"/><path class="head" d="M15 2.5 24 6l-9 3.5z"/></svg></div>
+
+        <div class="r1" style="grid-column:5">
+          <div class="card soft">
+            <div class="card-head"><span class="t">Chấm lại trên cùng tập kiểm tra cố định</span></div>
+            <ul>
+              <li>Chấm <b>cả</b> mô hình mới <b>và</b> mô hình đang dùng, ngay tại thời điểm đó</li>
+              <li><b>Không</b> lấy chỉ số đã lưu từ lần trước — chỉ số cũ có thể đo trong điều kiện khác, so sánh hai con số không cùng điều kiện là lỗi phương pháp</li>
+            </ul>
+          </div>
+        </div>
+        <div class="r1 arr" style="grid-column:6"><svg width="24" height="12" viewBox="0 0 24 12"><path d="M0 6H15"/><path class="head" d="M15 2.5 24 6l-9 3.5z"/></svg></div>
+
+        <!-- quality gate -->
+        <div class="r1" style="grid-column:7">
+          <div class="decision" style="text-align:left">
+            Quality gate — xét riêng từng mô hình
+            <small style="margin-top:5px">
+              <b>Mô hình rủi ro</b>, phải đạt đồng thời:<br>
+              1. Macro F1 ≥ 0,60 và Recall CRITICAL ≥ 0,75<br>
+              2. Macro F1 &gt; baseline persistence<br>
+              3. Macro F1 <b>và</b> Recall CRITICAL đều không kém mô hình đang dùng<br>
+              <b>Mô hình bất thường</b>: AUROC ≥ 0,75 và không kém mô hình đang dùng
+            </small>
+          </div>
+        </div>
+        <div class="r2" style="grid-column:7">
+          <div style="text-align:center">
+            <div class="branch-lbl">không đạt</div>
+            <div class="arr"><svg width="12" height="20" viewBox="0 0 12 20"><path d="M6 0V11"/><path class="head" d="M2.5 11 6 20l3.5-9z"/></svg></div>
+          </div>
+        </div>
+        <div class="r3" style="grid-column:7">
+          <div class="outcome fail"><b>Gắn thẻ <span class="mono">gate=rejected</span> kèm lý do</b><br>Mô hình đang dùng <b>giữ nguyên</b>. Phiên bản bị từ chối vẫn được ghi vào <span class="mono">model_versions</span> để Quản trị xem được trên giao diện.</div>
+        </div>
+        <div class="r1 arr" style="grid-column:8"><svg width="24" height="12" viewBox="0 0 24 12"><path d="M0 6H15"/><path class="head" d="M15 2.5 24 6l-9 3.5z"/></svg></div>
+
+        <div class="r1" style="grid-column:9">
+          <div class="col" style="gap:10px;width:100%">
+            <div class="outcome pass"><b>Đạt → chuyển alias <span class="mono">champion</span></b></div>
+            <div class="arr"><svg width="12" height="20" viewBox="0 0 12 20"><path d="M6 0V11"/><path class="head" d="M2.5 11 6 20l3.5-9z"/></svg></div>
+            <div class="card">
+              <div class="card-head"><img src="../logos/mlflow.svg" alt=""><span class="t">Consumer nạp mô hình mới</span></div>
+              <p>Tự phát hiện alias đổi trong một chu kỳ kiểm tra. <b>Không triển khai lại, không dừng tiến trình.</b> Đo thật: 17 giây.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ kết quả thật -->
+  <div class="band" style="margin-bottom:14px">
+    <div class="band-head">
+      Kết quả chạy thật — cả bốn phiên bản sinh ra đều không vượt được mô hình đang dùng
+      <span class="note">hành vi đúng như thiết kế của cửa kiểm định</span>
+    </div>
+    <div class="band-body">
+      <div class="results">
+        <div class="res fail">
+          <div class="name">Mô hình rủi ro v3</div>
+          <div class="met">Tự động do drift<br>Macro F1 0,612 · Recall 0,803</div>
+          <div class="verdict">Từ chối — Macro F1 thấp hơn 0,623</div>
+        </div>
+        <div class="res tie">
+          <div class="name">Mô hình bất thường v4</div>
+          <div class="met">Tự động do drift<br>AUROC 0,86418</div>
+          <div class="verdict">Chấp nhận vì chỉ hơn ở chữ số thứ tư — lần đó không có cửa sổ bình thường mới nào</div>
+        </div>
+        <div class="res fail">
+          <div class="name">Mô hình rủi ro v4</div>
+          <div class="met">Thủ công<br>Macro F1 0,631 · Recall 0,759</div>
+          <div class="verdict">Từ chối — Macro F1 <i>cao hơn</i> nhưng Recall CRITICAL giảm dưới 0,790</div>
+        </div>
+        <div class="res fail">
+          <div class="name">Mô hình bất thường v5</div>
+          <div class="met">Thủ công<br>AUROC 0,853</div>
+          <div class="verdict">Từ chối — thấp hơn 0,864</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="item">
+      <span style="display:inline-block;width:26px;height:13px;border:1px solid #1d4e89;background:#eef3f9"></span>
+      <b>Điểm quyết định</b>
+    </div>
+    <div class="item">
+      <span style="display:inline-block;width:26px;height:13px;border:1px solid #d4dde6;border-left:3px solid #8a99a8;background:#f7f9fb"></span>
+      <b>Kết cục dừng</b> — không kích hoạt gì thêm
+    </div>
+    <div class="item">
+      <span style="display:inline-block;width:26px;height:13px;border:1px solid #d4dde6;border-left:3px solid #b3342c;background:#f7f9fb"></span>
+      <b>Bị từ chối</b> — giữ mô hình đang dùng
+    </div>
+    <div class="item">
+      <span style="display:inline-block;width:26px;height:13px;border:1px solid #d4dde6;border-left:3px solid #2f7d4f;background:#f7f9fb"></span>
+      <b>Được chấp nhận</b> — đổi mô hình đang dùng
+    </div>
+  </div>
+
+  <p class="footnote">
+    Trường hợp <b>mô hình rủi ro v4</b> minh hoạ đúng ý định của điều kiện thứ ba: phiên bản này <i>có</i> Macro F1 tốt hơn, nếu chỉ dùng một chỉ số tổng thể thì đã được chấp nhận — nhưng nó đánh đổi khả năng phát hiện ca nguy kịch để lấy độ chính xác chung, và cửa kiểm định chặn lại. Thực nghiệm này <b>không chứng minh</b> rằng huấn luyện lại sửa được drift; nó chứng minh cửa kiểm định không để hệ thống tự hạ cấp.
+  </p>
+</div>
