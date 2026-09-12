@@ -20,7 +20,7 @@ services/                 Các service chạy thật (mỗi service có Dockerfi
   streaming/              Kafka producer phát lại + stream consumer suy luận            (src/rpm_streaming/)
 ml/                       Dữ liệu, huấn luyện, đánh giá, drift, retrain                 (src/rpm_ml/)
 packages/common/          rpm_common: làm sạch, lưới giờ, NEWS2, đặc trưng — dùng chung cho train và streaming
-infra/                    Docker (MLflow, Airflow), Airflow DAG, Prometheus/Grafana, script khởi tạo Postgres
+infra/                    Docker (MLflow, Airflow), Airflow DAG, Prometheus/Grafana, init Postgres, smoke_test.py
 tests/e2e/                Test tích hợp & phi chức năng chạy trên hệ thống thật (độ trễ, chịu lỗi)
 docs/                     Thiết kế (design/, mục 1–2 báo cáo) và ghi chú viết báo cáo (report/)
 docker-compose.yml        Toàn bộ hệ thống; service ứng dụng nằm trong profile "app"
@@ -50,7 +50,7 @@ docker compose --profile app run --rm stream-producer      # phát lại 20 bệ
 | API (Swagger) | http://localhost:8000/docs |
 | MLflow | http://localhost:5000 |
 | Airflow | http://localhost:8080 |
-| Grafana / Prometheus | http://localhost:3001 / http://localhost:9090 |
+| Grafana / Prometheus | http://localhost:3001 (dashboard "RPM — Backend API") / http://localhost:9090 |
 
 Phát triển trên máy (không Docker): tạo `.venv` rồi `pip install -e packages/common -e ml -e services/streaming`
 cùng các `requirements.txt`; lệnh chi tiết ở `CLAUDE.md` gốc và `CLAUDE.md` của từng thư mục.

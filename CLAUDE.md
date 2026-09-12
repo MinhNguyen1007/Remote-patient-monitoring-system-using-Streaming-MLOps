@@ -184,7 +184,8 @@ services/frontend/      React   — services/frontend/CLAUDE.md (design system C
 services/streaming/     Kafka   — services/streaming/CLAUDE.md (package rpm_streaming: producer/ consumer/ kafka/ storage/)
 ml/                     ML/MLOps — ml/CLAUDE.md (package rpm_ml: data/ models/ training/ evaluation/ drift/ pipelines/ storage/)
 packages/common/        rpm_common — đặc trưng dùng chung cho ml/ và services/streaming (quy ước ở ml/CLAUDE.md)
-infra/                  Dockerfile MLflow/Airflow, DAG Airflow (infra/airflow/dags), Prometheus/Grafana, init Postgres
+infra/                  Dockerfile MLflow/Airflow, DAG Airflow (infra/airflow/dags), Prometheus/Grafana
+                        (dashboard provisioning sẵn), init Postgres, smoke_test.py
 tests/e2e/              Test tích hợp & phi chức năng trên hệ thống thật — tests/e2e/README.md (Giai đoạn H)
 docs/                   design/ (thiết kế mục 1–2), report/ (ghi chú viết báo cáo)
 ```
@@ -226,6 +227,8 @@ cd services/backend && ..\..\.venv\Scripts\python -m pytest -q && cd ..\..
 cd services/frontend && npm run test && cd ..\..
 # E2E trên hệ thống thật (~6 phút; XÓA dữ liệu phát lại trong rpm_db — xem tests/e2e/README.md)
 cd tests/e2e && ..\..\.venv\Scripts\python -m pytest -q && cd ..\..
+# Smoke test hạ tầng (chạy mỗi khi sửa docker-compose.yml hoặc Dockerfile trong infra/)
+.venv\Scripts\python infra\smoke_test.py
 
 # Dữ liệu và model — trên host cần MLFLOW_TRACKING_URI=http://localhost:5000
 .venv\Scripts\python -m rpm_ml.data.preprocess            # → ml/data/processed/

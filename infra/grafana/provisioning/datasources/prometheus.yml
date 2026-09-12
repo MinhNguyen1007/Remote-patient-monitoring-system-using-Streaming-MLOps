@@ -2,6 +2,9 @@ apiVersion: 1
 
 datasources:
   - name: Prometheus
+    # uid cố định: dashboard trong provisioning/dashboards tham chiếu datasource theo uid.
+    # Nếu để Grafana tự sinh uid, mọi panel sẽ báo "Datasource not found".
+    uid: prometheus
     type: prometheus
     access: proxy
     url: http://prometheus:9090
