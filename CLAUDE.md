@@ -126,7 +126,7 @@
 - **Giai đoạn H — kiểm thử tích hợp & phi chức năng: XONG phần tự động (2026-09-12)**. Bộ test ở `tests/e2e/` (README riêng), 10 test chạy ~6 phút trên hệ thống thật.
   - Không mock gì: Kafka + TimescaleDB + MLflow từ docker compose; **stream consumer và backend do chính bộ test khởi động** dưới dạng tiến trình con nên giết/bật lại được (2.10.4).
   - Phủ 2.10.2 dòng 1, 2, 3, 6 và 2.10.4 cả 3 dòng. Dòng 4 (retrain thủ công) nằm ở `services/backend/tests`, dòng 5 (drift → retrain) đã chạy thật ở Giai đoạn G.
-  - **Độ trễ đầu–cuối đạt ngưỡng**: p95 **1,62 giây** (20 bệnh nhân cùng lúc, tốc độ mặc định), p50 0,93, max 1,83. Bảng đầy đủ ở `tests/e2e/reports/latency.md` (sinh tự động, commit vào git). Hai lần chạy độc lập cho 1,62 và 1,64.
+  - **Độ trễ đầu–cuối đạt ngưỡng**: p95 **1,30–1,62 giây** qua 3 lần chạy (20 bệnh nhân cùng lúc, tốc độ mặc định; toàn bộ mẫu 1,52–1,64). Bảng của lần chạy gần nhất ở `tests/e2e/reports/latency.md` (sinh tự động, commit vào git).
   - Chịu lỗi: giết cứng consumer → đủ bản ghi, 0 giờ trùng, không cảnh báo trùng; tắt backend giữa chừng → bật lại đọc tiếp offset cũ, `notification_logs` đúng người được phân công.
   - Tổng test: 254 (common 99, ml 61, streaming 27, backend 34, frontend 23, e2e 10).
   - ⚠ Bộ E2E **xóa dữ liệu phát lại** trong `rpm_db` khi bắt đầu (như `reset_demo`), giữ users/model_versions/alert_settings/drift_reports.

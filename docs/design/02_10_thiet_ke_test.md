@@ -76,7 +76,7 @@ Tham chiếu: baseline persistence (h = 4) trên tập `test` đạt Macro F1 0,
 
 | Tiêu chí | Cách đo | Ngưỡng đề xuất | Kết quả (2026-09-12) |
 |---|---|---|---|
-| Độ trễ đầu–cuối | Từ lúc producer publish tới lúc dashboard nhận prediction qua WebSocket, với 20 bệnh nhân phát đồng thời ở tốc độ mặc định (`tests/e2e/test_5_latency.py`) | p95 < 2 giây | **Đạt**: p95 1,62 giây trên 220 mẫu của kịch bản 20 bệnh nhân (1,64 giây trên toàn bộ 388 mẫu); p50 0,93; max 1,83. Bảng đầy đủ: `tests/e2e/reports/latency.md` |
+| Độ trễ đầu–cuối | Từ lúc producer publish tới lúc dashboard nhận prediction qua WebSocket, với 20 bệnh nhân phát đồng thời ở tốc độ mặc định (`tests/e2e/test_5_latency.py`) | p95 < 2 giây | **Đạt**: p95 1,30–1,62 giây qua 3 lần chạy (220 mẫu mỗi lần cho kịch bản 20 bệnh nhân; 1,52–1,64 giây trên toàn bộ 388 mẫu). Bảng của lần chạy gần nhất: `tests/e2e/reports/latency.md` |
 | Chịu lỗi backend | Tắt backend trong lúc đang replay rồi bật lại (`tests/e2e/test_4_fault_tolerance.py`) | Consumer vẫn ghi DB; backend đọc tiếp từ offset cũ, không mất alert | **Đạt**: cảnh báo sinh ra lúc backend tắt được xử lý sau khi bật lại, `notification_logs` ghi đúng người được phân công |
 | Chịu lỗi consumer | Giết cứng consumer giữa chừng rồi bật lại (`tests/e2e/test_4_fault_tolerance.py`) | State dựng lại từ DB; không tạo alert trùng; không bỏ sót bản ghi | **Đạt**: 9/9 bản ghi mỗi bệnh nhân, 0 giờ trùng, mỗi bệnh nhân vẫn đúng 1 cảnh báo |
 

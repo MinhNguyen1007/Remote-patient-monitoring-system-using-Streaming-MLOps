@@ -181,12 +181,14 @@ Bộ `tests/e2e/` (10 test, ~6 phút) chạy trên hệ thống thật — Kafka
 
   | Nhóm mẫu | n | p50 (s) | p95 (s) | p99 (s) | max (s) |
   |---|---|---|---|---|---|
-  | Tất cả | 388 | 0,88 | **1,64** | 2,02 | 2,31 |
-  | 20 bệnh nhân cùng lúc (kịch bản 2.10.4) | 220 | 0,93 | 1,62 | 1,74 | 1,83 |
-  | 14 bệnh nhân có đợt ICU dài | 168 | 0,83 | 1,76 | 2,12 | 2,31 |
-  | Cửa sổ đã đủ 12 giờ (có chạy LSTM-AE) | 80 | 1,02 | 1,88 | 2,21 | 2,31 |
+  | Tất cả | 388 | 0,74 | **1,52** | 1,87 | 2,33 |
+  | 20 bệnh nhân cùng lúc (kịch bản 2.10.4) | 220 | 0,71 | 1,30 | 1,51 | 1,63 |
+  | 14 bệnh nhân có đợt ICU dài | 168 | 0,76 | 1,66 | 2,17 | 2,33 |
+  | Cửa sổ đã đủ 12 giờ (có chạy LSTM-AE) | 80 | 0,95 | 1,75 | 2,16 | 2,25 |
 
-  **Đạt ngưỡng thiết kế p95 < 2 giây.** Hai lần chạy độc lập cho p95 1,64 và 1,62 giây. Phần lớn độ trễ là hàng đợi trong nhịp phát: 20 message của cùng một nhịp được consumer xử lý tuần tự (~70 ms/message), nên message cuối nhịp chờ lâu nhất. Nhịp có chạy LSTM-AE chậm hơn khoảng 0,2 giây ở p95.
+  (Bảng trên là lần chạy gần nhất, sao y `tests/e2e/reports/latency.md`; chạy lại bộ test sẽ sinh lại file đó.)
+
+  **Đạt ngưỡng thiết kế p95 < 2 giây.** Ba lần chạy độc lập cho p95 của kịch bản 20 bệnh nhân là 1,48 / 1,62 / 1,30 giây (toàn bộ mẫu: 1,64 / 1,64 / 1,52). Phần lớn độ trễ là hàng đợi trong nhịp phát: 20 message của cùng một nhịp được consumer xử lý tuần tự (~70 ms/message), nên message cuối nhịp chờ lâu nhất. Nhịp có chạy LSTM-AE chậm hơn khoảng 0,2 giây ở p95.
 - **Chịu lỗi consumer**: giết cứng giữa lúc đang xử lý 2 bệnh nhân × 8 giờ → bật lại, dựng state từ DB, kết quả 9/9 bản ghi mỗi bệnh nhân, 0 giờ trùng, mỗi bản ghi đúng 1 prediction, mỗi bệnh nhân vẫn đúng 1 cảnh báo (không tạo trùng sau khi khởi động lại).
 - **Chịu lỗi backend**: tắt backend giữa lúc replay → consumer vẫn ghi DB và tạo cảnh báo (lúc đó chưa có `notification_logs`); bật lại → Kafka listener đọc tiếp từ offset đã commit, xử lý cảnh báo bị bỏ lại và ghi `notification_logs` đúng người được phân công. Không mất cảnh báo.
 - **Nạp lại model khi đổi alias**: trỏ `risk_classifier@champion` sang version khác → consumer nạp trong một chu kỳ kiểm tra, prediction tiếp theo ghi đúng `risk_model_version_id` mới, cờ `is_champion` trong `model_versions` đi theo; trả alias về v2 thì quay lại nguyên trạng.
