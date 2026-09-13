@@ -341,5 +341,5 @@ Logo công nghệ trong hình lấy từ [Simple Icons](https://simpleicons.org)
 
 ## Giấy phép
 
-Mã nguồn phát hành theo [giấy phép MIT](LICENSE). Dữ liệu MIMIC-III có giấy phép riêng của PhysioNet
-và không kèm theo repo này.
+Mã nguồn phát hành theo [giấy phép MIT](LICENSE). Dữ liệu MIMIC-III, thang điểm NEWS2 và logo công nghệ
+có giấy phép riêng, không thuộc phạm vi MIT — xem [`NOTICE`](NOTICE).

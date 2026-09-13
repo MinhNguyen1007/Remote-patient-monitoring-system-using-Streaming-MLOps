@@ -19,11 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-Lưu ý về dữ liệu: phần mềm này KHÔNG chứa dữ liệu bệnh nhân. Bộ dữ liệu
-MIMIC-III Clinical Database Demo v1.4 dùng để thử nghiệm có giấy phép riêng
-(Open Data Commons ODbL v1.0) và phải tải trực tiếp từ PhysioNet — xem
-ml/README.md. Phần mềm chỉ dùng cho mục đích học tập và nghiên cứu, KHÔNG
-dùng cho chẩn đoán hay điều trị trên người bệnh thật.

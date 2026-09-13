@@ -1,0 +1,43 @@
+NOTICE — lưu ý về dữ liệu và tài nguyên bên thứ ba
+=================================================
+
+Mã nguồn trong repo này phát hành theo giấy phép MIT (xem LICENSE).
+Những phần dưới đây KHÔNG thuộc phạm vi giấy phép đó.
+
+1. Dữ liệu bệnh nhân
+--------------------
+Repo này KHÔNG chứa dữ liệu bệnh nhân. Bộ dữ liệu dùng để thử nghiệm là
+MIMIC-III Clinical Database Demo v1.4 (PhysioNet), phát hành theo
+Open Data Commons Open Database License (ODbL) v1.0, phải tải trực tiếp
+từ PhysioNet — xem ml/README.md.
+
+Khi dùng lại, trích dẫn:
+
+  Johnson, A. E. W., Pollard, T. J., Shen, L., Lehman, L. H., Feng, M.,
+  Ghassemi, M., Moody, B., Szolovits, P., Celi, L. A., & Mark, R. G. (2016).
+  MIMIC-III, a freely accessible critical care database.
+  Scientific Data, 3, 160035.
+
+  Goldberger, A. L., Amaral, L. A. N., Glass, L., Hausdorff, J. M.,
+  Ivanov, P. Ch., Mark, R. G., Mietus, J. E., Moody, G. B., Peng, C.-K., &
+  Stanley, H. E. (2000). PhysioBank, PhysioToolkit, and PhysioNet:
+  components of a new research resource for complex physiologic signals.
+  Circulation, 101(23), e215-e220.
+
+2. Thang điểm NEWS2
+-------------------
+Thang cảnh báo sớm NEWS2 do Royal College of Physicians (2017) công bố.
+Hệ thống dùng bản rút gọn 5 thông số (thiếu mức ý thức và oxy bổ sung).
+
+3. Logo công nghệ
+-----------------
+Các tệp SVG trong docs/report/figures/logos/ lấy từ Simple Icons
+(https://simpleicons.org), giấy phép CC0 1.0. Nguồn từng tệp ghi ở
+docs/report/figures/logos/NGUON.md. Logo là thương hiệu của các chủ sở
+hữu tương ứng và chỉ dùng để minh hoạ kiến trúc hệ thống.
+
+4. Mục đích sử dụng
+-------------------
+Đây là đồ án học tập. Phần mềm chỉ dùng cho mục đích học tập và nghiên
+cứu, KHÔNG dùng cho chẩn đoán, điều trị hay bất kỳ quyết định lâm sàng
+nào trên người bệnh thật.
