@@ -51,3 +51,9 @@ tests/e2e/.logs/
 # Bản Word sinh ra từ docs/report/*.md (tạo lại bằng python docs/report/build_docx.py)
 docs/report/*.docx
 docs/report/.*.pandoc.md
+
+# Tệp mẫu / ảnh mẫu do người khác soạn (tên, MSSV, email của nhóm khác) — chỉ tham khảo
+# sườn khi viết báo cáo, không phải sản phẩm của đồ án nên không đưa lên repo công khai.
+docs/report/BaoCao_GiaoDichDinhLuong.md
+docs/report/Mau_Bai_bao_Project_NLP.md
+images/Ve_So_Do/

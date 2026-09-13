@@ -5,9 +5,8 @@
 | Tệp | Vai trò |
 |---|---|
 | [`ghi_chu_bao_cao.md`](ghi_chu_bao_cao.md) | **Nguồn số liệu duy nhất**: mọi kết quả, quyết định và 16 hạn chế bắt buộc công khai, sắp theo mục báo cáo. Đọc file này trước khi viết bất cứ mục nào |
-| [`bao_cao_do_an.md`](bao_cao_do_an.md) | Khung báo cáo đồ án 5 chương + phần đầu/phần cuối, theo sườn `BaoCao_GiaoDichDinhLuong.md` |
-| [`bai_bao.md`](bai_bao.md) | Khung bài báo 5 mục, theo sườn `Mau_Bai_bao_Project_NLP.md` |
-| `BaoCao_GiaoDichDinhLuong.md`, `Mau_Bai_bao_Project_NLP.md` | Hai tệp mẫu của người dùng (chỉ để tham khảo sườn, **không sửa**) |
+| [`bao_cao_do_an.md`](bao_cao_do_an.md) | Báo cáo đồ án 5 chương + phần đầu/phần cuối, theo sườn tệp mẫu của môn học |
+| [`bai_bao.md`](bai_bao.md) | Bài báo 5 mục, theo sườn tệp mẫu của môn học |
 | [`build_docx.py`](build_docx.py) | Xuất `.docx` bằng Pandoc (tuỳ chọn — bản giao hiện tại là Markdown) |
 | [`tools/render_figures.py`](tools/render_figures.py) | Render sơ đồ Mermaid → PNG |
 | [`tools/render_html_figures.py`](tools/render_html_figures.py) | Render 3 sơ đồ tổng quát viết bằng HTML/CSS → PNG |
@@ -66,13 +65,18 @@ Cả năm lỗi này đều **đã từng xảy ra** trong lần viết đầu (
 
 Khác với các sơ đồ UML sinh từ Mermaid, ba sơ đồ tổng quát được viết tay bằng HTML/CSS rồi render bằng
 Chrome headless (`tools/render_html_figures.py`). Mỗi sơ đồ theo **một phong cách riêng**, bám theo ba
-tệp mẫu người dùng đưa ở `images/Ve_So_Do/`:
+ảnh mẫu tham khảo (chỉ có trên máy, xem ghi chú cuối mục):
 
 | Sơ đồ | Phong cách (mẫu tương ứng) | CSS |
 |---|---|---|
-| `so_do_tong_quat.png` | Nhiều lớp, thanh tiêu đề màu đặc theo nhóm chức năng, thẻ có bullet, ô chú giải, dải hạ tầng và luồng đầu–cuối ở chân (`SoDoHeThongTongQuat.png`) | `style_layered.css` |
-| `mo_hinh_train_serve_monitor.png` | Vẽ tay: font Segoe Print, panel pastel có gạch chéo, hộp bo góc không đều (`MoHinh_Trainiing_Serving_Monitoring.png`) | `style_sketch.css` |
-| `vong_lap_mlops.png` | Lưu đồ đơn sắc: khung nét đứt có tiêu đề, hình thoi quyết định, logo đặt rời, chú thích serif dưới hình (`Mau_Mo_Hinh_Tong_Quat_He_Thong.png`) | `style_flow.css` |
+| `so_do_tong_quat.png` | Nhiều lớp, thanh tiêu đề màu đặc theo nhóm chức năng, thẻ có bullet, ô chú giải, dải hạ tầng và luồng đầu–cuối ở chân | `style_layered.css` |
+| `mo_hinh_train_serve_monitor.png` | Vẽ tay: font Segoe Print, panel pastel có gạch chéo, hộp bo góc không đều | `style_sketch.css` |
+| `vong_lap_mlops.png` | Lưu đồ đơn sắc: khung nét đứt có tiêu đề, hình thoi quyết định, logo đặt rời, chú thích serif dưới hình | `style_flow.css` |
+
+> **Không có trong repo**: hai tệp mẫu báo cáo/bài báo (`docs/report/BaoCao_GiaoDichDinhLuong.md`,
+> `docs/report/Mau_Bai_bao_Project_NLP.md`) và ba ảnh mẫu sơ đồ (`images/Ve_So_Do/`) do người khác
+> soạn và có chứa thông tin cá nhân của họ, nên được `.gitignore` loại khỏi repo công khai.
+> Chúng vẫn nằm trên máy phát triển và chỉ dùng để tham khảo bố cục.
 
 Logo lấy từ [Simple Icons](https://simpleicons.org) — giấy phép **CC0**, mỗi logo là một path đơn sắc đã
 mang màu thương hiệu chính thức, nên nét đồng đều giữa các hãng thay vì mỗi logo một phong cách.
@@ -113,9 +117,9 @@ Theo yêu cầu "chưa biết thì không ghi", những thông tin dưới đây
 3. **Bài báo** chỉ có một tác giả và một email; nếu làm nhóm hoặc muốn ghi tên giảng viên hướng dẫn làm đồng tác giả (như tệp mẫu) thì cần bổ sung.
 4. **Hai mục "LÀM VIỆC NHÓM" và "TỰ ĐÁNH GIÁ"** của mẫu đã được **bỏ khỏi** báo cáo vì không biết đồ án làm một mình hay theo nhóm. Nếu môn học yêu cầu thì thêm lại.
 5. **Logo trường** ở trang bìa — mẫu có, repo chưa có ảnh này.
-6. **Hai ảnh giao diện cần chụp lại** (cần đăng nhập, Claude không tự nhập mật khẩu được):
-   - `images/3_patient_detail.png` — bản đang dùng ở báo cáo vẫn còn lỗi cũ: bệnh nhân ở giờ thứ 88, dải bất thường đầy đủ, nhưng thẻ "Diễn biến bất thường" ghi "Chưa đủ 16 giờ". Lỗi đã sửa trong code, chỉ thiếu ảnh mới.
-   - `images/3_patient_detail_v2.png` — thực ra là ảnh **danh sách bệnh nhân** chụp lại sau khi sửa (đã hiện đúng "Thiếu dữ liệu cửa sổ"), bị đặt nhầm tên. Nên đổi tên thành `2_patient_list.png` để thay bản cũ (bản cũ vẫn ghi sai "Chưa đủ 16 giờ" ở nhiều thẻ).
+6. **Một ảnh giao diện cần chụp lại** (cần đăng nhập, Claude không tự nhập mật khẩu được):
+   `images/3_patient_detail.png` — bản đang dùng ở báo cáo và ở mục "Giao diện" của `README.md` gốc vẫn còn lỗi cũ: bệnh nhân ở giờ thứ 88, dải bất thường đầy đủ, nhưng thẻ "Diễn biến bất thường" ghi "Chưa đủ 16 giờ". Lỗi đã sửa trong code, chỉ thiếu ảnh mới.
+   (`images/2_patient_list.png` đã được thay bằng bản chụp lại sau khi sửa lỗi, ngày 2026-09-13.)
 
 ## Lưu ý khi viết
 
