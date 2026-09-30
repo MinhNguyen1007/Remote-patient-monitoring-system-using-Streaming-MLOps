@@ -175,6 +175,12 @@
     - ⚠ Người dùng để file `rpm-deployer_accessKeys.csv` ở gốc repo — đã thêm `*accessKeys*.csv` vào `.gitignore`; nên chuyển file đó ra ngoài repo.
   - **Repo GitHub**: đã đặt description (tiếng Anh) + 20 topics bằng `gh repo edit`. `gh` chưa `auth login`; token lấy từ Git Credential Manager (`git credential fill`, scope `repo`) truyền qua `GH_TOKEN`, không in ra. Không đặt Website vì EC2 phần lớn thời gian tắt.
   - Rà soát tài liệu sau các thay đổi trong ngày: số test 254 → **257** (ml 61 → 64 do `test_promote.py`) ở README (badge + bảng), `bao_cao_do_an.md` 4.5, `ghi_chu_bao_cao.md`, `ml/CLAUDE.md`; README thêm mục "Triển khai lên AWS", `deploy/aws/` + `.github/workflows/` vào cấu trúc và bảng tài liệu.
+  - **Giao diện nâng cấp sang theme "CS:GO classic" của skill `truanayangi-ui` (2026-09-30, người dùng chọn qua AskUserQuestion: CS:GO classic, giao diện + hiệu ứng cảnh báo, âm tổng hợp).** Chi tiết + bẫy CSS layer ở `services/frontend/CLAUDE.md`, thiết kế ở `docs/design/02_8` (mục 2.8.1–2.8.4 viết lại; mockup cũ chỉ còn đúng bố cục).
+    - Header thay sidebar; thẻ bệnh nhân kiểu thẻ CS:GO theo màu rủi ro; overlay "NEW ITEM" cho cảnh báo nguy kịch mới (xếp hàng, Xác nhận cho Bác sĩ), toast cho bất thường / drift / retrain; âm báo tổng hợp, nút tắt tiếng nhớ lựa chọn.
+    - Biểu đồ: tâm trương `#86b6ef` → `#199e70` (validate_palette.js trên nền `#1b2731` đạt 5/5).
+    - Lỗi tìm ra khi soát ảnh: toast nằm dưới nền mờ của overlay modal rồi tự ẩn → đã dừng đồng hồ khi overlay mở, có test chứng minh bắt được lỗi. Frontend 31 test (tổng 265).
+    - Đã kiểm trực quan bằng Chrome headless trên stack local (đăng nhập, dashboard, chi tiết, cảnh báo, admin, overlay + toast qua dữ liệu phát lại thật, điện thoại 390 px).
+    - **Ảnh `images/*.png` (README + báo cáo) là giao diện cũ** — cần chụp lại cả 9 ảnh (Claude chụp được bằng Chrome headless + JWT từ API, không cần người dùng đăng nhập).
   - **Việc còn lại** (người dùng bảo tạm bỏ qua mục 1 và file access key):
     1. **Chụp lại `images/3_patient_detail.png`** — cần người dùng tự đăng nhập. Ảnh cũ còn lỗi "Chưa đủ 16 giờ" ở bệnh nhân giờ 88; hiển thị ở `README.md` và `bao_cao_do_an.md` dòng 886. Chụp xong thì xoá mục 6 trong `docs/report/README.md` "Còn thiếu".
     2. **Thông tin hành chính trang bìa** — người dùng bảo tạm bỏ qua (danh sách ở `docs/report/README.md` mục "Còn thiếu").
@@ -237,7 +243,7 @@ docs/                   design/ (thiết kế mục 1–2), report/ (ghi chú vi
 - **Một nguồn code feature duy nhất**: mọi tính toán feature nằm trong `packages/common` (`rpm_common`), không copy sang `ml/` hay `services/streaming` (tránh lệch giữa lúc train và lúc chạy thật).
 - **Champion–Challenger**: model mới chỉ nhận alias `champion` trên MLflow khi đạt quality gate. Gate gồm: ngưỡng tuyệt đối ở `02_10` mục 2.10.3, thắng baseline persistence, không kém champion trên cùng tập test. Không dùng stage `Production` (đã lỗi thời).
 - **Cùng một phiên bản MLflow** (`3.11.1`) cho server (`infra/Dockerfile.mlflow`) và mọi client (`ml/`, `services/streaming`, Airflow).
-- Style giao diện: nền dark-theme lấy cảm hứng từ `csgo-case-opening-design` skill, tùy biến thêm màu ngữ nghĩa lâm sàng (xanh/vàng/đỏ theo risk level) — xem `docs/design/02_8_thiet_ke_giao_dien.md`. Không tự ý đổi sang theme y tế "an toàn" thông thường trừ khi người dùng yêu cầu lại.
+- Style giao diện: theme "CS:GO classic" của skill `truanayangi-ui` (nền xám xanh, panel trong mờ, góc vuông, nút xanh lá, số vàng), thêm màu ngữ nghĩa lâm sàng (xanh/vàng/đỏ theo risk level, tím cho bất thường) — xem `services/frontend/CLAUDE.md` và `docs/design/02_8_thiet_ke_giao_dien.md`. Không tự ý đổi sang theme y tế "an toàn" thông thường trừ khi người dùng yêu cầu lại.
 
 ## Lệnh hay dùng
 

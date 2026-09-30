@@ -11,7 +11,7 @@ import { useAsync } from '@/hooks/useAsync';
 import { ROLE_LABEL } from '@/lib/risk';
 import type { Role, User } from '@/types/api';
 
-import { AdminTabs, fieldClass } from './AdminTabs';
+import { fieldClass } from './fields';
 
 /** UC03 — CRUD tài khoản. Không xóa cứng: khóa bằng is_active để giữ lịch sử xử lý cảnh báo. */
 export function UsersPage() {
@@ -49,7 +49,6 @@ export function UsersPage() {
           </Button>
         }
       />
-      <AdminTabs />
       {error && <StateMessage tone="error">{error}</StateMessage>}
       {users.error ? (
         <StateMessage tone="error">{users.error.message}</StateMessage>
@@ -72,7 +71,7 @@ export function UsersPage() {
                 const self = u.id === me?.id;
                 return (
                   <tr key={u.id}>
-                    <td className="td font-semibold">{u.full_name}{self && <span className="ml-2 text-[12px] font-normal text-muted-foreground">(bạn)</span>}</td>
+                    <td className="td font-medium">{u.full_name}{self && <span className="ml-2 text-[12px] font-normal text-muted-foreground">(bạn)</span>}</td>
                     <td className="td mono text-[13px]">{u.email}</td>
                     <td className="td">
                       <select
@@ -128,20 +127,20 @@ function CreateUserDialog({ open, onOpenChange, onCreated }: { open: boolean; on
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="border border-border p-6 sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-[18px] font-bold">Thêm tài khoản</DialogTitle>
+          <DialogTitle>Thêm tài khoản</DialogTitle>
           <DialogDescription className="text-muted-foreground">Mật khẩu tối thiểu 8 ký tự. Bác sĩ/Điều dưỡng chỉ thấy bệnh nhân sau khi được phân công.</DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="flex flex-col gap-3.5">
-          <label className="flex flex-col gap-1.5 text-[13px] font-semibold">Họ tên
+          <label className="flex flex-col gap-1.5 text-[13px] font-medium">Họ tên
             <input required className={fieldClass} value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
           </label>
-          <label className="flex flex-col gap-1.5 text-[13px] font-semibold">Email
+          <label className="flex flex-col gap-1.5 text-[13px] font-medium">Email
             <input required type="email" className={fieldClass} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
           </label>
-          <label className="flex flex-col gap-1.5 text-[13px] font-semibold">Mật khẩu
+          <label className="flex flex-col gap-1.5 text-[13px] font-medium">Mật khẩu
             <input required minLength={8} type="password" autoComplete="new-password" className={fieldClass} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
           </label>
-          <label className="flex flex-col gap-1.5 text-[13px] font-semibold">Vai trò
+          <label className="flex flex-col gap-1.5 text-[13px] font-medium">Vai trò
             <select className={fieldClass} value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Role })}>
               {(Object.keys(ROLE_LABEL) as Role[]).map((role) => <option key={role} value={role}>{ROLE_LABEL[role]}</option>)}
             </select>

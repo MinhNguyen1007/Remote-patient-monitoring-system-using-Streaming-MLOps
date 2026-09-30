@@ -869,9 +869,9 @@ Hai kết quả này xác nhận rằng thứ tự "ghi cơ sở dữ liệu tr�
 | `ml` (dữ liệu, mô hình, gate, drift, chuyển mô hình giữa hai kho) | 64 |
 | `services/streaming` | 27 |
 | `services/backend` (cơ sở dữ liệu thật) | 34 |
-| `services/frontend` (Vitest) | 23 |
+| `services/frontend` (Vitest) | 31 |
 | `tests/e2e` (hệ thống thật) | 10 |
-| **Tổng** | **257** |
+| **Tổng** | **265** |
 
 ### 4.5.6. Giao diện hệ thống
 

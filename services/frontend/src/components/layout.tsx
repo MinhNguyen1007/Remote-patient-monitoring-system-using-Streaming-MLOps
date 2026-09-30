@@ -1,60 +1,60 @@
-import { Activity, Bell, Cpu, LayoutGrid, Link2, LogOut, SlidersHorizontal, Users, type LucideIcon } from 'lucide-react';
+import { Activity, Bell, Cpu, LayoutGrid, Link2, LogOut, SlidersHorizontal, Users, Volume2, VolumeX, type LucideIcon } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { Link, NavLink, Outlet } from 'react-router-dom';
 
 import { api } from '@/api/client';
+import { AlertReveal } from '@/components/AlertReveal';
 import { useAuth } from '@/context/AuthContext';
 import { useRealtime, useServerEvents } from '@/context/WebSocketContext';
-import { initials } from '@/lib/format';
+import { useAlertSound, type AlertSound } from '@/hooks/useAlertSound';
 import { ROLE_LABEL } from '@/lib/risk';
 import { cn } from '@/lib/utils';
 
-export function Logo() {
-  return (
-    <div className="flex items-center gap-2.5">
-      <div className="flex size-[34px] items-center justify-center bg-primary">
-        <Activity aria-hidden size={20} strokeWidth={2.4} color="var(--primary-foreground)" />
-      </div>
-      <div className="flex flex-col leading-[1.1]">
-        <span className="text-[17px] font-extrabold tracking-[-0.5px]">RPM Monitor</span>
-        <span className="mono text-[10.5px] tracking-[1.5px] text-muted-foreground">ICU · REALTIME</span>
-      </div>
-    </div>
+export function Logo({ to }: { to?: string }) {
+  const content = (
+    <>
+      <span className="app-brand-icon">
+        <Activity aria-hidden size={20} strokeWidth={2.2} />
+      </span>
+      <span className="app-brand-text">
+        RPM Monitor
+        <small>ICU · REALTIME</small>
+      </span>
+    </>
+  );
+  return to ? (
+    <Link to={to} className="app-brand" aria-label="RPM Monitor — trang chính">
+      {content}
+    </Link>
+  ) : (
+    <span className="app-brand">{content}</span>
   );
 }
 
 export function RealtimeIndicator() {
   const { status } = useRealtime();
   const connected = status === 'open';
-  const color = connected ? 'var(--primary)' : 'var(--risk-warning)';
+  const color = connected ? '#83a65f' : 'var(--risk-warning)';
   return (
-    <span className="mono inline-flex items-center gap-2 text-[12px] text-muted-foreground" role="status" aria-live="polite">
-      <span aria-hidden className="size-2" style={{ background: color, boxShadow: `0 0 0 4px color-mix(in srgb, ${color} 15%, transparent)` }} />
+    <span className="inline-flex items-center gap-2 text-[12px] text-muted-foreground" role="status" aria-live="polite">
+      <span aria-hidden className="size-2" style={{ background: color, boxShadow: `0 0 0 4px color-mix(in srgb, ${color} 18%, transparent)` }} />
       {connected ? 'Realtime · đã kết nối' : status === 'connecting' ? 'Đang kết nối…' : 'Đang kết nối lại…'}
     </span>
   );
 }
 
 function NavItem({ to, icon: Icon, label, badge }: { to: string; icon: LucideIcon; label: string; badge?: number }) {
+  const name = badge ? `${label}, ${badge} cảnh báo đang mở` : label;
   return (
-    <NavLink
-      to={to}
-      className={({ isActive }) =>
-        cn('flex h-10 items-center gap-2.5 px-3 font-medium text-muted-foreground', isActive && 'bg-accent font-semibold text-accent-foreground')
-      }
-    >
-      <Icon aria-hidden size={18} />
-      <span>{label}</span>
-      {badge ? (
-        <span className="mono ml-auto flex h-5 min-w-[22px] items-center justify-center bg-risk-critical px-1.5 text-[11.5px] font-semibold text-foreground" aria-label={`${badge} cảnh báo đang mở`}>
-          {badge}
-        </span>
-      ) : null}
+    <NavLink to={to} className="tn-hbtn" aria-label={name} title={label}>
+      <Icon aria-hidden />
+      <span className="tn-hbtn-label">{label}</span>
+      {badge ? <span className="app-badge" aria-hidden>{badge}</span> : null}
     </NavLink>
   );
 }
 
-/** Badge số cảnh báo mở trên sidebar: tải khi mở trang, tải lại khi có cảnh báo mới/đổi trạng thái. */
+/** Badge số cảnh báo mở trên header: tải khi mở trang, tải lại khi có cảnh báo mới/đổi trạng thái. */
 function useOpenAlertCount(enabled: boolean): number {
   const [count, setCount] = useState(0);
   const [version, setVersion] = useState(0);
@@ -70,21 +70,33 @@ function useOpenAlertCount(enabled: boolean): number {
   return count;
 }
 
+function SoundToggle({ sound }: { sound: AlertSound }) {
+  const label = sound.muted ? 'Âm báo tắt' : 'Âm báo bật';
+  const hint = sound.saved ? '' : ' (không lưu được trên trình duyệt này, chỉ áp dụng phiên hiện tại)';
+  return (
+    <button type="button" className="tn-hbtn tn-hbtn--ghost" onClick={sound.toggle} aria-pressed={!sound.muted} aria-label={`${label}${hint}`} title={`${label}${hint}`}>
+      {sound.muted ? <VolumeX aria-hidden /> : <Volume2 aria-hidden />}
+      <span className="tn-hbtn-label">
+        {label}
+        {!sound.saved && ' *'}
+      </span>
+    </button>
+  );
+}
+
 export function AppShell() {
   const { user, logout } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
   const openAlerts = useOpenAlertCount(!isAdmin);
+  const sound = useAlertSound();
   if (!user) return null;
   return (
-    <div className="flex min-h-screen bg-background">
-      <aside className="sticky top-0 flex h-screen w-[248px] shrink-0 flex-col gap-7 border-r border-border bg-card px-3.5 py-5">
-        <div className="px-1.5">
-          <Logo />
-        </div>
-        <nav className="flex flex-col gap-1" aria-label="Điều hướng chính">
+    <div className="tn-shell app-shell">
+      <header className="tn-header app-header">
+        <Logo to={isAdmin ? '/admin/users' : '/patients'} />
+        <nav className="app-nav" aria-label="Điều hướng chính">
           {isAdmin ? (
             <>
-              <div className="mono px-3 pb-1.5 text-[10.5px] tracking-[1.8px] text-muted-foreground">QUẢN TRỊ</div>
               <NavItem to="/admin/users" icon={Users} label="Người dùng" />
               <NavItem to="/admin/assignments" icon={Link2} label="Phân công" />
               <NavItem to="/admin/thresholds" icon={SlidersHorizontal} label="Ngưỡng cảnh báo" />
@@ -97,33 +109,37 @@ export function AppShell() {
             </>
           )}
         </nav>
-        <div className="mt-auto flex items-center gap-2.5 border border-border bg-background p-3">
-          <div className="flex size-[34px] shrink-0 items-center justify-center bg-secondary text-[13px] font-bold">{initials(user.full_name)}</div>
-          <div className="flex min-w-0 flex-col leading-tight">
-            <span className="truncate text-[13px] font-semibold">{user.full_name}</span>
-            <span className="mono text-[11px] text-muted-foreground">{ROLE_LABEL[user.role]}</span>
+        <div className="tn-header-actions">
+          <SoundToggle sound={sound} />
+          <div className="app-user">
+            <strong>{user.full_name}</strong>
+            <span>{ROLE_LABEL[user.role]}</span>
           </div>
-          <button type="button" onClick={logout} className="ml-auto flex p-1 text-muted-foreground hover:text-foreground" aria-label="Đăng xuất" title="Đăng xuất">
-            <LogOut size={18} />
+          <button type="button" onClick={logout} className="tn-hbtn" aria-label="Đăng xuất" title="Đăng xuất">
+            <LogOut aria-hidden />
           </button>
         </div>
-      </aside>
-      <main className="flex min-w-0 grow flex-col gap-6 px-9 pt-7 pb-9">
+      </header>
+      <main className="tn-main app-main">
         <Outlet />
       </main>
+      <footer className="tn-footer app-footer">
+        <span>RPM Monitor · đồ án giám sát bệnh nhân từ xa bằng Streaming + MLOps</span>
+        <span>Dữ liệu: MIMIC-III Clinical Database Demo (PhysioNet) · âm báo tổng hợp bằng Web Audio</span>
+      </footer>
+      <AlertReveal sound={sound} />
     </div>
   );
 }
 
-export function PageHeader({ eyebrow, title, subtitle, actions }: { eyebrow: string; title: ReactNode; subtitle?: ReactNode; actions?: ReactNode }) {
+/** Tiêu đề trang kiểu CS:GO: 32 px / 400 căn giữa, dòng đếm (số màu vàng), mô tả, rồi các thao tác. */
+export function PageHeader({ eyebrow, title, subtitle, actions }: { eyebrow?: ReactNode; title: ReactNode; subtitle?: ReactNode; actions?: ReactNode }) {
   return (
-    <header className="flex flex-wrap items-end justify-between gap-6">
-      <div className="flex flex-col gap-2.5">
-        <div className="eyebrow">{eyebrow}</div>
-        <h1 className="page-title">{title}</h1>
-        {subtitle && <p className="m-0 max-w-[720px] text-pretty text-muted-foreground">{subtitle}</p>}
-      </div>
-      {actions && <div className="flex flex-wrap items-center gap-3">{actions}</div>}
+    <header className="page-head">
+      <h1 className="page-title">{title}</h1>
+      {eyebrow && <p className="page-counter">{eyebrow}</p>}
+      {subtitle && <p className="page-sub">{subtitle}</p>}
+      {actions && <div className="mt-2 flex flex-wrap items-center justify-center gap-3">{actions}</div>}
     </header>
   );
 }
@@ -140,23 +156,13 @@ export function Segmented<T extends string>({
   label: string;
 }) {
   return (
-    <div role="radiogroup" aria-label={label} className="flex gap-0.5 border border-border bg-card p-[3px]">
-      {options.map((option) => {
-        const active = option.value === value;
-        return (
-          <button
-            key={option.value}
-            type="button"
-            role="radio"
-            aria-checked={active}
-            onClick={() => onChange(option.value)}
-            className={cn('flex h-8 items-center gap-[7px] px-3 text-[13px] font-semibold', active ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground')}
-          >
-            {option.label}
-            {option.count !== undefined && <span className="mono opacity-80">{option.count}</span>}
-          </button>
-        );
-      })}
+    <div role="radiogroup" aria-label={label} className="segmented">
+      {options.map((option) => (
+        <button key={option.value} type="button" role="radio" aria-checked={option.value === value} onClick={() => onChange(option.value)}>
+          {option.label}
+          {option.count !== undefined && <span className="count">{option.count}</span>}
+        </button>
+      ))}
     </div>
   );
 }
@@ -164,7 +170,7 @@ export function Segmented<T extends string>({
 export function StateMessage({ children, tone = 'muted' }: { children: ReactNode; tone?: 'muted' | 'error' }) {
   return (
     <div
-      className={cn('card px-5 py-8 text-center text-[13.5px]', tone === 'error' ? 'border-risk-critical/50 text-foreground' : 'text-muted-foreground')}
+      className={cn('card px-5 py-8 text-center text-[13.5px]', tone === 'error' ? 'border-risk-critical/60 text-foreground' : 'text-muted-foreground')}
       role={tone === 'error' ? 'alert' : undefined}
     >
       {children}

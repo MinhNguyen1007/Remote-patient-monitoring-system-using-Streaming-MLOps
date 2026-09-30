@@ -10,7 +10,7 @@ import { ROLE_LABEL } from '@/lib/risk';
 import { cn } from '@/lib/utils';
 import type { AdminPatient } from '@/types/api';
 
-import { AdminTabs, fieldClass } from './AdminTabs';
+import { fieldClass } from './fields';
 
 /** UC13 — master-detail: chọn bệnh nhân, gán/gỡ bác sĩ và điều dưỡng phụ trách. */
 export function AssignmentsPage() {
@@ -61,7 +61,6 @@ export function AssignmentsPage() {
         title="Phân công"
         subtitle="Bác sĩ và Điều dưỡng chỉ xem và nhận cảnh báo của bệnh nhân được phân công. Một bệnh nhân có thể có nhiều người phụ trách."
       />
-      <AdminTabs />
       {patients.error ? (
         <StateMessage tone="error">{patients.error.message}</StateMessage>
       ) : !patients.data ? (
@@ -71,9 +70,9 @@ export function AssignmentsPage() {
       ) : (
         <section className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
           <div className="card flex flex-col gap-1 p-3">
-            <label className="mb-2 flex h-[38px] items-center gap-2 border border-input bg-background px-3">
-              <Search aria-hidden size={16} color="var(--muted-foreground)" />
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tìm bệnh nhân" aria-label="Tìm bệnh nhân" className="h-full grow bg-transparent outline-none" />
+            <label className="field mb-2">
+              <Search aria-hidden size={16} color="#abb8c2" />
+              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tìm bệnh nhân" aria-label="Tìm bệnh nhân" />
             </label>
             <div className="flex max-h-[560px] flex-col gap-1 overflow-y-auto" role="listbox" aria-label="Danh sách bệnh nhân">
               {visible.map((p) => {
@@ -86,7 +85,7 @@ export function AssignmentsPage() {
                     role="option"
                     aria-selected={active}
                     onClick={() => setSelectedId(p.id)}
-                    className={cn('flex h-11 items-center justify-between px-3 text-left', active ? 'bg-accent font-bold text-accent-foreground' : 'hover:bg-secondary')}
+                    className={cn('flex h-11 items-center justify-between px-3 text-left', active ? 'bg-[#2b3a45] text-white shadow-[inset_3px_0_0_var(--gold)]' : 'hover:bg-[#ffffff0d]')}
                   >
                     <span>{p.display_name}</span>
                     <span className="mono text-[12px]" style={{ color: count === 0 ? 'var(--risk-warning)' : 'var(--muted-foreground)' }}>
@@ -100,7 +99,7 @@ export function AssignmentsPage() {
           {selected && (
             <div className="card flex flex-col gap-[18px] p-[22px]">
               <div className="flex flex-col gap-1">
-                <h2 className="m-0 text-[22px] font-extrabold">{selected.display_name}</h2>
+                <h2 className="m-0 text-[22px] font-normal">{selected.display_name}</h2>
                 <span className="text-[13px] text-muted-foreground">
                   {selected.age ?? '—'} tuổi · {selected.gender === 'M' ? 'Nam' : selected.gender === 'F' ? 'Nữ' : '—'} · MIMIC {selected.mimic_subject_id} · đợt ICU {selected.mimic_icustay_id}
                 </span>
@@ -109,10 +108,10 @@ export function AssignmentsPage() {
                 <span className="eyebrow">Đang phụ trách</span>
                 {!selected.assignments.length && <span className="text-muted-foreground">Chưa có ai phụ trách: cảnh báo của bệnh nhân này sẽ không gửi tới ai.</span>}
                 {selected.assignments.map((a) => (
-                  <div key={a.id} className="flex flex-wrap items-center gap-3 border border-border bg-background px-3.5 py-3">
-                    <div className="flex size-[34px] items-center justify-center bg-secondary text-[12px] font-bold">{initials(a.user_full_name)}</div>
-                    <span className="font-semibold">{a.user_full_name}</span>
-                    <span className="inline-flex h-6 items-center border border-border bg-secondary px-2.5 text-[12px] font-semibold">{ROLE_LABEL[a.user_role]}</span>
+                  <div key={a.id} className="flex flex-wrap items-center gap-3 border border-[#ffffff26] bg-[#17232c80] px-3.5 py-3">
+                    <div className="flex size-[34px] items-center justify-center bg-[#2b3a45] text-[12px]">{initials(a.user_full_name)}</div>
+                    <span className="font-medium">{a.user_full_name}</span>
+                    <span className="inline-flex h-6 items-center border border-[#ffffff2b] bg-[#1d2932b8] px-2.5 text-[12px] font-medium">{ROLE_LABEL[a.user_role]}</span>
                     <span className="mono ml-auto text-[12px] text-muted-foreground">phân công {dateTime(a.assigned_at)}</span>
                     <Button variant="ghost" onClick={() => unassign(a.id)} className="h-8 px-2.5" aria-label={`Gỡ ${a.user_full_name}`}>
                       <X />

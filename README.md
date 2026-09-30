@@ -18,7 +18,7 @@ kèm vòng lặp MLOps tự phát hiện drift, huấn luyện lại và chỉ t
 [![MLflow](https://img.shields.io/badge/MLflow-3.11-0194E2?logo=mlflow&logoColor=white)](https://mlflow.org/)
 [![Airflow](https://img.shields.io/badge/Airflow-2.9-017CEE?logo=apacheairflow&logoColor=white)](https://airflow.apache.org/)
 [![Docker Compose](https://img.shields.io/badge/Docker%20Compose-2496ED?logo=docker&logoColor=white)](https://docs.docker.com/compose/)
-[![Tests](https://img.shields.io/badge/tests-257%20passing-success)](#kiểm-thử)
+[![Tests](https://img.shields.io/badge/tests-265%20passing-success)](#kiểm-thử)
 
 </div>
 
@@ -284,7 +284,7 @@ Lệnh đầy đủ, kèm biến môi trường cho từng lệnh, ở mục "L�
 
 ## Kiểm thử
 
-257 test, tất cả chạy trên phụ thuộc thật — không mock Kafka, không mock database, không mock MLflow.
+265 test, tất cả chạy trên phụ thuộc thật — không mock Kafka, không mock database, không mock MLflow.
 
 | Bộ test | Số test | Phạm vi |
 |---|---|---|
@@ -292,7 +292,7 @@ Lệnh đầy đủ, kèm biến môi trường cho từng lệnh, ở mục "L�
 | `ml` | 64 | Tiền xử lý, chia nhóm, hai mô hình, metric, quality gate, drift, promote model giữa hai registry |
 | `services/streaming` | 27 | Producer, consumer, **đồng nhất train/serving từng giờ trên dữ liệu thật** |
 | `services/backend` | 34 | 25 route, phân quyền theo phân công, chuyển trạng thái cảnh báo; chạy trên TimescaleDB thật |
-| `services/frontend` | 23 | Component, cập nhật realtime, chặn route theo vai trò |
+| `services/frontend` | 31 | Component, cập nhật realtime, chặn route theo vai trò, overlay/toast + âm báo cảnh báo mới |
 | `tests/e2e` | 10 | Độ trễ đầu–cuối, chịu lỗi (giết consumer / tắt backend giữa chừng), nạp lại model |
 
 ```bash

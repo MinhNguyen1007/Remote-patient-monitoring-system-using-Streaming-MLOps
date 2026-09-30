@@ -86,7 +86,7 @@ export function DriftChart({ reports }: { reports: DriftReport[] }) {
       {hovered && hover !== null && (
         <div className="pointer-events-none absolute top-4 flex w-[220px] flex-col gap-1 border border-border bg-popover px-3 py-2.5 text-[12.5px]" style={{ left: x(hover) > width / 2 ? x(hover) - 236 : x(hover) + 14 }}>
           <span className="mono text-[11px] text-muted-foreground">{clock(hovered.run_at)} · {hovered.n_records} bản ghi</span>
-          <span>Max PSI <span className="mono font-semibold">{vn(hovered.max_psi, 3)}</span></span>
+          <span>Max PSI <span className="mono font-medium">{vn(hovered.max_psi, 3)}</span></span>
           <span className="text-muted-foreground">{hovered.drift_detected ? (hovered.triggered_retrain ? 'Drift · đã kích hoạt retrain' : 'Drift · không kích hoạt thêm retrain') : 'Không có drift'}</span>
           {Object.entries(hovered.feature_stats ?? {})
             .filter(([, stat]) => stat.drifted)

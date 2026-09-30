@@ -121,7 +121,7 @@ export function VitalsChart({ points, tauAnomaly }: { points: TimelinePoint[]; t
           onMouseLeave={() => setHover(null)}
           onKeyDown={onKey}
           onBlur={() => setHover(null)}
-          className="block outline-none focus-visible:outline-2 focus-visible:outline-primary"
+          className="block outline-none focus-visible:outline-2 focus-visible:outline-[var(--tn-focus)]"
           style={{ fontFamily: 'var(--font-sans)' }}
         >
           {STRIPS.map((strip, s) => {
@@ -202,18 +202,18 @@ export function VitalsChart({ points, tauAnomaly }: { points: TimelinePoint[]; t
           <TooltipRow label="Nhịp thở" value={hovered.respiratory_rate} unit="/phút" />
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">Huyết áp</span>
-            <span className="mono font-semibold">{vn(hovered.systolic_bp, 0)}/{vn(hovered.diastolic_bp, 0)}</span>
+            <span className="mono font-medium">{vn(hovered.systolic_bp, 0)}/{vn(hovered.diastolic_bp, 0)}</span>
           </div>
           <TooltipRow label="Nhiệt độ" value={hovered.temperature} unit="°C" digits={1} />
           <div className="my-0.5 h-px bg-border" />
           <RiskBadge level={hovered.risk_level} score={hovered.risk_score} />
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">NEWS2</span>
-            <span className="mono font-semibold">{hovered.news2_score ?? '—'}</span>
+            <span className="mono font-medium">{hovered.news2_score ?? '—'}</span>
           </div>
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">Bất thường</span>
-            <span className="mono font-semibold">{vn(hovered.anomaly_score, 3)}</span>
+            <span className="mono font-medium">{vn(hovered.anomaly_score, 3)}</span>
           </div>
         </div>
       )}
@@ -225,7 +225,7 @@ function TooltipRow({ label, value, unit, digits = 0 }: { label: string; value: 
   return (
     <div className="flex justify-between gap-4">
       <span className="text-muted-foreground">{label}</span>
-      <span className="mono font-semibold">{value === null ? 'không đo' : `${vn(value, digits)} ${unit}`}</span>
+      <span className="mono font-medium">{value === null ? 'không đo' : `${vn(value, digits)} ${unit}`}</span>
     </div>
   );
 }

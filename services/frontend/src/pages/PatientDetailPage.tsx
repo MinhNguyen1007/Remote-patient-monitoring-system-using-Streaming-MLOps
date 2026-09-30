@@ -101,7 +101,7 @@ export function PatientDetailPage() {
             <>
               <div className="flex items-center gap-3.5">
                 <RiskBadge level={latest.risk_level} size="lg" />
-                <span className="mono text-[36px] font-semibold tracking-[-1.5px]">
+                <span className="mono text-[36px] font-medium">
                   {Math.round(latest.risk_score * 100)}
                   <span className="text-[18px] text-muted-foreground">%</span>
                 </span>
@@ -117,7 +117,7 @@ export function PatientDetailPage() {
         <div className="card flex flex-col gap-3 p-5">
           <div className="flex items-baseline justify-between">
             <span className="eyebrow">NEWS2 hiện tại</span>
-            <span className="mono text-[30px] font-semibold tracking-[-1px]">
+            <span className="mono text-[30px] font-medium">
               {latest?.news2_score ?? '—'}
               <span className="text-[14px] text-muted-foreground"> /15</span>
             </span>
@@ -133,7 +133,7 @@ export function PatientDetailPage() {
                       <span key={k} className="h-2 w-3.5" style={{ background: points !== null && k < points ? CHART.ink : 'var(--secondary)', opacity: points !== null && k < points ? 0.85 : 1 }} />
                     ))}
                   </div>
-                  <span className="mono w-3.5 text-right font-semibold">{points ?? '—'}</span>
+                  <span className="mono w-3.5 text-right font-medium">{points ?? '—'}</span>
                 </div>
               );
             })}
@@ -173,7 +173,7 @@ export function PatientDetailPage() {
         ) : (
           <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-3">
             {alerts.data.map((alert) => (
-              <article key={alert.id} className="flex flex-col gap-2.5 border border-border bg-background p-3.5">
+              <article key={alert.id} className="flex flex-col gap-2.5 border border-[#ffffff26] bg-[#17232c80] p-3.5">
                 <div className="flex items-center justify-between gap-2">
                   <AlertTypeLabel type={alert.alert_type} />
                   <AlertStatusPill status={alert.status} />
@@ -197,7 +197,7 @@ export function PatientDetailPage() {
 
 function BackLink() {
   return (
-    <Link to="/patients" className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground hover:text-foreground">
+    <Link to="/patients" className="inline-flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground hover:text-foreground">
       <ChevronLeft size={16} />
       Danh sách bệnh nhân
     </Link>

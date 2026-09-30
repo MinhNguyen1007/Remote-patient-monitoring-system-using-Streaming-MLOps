@@ -102,20 +102,20 @@ export function AlertsPage() {
                     <td className="td">
                       <div className="flex items-center gap-2.5">
                         <AlertTypeLabel type={alert.alert_type} />
-                        {isNew && <span className="mono bg-primary px-1.5 py-0.5 text-[10.5px] font-semibold tracking-[1px] text-primary-foreground">MỚI</span>}
+                        {isNew && <span className="border border-[#dec98980] bg-[#dec9891f] px-1.5 py-0.5 text-[11px] tracking-[1px] text-gold">MỚI</span>}
                       </div>
                     </td>
                     <td className="td">
-                      <Link to={`/patients/${alert.patient_id}`} className="font-bold hover:text-primary">{alert.patient_display_name}</Link>
+                      <Link to={`/patients/${alert.patient_id}`} className="font-normal hover:text-gold">{alert.patient_display_name}</Link>
                     </td>
                     <td className="td">
                       <span className="mono">{clock(alert.prediction_recorded_at)}</span>
                       <span className="text-[12px] text-muted-foreground"> · giờ {alert.hour_index ?? '—'}</span>
                     </td>
-                    <td className="td mono font-semibold">{alert.alert_type === 'ANOMALY' ? '—' : (alert.news2_score ?? '—')}</td>
+                    <td className="td mono font-medium">{alert.alert_type === 'ANOMALY' ? '—' : (alert.news2_score ?? '—')}</td>
                     <td className="td">
                       <div className="flex flex-col">
-                        <span className="mono font-semibold">{alert.alert_type === 'ANOMALY' ? vn(alert.anomaly_score, 3) : vn(alert.risk_score)}</span>
+                        <span className="mono font-medium">{alert.alert_type === 'ANOMALY' ? vn(alert.anomaly_score, 3) : vn(alert.risk_score)}</span>
                         <span className="text-[11.5px] text-muted-foreground">{alert.alert_type === 'ANOMALY' ? 'Điểm bất thường' : 'Xác suất nguy kịch'}</span>
                       </div>
                     </td>

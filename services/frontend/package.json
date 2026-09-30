@@ -2,7 +2,7 @@
   "name": "rpm-monitor-frontend",
   "version": "0.1.0",
   "private": true,
-  "description": "Dashboard giám sát bệnh nhân từ xa (React + Vite), design system csgo-case-opening-design góc vuông",
+  "description": "Dashboard giám sát bệnh nhân từ xa (React + Vite), theme CS:GO classic của truanayangi-ui, góc vuông",
   "type": "module",
   "scripts": {
     "dev": "vite",

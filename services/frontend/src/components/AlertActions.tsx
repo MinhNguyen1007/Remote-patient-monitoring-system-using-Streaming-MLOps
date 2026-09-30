@@ -67,7 +67,7 @@ export function AlertActions({ alert, onChanged, compact = false }: { alert: Ale
         placeholder="Ghi chú xử lý (bắt buộc)"
         aria-label="Ghi chú xử lý"
         rows={2}
-        className="min-h-[60px] resize-y border border-input bg-background px-3 py-2 text-[13px] outline-none focus-visible:outline-2 focus-visible:outline-primary"
+        className="min-h-[60px] resize-y border border-[#ffffff35] bg-[#1e2b36cc] px-3 py-2 text-white outline-none focus-visible:outline-2 focus-visible:outline-[var(--tn-focus)]"
       />
       <div className="flex gap-2">
         <Button type="submit" disabled={busy || !note.trim()} className="h-9 px-3.5">

@@ -36,19 +36,14 @@ export function LoginPage() {
     }
   };
 
-  const field = 'flex h-[38px] items-center gap-2 border border-input bg-background px-3 focus-within:outline-2 focus-within:outline-offset-3 focus-within:outline-primary';
-
   return (
-    <div className="grid min-h-screen grid-cols-1 bg-background lg:grid-cols-2">
-      <section
-        className="hidden flex-col justify-between border-r border-border px-14 py-12 lg:flex"
-        style={{ background: 'radial-gradient(900px 520px at 0% 100%, color-mix(in srgb, var(--primary) 7%, transparent), transparent 70%), var(--background)' }}
-      >
+    <div className="tn-shell grid min-h-screen grid-cols-1 lg:grid-cols-2">
+      <section className="hidden flex-col justify-between border-r border-[#ffffff20] bg-[#101a2350] px-14 py-12 lg:flex">
         <Logo />
         <div className="flex max-w-[520px] flex-col gap-[18px]">
           <div className="eyebrow">Hệ thống giám sát bệnh nhân từ xa</div>
-          <h1 className="page-title text-[52px] tracking-[-2.4px]">Cảnh báo sớm nguy kịch trong 4 giờ tới.</h1>
-          <p className="m-0 text-[15px] text-pretty text-muted-foreground">
+          <h1 className="page-title text-[44px] leading-[1.1]">Cảnh báo sớm nguy kịch trong 4 giờ tới.</h1>
+          <p className="m-0 text-[15px] text-pretty text-[#aebbc5]">
             Vitals ICU được phát theo thời gian thực, dự báo rủi ro bằng mô hình học máy và phát hiện diễn biến bất thường so với baseline của chính bệnh nhân.
           </p>
         </div>
@@ -64,47 +59,45 @@ export function LoginPage() {
             <div className="mb-3 lg:hidden">
               <Logo />
             </div>
-            <h2 className="m-0 text-[24px] font-extrabold tracking-[-0.8px]">Đăng nhập</h2>
-            <span className="text-muted-foreground">Dành cho Bác sĩ, Điều dưỡng và Quản trị viên</span>
+            <h2 className="m-0 text-[28px] font-normal text-[#e4e8eb]">Đăng nhập</h2>
+            <span className="text-[#abb8c2]">Dành cho Bác sĩ, Điều dưỡng và Quản trị viên</span>
           </div>
           <label className="flex flex-col gap-2">
-            <span className="text-[13px] font-semibold">Email</span>
-            <span className={field}>
-              <Mail aria-hidden size={16} color="var(--muted-foreground)" />
+            <span className="text-[12px] text-[#c2c8cd]">Email</span>
+            <span className="field">
+              <Mail aria-hidden size={16} color="#abb8c2" />
               <input
                 type="email"
                 autoComplete="username"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="h-full grow bg-transparent outline-none"
                 placeholder="ten@benhvien.vn"
               />
             </span>
           </label>
           <label className="flex flex-col gap-2">
-            <span className="text-[13px] font-semibold">Mật khẩu</span>
-            <span className={field}>
-              <Lock aria-hidden size={16} color="var(--muted-foreground)" />
+            <span className="text-[12px] text-[#c2c8cd]">Mật khẩu</span>
+            <span className="field">
+              <Lock aria-hidden size={16} color="#abb8c2" />
               <input
                 type={showPassword ? 'text' : 'password'}
                 autoComplete="current-password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="h-full grow bg-transparent outline-none"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
-                className="flex text-muted-foreground hover:text-foreground"
+                className="flex min-h-8 min-w-8 items-center justify-center text-[#abb8c2] hover:text-white"
                 aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
               >
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </span>
           </label>
-          <Button type="submit" disabled={submitting || !email || !password} className="h-[42px] text-[14px] font-semibold">
+          <Button type="submit" disabled={submitting || !email || !password} className="h-[46px] text-[15px]">
             {submitting ? 'Đang đăng nhập…' : 'Đăng nhập'}
           </Button>
           {error && (

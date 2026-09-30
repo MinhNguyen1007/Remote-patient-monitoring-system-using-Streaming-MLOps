@@ -1,10 +1,15 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
+/* CSS của kit vào layer components: nếu để ngoài layer, phần reset :where(button){background:none} của kit sẽ thắng
+   mọi class Tailwind (layer utilities) bất kể độ ưu tiên. Lớp riêng của ứng dụng bên dưới vẫn để ngoài layer. */
+@import '../truanayangi-ui/styles/core.css' layer(components);
+@import '../truanayangi-ui/styles/theme-csgo.css' layer(components);
 
 /*
- * Design system: skill csgo-case-opening-design (token Layer 2 "product skin") + màu lâm sàng.
- * Giá trị lấy đúng từ mockup docs/design/mockups/build_mockups.py và docs/design/02_8 mục 2.8.2.
- * Góc vuông theo yêu cầu người dùng: chỉ đổi --radius gốc, cả thang --radius-* về 0.
+ * Design system: truanayangi-ui, theme "CS:GO classic" (người dùng chọn 2026-09-30) + màu lâm sàng.
+ * Token gốc của theme nằm trong truanayangi-ui/styles/theme-csgo.css (data-tn-theme="csgo" trên <html>);
+ * file này chỉ ghi đè: góc vuông tuyệt đối (yêu cầu 2026-09-11), focus vàng, token lâm sàng và các lớp của ứng dụng.
+ * Giá trị lấy từ references/themes.md của skill ("CS:GO classic (exact values)").
  */
 @theme inline {
   --color-background: var(--background);
@@ -26,70 +31,162 @@
   --color-risk-warning: var(--risk-warning);
   --color-risk-critical: var(--risk-critical);
   --color-anomaly: var(--anomaly-flag);
+  --color-gold: var(--gold);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) * 1.4);
   --radius-2xl: calc(var(--radius) * 1.8);
-  --font-sans: 'Be Vietnam Pro', 'Segoe UI', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+  --font-sans: Arial, Helvetica, sans-serif;
+  --font-mono: Arial, Helvetica, sans-serif;
 }
 
-:root {
-  --background: #101113;
-  --foreground: #f3f3ef;
-  --card: #191a1e;
-  --popover: #24252a;
-  --primary: #d2f65b;
-  --primary-foreground: #15180c;
-  --secondary: #25272c;
-  --muted: #24252b;
-  --muted-foreground: #999ba3;
-  --accent: #33362c;
-  --accent-foreground: #e4ff99;
-  --border: #303137;
-  --input: #3d3f46;
-  --ring: #d2f65b;
+/* (0,2,0) thắng :is([data-tn-theme="csgo"]) (0,1,0) của theme */
+:root[data-tn-theme='csgo'] {
   --radius: 0;
+  --muted-foreground: #abb8c2;
+  --ring: #e4b85c;
+  --tn-focus: #e4b85c;
+  --gold: #dec989;
+  --label: #c2c8cd;
+  --hairline: #ffffff20;
+  --panel-bg: #17232c88;
+  --panel-border: #ffffff32;
+  --field-bg: #1e2b36cc;
+  /* Màu lâm sàng: luôn đi kèm nhãn chữ + icon (02_8 mục 2.8.2a) */
   --risk-normal: #0ca30c;
   --risk-warning: #fab219;
   --risk-critical: #d03b3b;
   --anomaly-flag: #9085e9;
   --series: #3987e5;
-  --series-2: #86b6ef;
-  color-scheme: dark;
+  --series-2: #199e70;
 }
 
 @layer base {
   * { @apply border-border; }
-  html, body { background: var(--background); color: var(--foreground); }
+  html, body { background: var(--background); color: var(--tn-text); }
   body { margin: 0; font-family: var(--font-sans); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
   button { cursor: pointer; }
   button:disabled { cursor: not-allowed; }
-  :focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+  :focus-visible { outline: 2px solid var(--tn-focus); outline-offset: 3px; }
   a { color: inherit; text-decoration: none; }
+  input, select, textarea { font-size: 16px; } /* không zoom trên iOS */
+  @media (min-width: 641px) { input, select, textarea { font-size: 14px; } }
 }
 
-.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
-.eyebrow {
-  font-family: var(--font-mono); font-size: 12px; letter-spacing: 2px; text-transform: uppercase;
-  color: var(--muted-foreground); display: flex; align-items: center; gap: 8px;
+.mono { font-variant-numeric: tabular-nums; }
+.gold { color: var(--gold); font-variant-numeric: tabular-nums; }
+
+/* ---------- Khung trang: header CS:GO + nội dung ---------- */
+.app-shell { display: flex; flex-direction: column; }
+.app-header { position: sticky; top: 0; z-index: 40; background: #101a23f0; }
+.app-brand { display: inline-flex; align-items: center; gap: 11px; font-size: 20px; font-weight: 500; color: #e4e8eb; }
+.app-brand-icon {
+  display: grid; place-items: center; width: 34px; height: 34px; flex: none;
+  background: linear-gradient(#739b4d, #5b8139); border: 1px solid #9fb98460; color: #fff;
 }
-.eyebrow::before { content: ''; width: 6px; height: 6px; background: var(--primary); flex-shrink: 0; }
-.page-title { margin: 0; font-size: 34px; font-weight: 800; letter-spacing: -1.2px; line-height: 1.15; }
-.block-title { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.4px; }
-.card { background: var(--card); border: 1px solid var(--border); }
+.app-brand small { display: block; font-size: 11px; letter-spacing: 1.5px; color: #abb8c2; }
+.app-nav { display: flex; align-items: center; gap: 6px; margin-right: auto; margin-left: 28px; }
+.app-nav .tn-hbtn[aria-current='page'] { background: #2b3a45; border-color: #ffffff4a; color: #fff; box-shadow: inset 0 -2px 0 var(--gold); }
+.app-badge {
+  display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 5px;
+  background: var(--risk-critical); color: #fff; font-size: 12px; font-variant-numeric: tabular-nums;
+}
+.app-user { display: flex; flex-direction: column; line-height: 1.2; text-align: right; }
+.app-user strong { font-size: 13px; font-weight: 400; color: #e4e8eb; }
+.app-user span { font-size: 11px; color: #abb8c2; }
+.app-main { display: flex; flex-direction: column; gap: 24px; width: 100%; max-width: 1320px; margin: 0 auto; padding: 40px 40px 35px; }
+/* .tn-main của kit đặt margin:auto 4 phía → trong khung flex dọc, trang ngắn bị đẩy ra giữa. Footer nhận phần dư. */
+.app-footer { width: 100%; max-width: 1320px; margin: auto auto 0; padding: 24px 40px 28px; }
+@media (max-width: 1100px) { .app-user { display: none; } }
+@media (max-width: 900px) { .app-nav { margin-left: 8px; } .app-nav .tn-hbtn-label { display: none; } }
+@media (max-width: 640px) {
+  .app-brand-text { display: none; }
+  .app-main { padding: 26px 16px 28px; }
+  .app-footer { padding: 20px 16px 24px; flex-direction: column; }
+}
+@media (pointer: coarse) { .app-header .tn-hbtn { min-height: 44px; min-width: 44px; justify-content: center; } }
+
+/* ---------- Tiêu đề trang: 32 px / 400 căn giữa, dòng đếm vàng, hàng điều khiển có hairline ---------- */
+.page-head { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+.page-title { margin: 0; font-size: 32px; font-weight: 400; line-height: 1.15; color: #e4e8eb; }
+.page-counter { margin: 0; font-size: 12px; letter-spacing: 0.3px; color: #abb8c2; }
+.page-counter strong { font-weight: 500; color: var(--gold); font-variant-numeric: tabular-nums; }
+.page-sub { margin: 0; max-width: 720px; font-size: 14px; color: #aebbc5; text-wrap: pretty; }
+.page-controls {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px;
+  padding-bottom: 20px; border-bottom: 1px solid #ffffff28;
+}
+@media (max-width: 640px) {
+  .page-head { align-items: flex-start; text-align: left; }
+  .page-title { font-size: 27px; }
+}
+
+/* ---------- Panel, nhãn, bảng ---------- */
+.card { background: var(--panel-bg); border: 1px solid var(--panel-border); box-shadow: 0 12px 36px #0002; }
+.eyebrow { font-size: 13px; color: var(--label); }
+.block-title { margin: 0; font-size: 17px; font-weight: 400; color: #e4e8eb; }
 .th {
-  text-align: left; font: 500 11px var(--font-mono); letter-spacing: 1.5px; text-transform: uppercase;
-  color: var(--muted-foreground); padding: 10px 16px; border-bottom: 1px solid var(--border);
+  text-align: left; font-size: 12px; font-weight: 400; letter-spacing: 0.2px; color: var(--label);
+  padding: 11px 16px; border-bottom: 1px solid var(--hairline); background: #ffffff06;
 }
-.td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.td { padding: 13px 16px; border-bottom: 1px solid #ffffff14; vertical-align: middle; }
+tbody tr:hover > .td { background: #ffffff05; }
 
-/* Cảnh báo mới vào: một lần nhấn mạnh rồi mờ dần (02_8 mục 2.8.2d), không nhấp nháy liên tục */
-@keyframes arrive { from { background-color: color-mix(in srgb, var(--primary), transparent 82%); } to { background-color: transparent; } }
-.arrive { animation: arrive 6s ease-out; }
+.field {
+  display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 12px;
+  border: 1px solid #ffffff35; background: var(--field-bg); color: #fff;
+}
+.field:focus-within { outline: 2px solid var(--tn-focus); outline-offset: 3px; }
+.field input { height: 100%; flex-grow: 1; min-width: 0; background: transparent; outline: none; }
+
+/* Segmented: nhóm nút header CS:GO, lựa chọn đang bật có gạch chân vàng như tab của hộp thoại cài đặt */
+.segmented { display: flex; gap: 0; border: 1px solid #ffffff2b; background: #1d2932b8; }
+.segmented button { display: flex; align-items: center; gap: 7px; height: 34px; padding: 0 13px; font-size: 13px; color: #d8dde1; }
+.segmented button:hover { background: #2b3a45; }
+.segmented button[aria-checked='true'] { background: #2b3a45; color: #fff; box-shadow: inset 0 -2px 0 var(--gold); }
+.segmented .count { color: var(--gold); font-variant-numeric: tabular-nums; }
+@media (pointer: coarse) { .segmented button { min-height: 44px; } }
+
+/* ---------- Thẻ bệnh nhân: thẻ CS:GO, ánh màu mức rủi ro dâng lên từ thanh đáy ---------- */
+.patient-card.tn-card {
+  --tn-card-rarity-w: 5px;
+  display: flex; flex-direction: column; gap: 14px; padding: 18px 18px 14px;
+  background: linear-gradient(0deg, color-mix(in srgb, var(--tn-rarity), transparent 80%), #2c3a45 75%);
+}
+.patient-card.tn-card:hover { filter: brightness(1.15); }
+.patient-card .muted { color: #bfc5cc; }
+
+/* Cảnh báo mới vào bảng: một lần nhấn mạnh rồi mờ dần (02_8 mục 2.8.2d), không nhấp nháy liên tục */
+@keyframes arrive { from { background-color: color-mix(in srgb, var(--gold), transparent 80%); } to { background-color: transparent; } }
+.arrive > .td { animation: arrive 6s ease-out; }
 
 .card-grid > * { content-visibility: auto; contain-intrinsic-size: auto 300px; }
+
+/* ---------- Cảnh báo mới: overlay toàn màn hình (rủi ro nguy kịch) + toast (bất thường, MLOps) ---------- */
+.tn-winner .tn-winner-art { width: min(340px, 68vw); margin: 16px 0; }
+.alert-art { display: grid; place-content: center; justify-items: center; gap: 6px; }
+.alert-art strong { font-size: 72px; font-weight: 400; line-height: 1; color: #fff; font-variant-numeric: tabular-nums; }
+.alert-art strong small { font-size: 28px; color: #d9dfe3; }
+.alert-art span { max-width: 80%; font-size: 13px; color: #d9dfe3; text-align: center; }
+.alert-queue { font-size: 12px; color: var(--gold); }
+
+.toast-stack {
+  position: fixed; right: 24px; bottom: 24px; z-index: 45;
+  display: flex; flex-direction: column; gap: 10px; width: min(420px, calc(100vw - 32px));
+}
+.toast {
+  display: grid; grid-template-columns: auto 1fr auto; align-items: start; gap: 12px; padding: 14px 14px 14px 16px;
+  background: #202e3bf5; border: 1px solid #ffffff40; border-bottom: 5px solid var(--tn-rarity);
+  box-shadow: 0 12px 36px #0006; animation: tn-reveal 0.3s ease-out;
+}
+.toast h2 { margin: 0; font-size: 15px; font-weight: 400; color: #fff; }
+.toast p { margin: 3px 0 0; font-size: 12.5px; color: #aebbc5; }
+.toast a { display: inline-block; margin-top: 8px; font-size: 13px; color: var(--gold); }
+.toast a:hover { text-decoration: underline; }
+.toast-close { display: grid; place-items: center; width: 28px; height: 28px; color: #b6c2ca; }
+.toast-close:hover { color: #fff; }
+@media (max-width: 640px) { .toast-stack { right: 16px; bottom: 16px; } }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }

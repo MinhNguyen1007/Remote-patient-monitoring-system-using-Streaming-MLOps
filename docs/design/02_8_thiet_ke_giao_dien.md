@@ -4,6 +4,8 @@ Mục này trình bày thiết kế giao diện người dùng của hệ thốn
 
 Mockup độ trung thực cao được dựng bằng Claude Design canvas: https://claude.ai/code/artifact/06619c98-443f-4157-be37-cef16741dc5d. Mã nguồn artboard nằm ở `docs/design/mockups/`, ảnh dùng trong tài liệu ở `docs/design/mockups/png/`. Số liệu trên mockup là **số liệu mẫu**, cùng định dạng với response của API.
 
+> **Cập nhật 2026-09-30 — đổi giao diện sang theme "CS:GO classic" của bộ `truanayangi-ui`** (người dùng yêu cầu nâng cấp giao diện). Bố cục màn hình, luồng nghiệp vụ và màu lâm sàng giữ nguyên; thay đổi nằm ở màu nền, chữ, header thay sidebar, và thêm overlay/âm báo cảnh báo mới. Các mục 2.8.1–2.8.4 dưới đây đã viết lại theo giao diện mới; mockup và ảnh `mockups/png/` là của giao diện trước đó (bố cục vẫn đúng, màu và chữ đã khác).
+
 ## 2.8.1. Định hướng thiết kế
 
 **Người dùng và bối cảnh sử dụng.** Bác sĩ và điều dưỡng theo dõi đồng thời nhiều bệnh nhân ICU trên màn hình máy tính, thường trong ca trực kéo dài và ở phòng có ánh sáng thấp. Giao diện cần:
@@ -13,22 +15,25 @@ Mockup độ trung thực cao được dựng bằng Claude Design canvas: https
 3. Cho phép xem diễn biến vitals trước khi xác nhận cảnh báo.
 4. Không gây mỏi mắt hoặc "bão cảnh báo" bằng hiệu ứng nhấp nháy.
 
-**Phong cách.** Giao diện dùng design system dark-theme lấy cảm hứng từ giao diện mở hộp CS:GO (`csgo-case-opening-design`): nền gần đen, đúng một màu nhấn neon, chữ tiêu đề đậm, nhãn dữ liệu dạng mono. Đây là lựa chọn thẩm mỹ có chủ đích để dashboard có bản sắc riêng. Bên trên design system đó, hệ thống bổ sung một lớp màu ngữ nghĩa lâm sàng.
+**Phong cách.** Giao diện dùng theme **"CS:GO classic"** của bộ giao diện `truanayangi-ui` (tái hiện giao diện kho đồ CS:GO): nền xám xanh với lớp gradient, panel trong mờ viền mảnh, góc vuông, chữ Arial nét thường, nút chính xanh lá gradient, số liệu nhấn màu vàng. Đây là lựa chọn thẩm mỹ có chủ đích để dashboard có bản sắc riêng. Bên trên theme đó, hệ thống bổ sung một lớp màu ngữ nghĩa lâm sàng.
 
 Các tùy biến so với design system gốc:
 
 | Thành phần của design system gốc | Tùy biến trong RPM | Lý do |
 |---|---|---|
-| Cơ chế "mở case", vòng quay ngẫu nhiên | Bỏ hoàn toàn | Không có khoảnh khắc ngẫu nhiên trong nghiệp vụ y tế |
-| Thang "rarity" (độ hiếm) | Thay bằng 3 mức rủi ro lâm sàng + màu bất thường | Giữ cơ chế gán màu qua biến CSS, đổi ý nghĩa |
-| Bo góc `--radius: .4rem` | **Góc vuông** `--radius: 0` | Theo yêu cầu của người dùng: hình khối vuông cho cảm giác chắc chắn, nghiêm túc. Design system cho phép đổi một biến gốc để cả thang bo góc về 0 |
-| Motion bằng `requestAnimationFrame` | Chỉ dùng cho thay đổi có ý nghĩa thật: badge đổi mức, cảnh báo mới vào, trạng thái cảnh báo đổi | Tránh chuyển động trang trí trong môi trường lâm sàng |
+| Cơ chế "mở hòm", vòng quay ngẫu nhiên | Bỏ hoàn toàn | Không có khoảnh khắc ngẫu nhiên trong nghiệp vụ y tế |
+| Thang "rarity" (độ hiếm) trên thẻ | Thay bằng 3 mức rủi ro lâm sàng + màu bất thường; giữ cách thể hiện (ánh màu dâng lên từ thanh đáy thẻ) | Giữ cơ chế gán màu qua biến `--tn-rarity`, đổi ý nghĩa |
+| Màn "NEW ITEM" toàn màn hình sau khi quay | Dùng cho **cảnh báo rủi ro nguy kịch mới**; nội dung là đúng dữ liệu của cảnh báo | Khoảnh khắc cần chú ý thật trong nghiệp vụ; không có yếu tố ngẫu nhiên |
+| Âm thanh mở hòm theo độ hiếm | Âm báo tổng hợp (Web Audio) khi có cảnh báo mới; nguy kịch/bất thường/drift kêu khác nhau; tắt được, nhớ lựa chọn | Không dùng tệp âm thanh có bản quyền |
+| Bo góc hộp thoại/nút phụ của theme | **Góc vuông tuyệt đối** `--radius: 0` | Theo yêu cầu của người dùng (2026-09-11) |
+| Ảnh nền nhà kho | Chỉ dùng gradient dự phòng của theme | Ảnh gốc không được phép dùng trong repo công khai |
+| Motion | Chỉ cho thay đổi có ý nghĩa thật: cảnh báo mới, badge đổi mức, trạng thái cảnh báo đổi | Tránh chuyển động trang trí trong môi trường lâm sàng |
 
 ## 2.8.2. Hệ thống thiết kế (Design System)
 
 ![Bảng thành phần giao diện](mockups/png/Components.png)
 
-*Hình 2.8.1 — Bảng thành phần dùng chung: badge rủi ro, NEWS2, điểm bất thường, trạng thái cảnh báo, nút, trạng thái kết nối.*
+*Hình 2.8.1 — Bảng thành phần dùng chung: badge rủi ro, NEWS2, điểm bất thường, trạng thái cảnh báo, nút, trạng thái kết nối (mockup của giao diện trước; cấu tạo thành phần giữ nguyên).*
 
 ### a) Màu sắc
 
@@ -36,49 +41,55 @@ Toàn bộ màu khai báo thành biến CSS; component chỉ tham chiếu biến
 
 | Nhóm | Token | Giá trị | Dùng cho |
 |---|---|---|---|
-| Nền | `--background` | `#101113` | Nền trang. Gần đen nhưng không phải đen tuyệt đối, để đỡ chói |
-| | `--card` | `#191a1e` | Thẻ, sidebar, bảng |
-| | `--popover` | `#24252a` | Tooltip, menu |
-| Chữ | `--foreground` | `#f3f3ef` | Chữ chính |
-| | `--muted-foreground` | `#999ba3` | Chữ phụ, nhãn, mô tả |
-| Viền | `--border` / `--input` | `#303137` / `#3d3f46` | Viền thẻ, ô nhập |
-| Nhấn | `--primary` | `#d2f65b` (lime) | **Chỉ** hành động chính, mục điều hướng đang chọn, viền focus, chỉ báo "live" |
+| Nền | `--background` + gradient | `#27323b`, `linear-gradient(#18242edf, #25323dd9)` | Nền trang xám xanh của theme CS:GO |
+| | panel | `#17232c88`, viền `#ffffff32` | Panel, bảng, thẻ thông tin (trong mờ) |
+| | header | `#101a23`, viền dưới `#ffffff20` | Thanh điều hướng trên cùng |
+| Chữ | chữ chính / tiêu đề | `#f3f3ef` / `#e4e8eb` | |
+| | nhãn / chữ phụ | `#c2c8cd` / `#abb8c2` | Nhãn dữ liệu, mô tả |
+| Nhấn | nút chính | `linear-gradient(#739b4d, #5b8139)`, hover `#83a65f` | **Chỉ** hành động chính |
+| | vàng | `#dec989` | Con số đếm, tab/lựa chọn đang bật (gạch chân 2px), trạng thái cảnh báo "Mở" |
+| | focus | `#e4b85c` | Viền focus bàn phím |
 | Rủi ro | `--risk-normal` | `#0ca30c` | Bình thường |
 | | `--risk-warning` | `#fab219` | Cảnh báo — cần theo dõi sát |
 | | `--risk-critical` | `#d03b3b` | Nguy kịch |
 | Bất thường | `--anomaly-flag` | `#9085e9` (tím) | Điểm/cờ bất thường của LSTM-Autoencoder; tách khỏi 3 màu rủi ro |
-| Biểu đồ | series | `#3987e5` / `#86b6ef` | Đường vitals / huyết áp tâm trương |
+| Biểu đồ | series | `#3987e5` / `#199e70` | Đường vitals / huyết áp tâm trương (nét đứt + nhãn trực tiếp). Kiểm tra bằng `validate_palette.js` trên nền `#1b2731`: đạt cả 5 tiêu chí cùng màu bất thường |
 
 Quy tắc dùng màu:
 
 - **Không truyền đạt thông tin chỉ bằng màu.** Mọi mức rủi ro luôn gồm icon riêng và nhãn chữ (`Bình thường` / `Cảnh báo` / `Nguy kịch`): vòng tròn dấu tích, tam giác, bát giác. Nhờ vậy người mù màu đỏ–xanh vẫn phân biệt được.
 - Badge dùng nền màu trạng thái ở độ phủ 14% và viền 45%. Chữ giữ màu `--foreground` để đạt tương phản đọc. Màu trạng thái chỉ nằm ở icon và nền.
-- Màu rủi ro lấy từ bảng màu trạng thái của hướng dẫn trực quan hóa dữ liệu (`dataviz`). Các màu này tách biệt với accent lime, nên nút hành động không bị nhầm với trạng thái bệnh nhân.
+- Màu rủi ro lấy từ bảng màu trạng thái của hướng dẫn trực quan hóa dữ liệu (`dataviz`). Nút chính xanh lá của theme là dạng gradient và luôn có chữ, nên không bị nhầm với trạng thái "Bình thường" của bệnh nhân.
 
 ### b) Typography
 
 | Vai trò | Font | Cỡ / độ đậm | Ghi chú |
 |---|---|---|---|
-| Tiêu đề trang | Be Vietnam Pro | 34px / 800, letter-spacing −1.2px | Đậm, khoảng chữ âm theo design system |
-| Tiêu đề khối | Be Vietnam Pro | 18px / 700 | |
-| Nội dung | Be Vietnam Pro | 14px / 400–600 | Hỗ trợ đầy đủ dấu tiếng Việt |
-| Nhãn dữ liệu, số liệu | JetBrains Mono | 11–22px, số tabular | Eyebrow viết hoa giãn chữ 2px; mọi con số (vitals, xác suất, thời gian) dùng mono để thẳng cột |
+| Tiêu đề trang | Arial | 32px / 400, căn giữa (27px, căn trái trên điện thoại) | Theo theme CS:GO; dưới tiêu đề là dòng đếm 12px, số màu vàng |
+| Tiêu đề khối | Arial | 17px / 400 | |
+| Nội dung | Arial | 14px / 400 | Có sẵn trên mọi máy, đủ dấu tiếng Việt; không tải web font |
+| Nhãn dữ liệu, số liệu | Arial | nhãn 12px `#c2c8cd`; số 22px / 400, số tabular | Mọi con số (vitals, xác suất, thời gian) dùng số tabular để thẳng cột |
 
 Số thập phân dùng dấu phẩy theo chuẩn tiếng Việt (`0,72`). Cách này nhất quán với báo cáo.
 
 ### c) Hình khối, khoảng cách, icon
 
 - **Góc vuông** cho mọi thẻ, nút, ô nhập, badge, tooltip và ô biểu đồ. Ngoại lệ duy nhất là nút radio giữ hình tròn, vì hình tròn là quy ước nhận biết lựa chọn đơn, phân biệt với checkbox.
-- Viền 1px `--border` cho mọi khối. Thẻ bệnh nhân có thêm **viền dưới 3px theo màu rủi ro**: đây là motif "tier" của design system gốc, được dùng lại để thể hiện mức rủi ro.
-- Khoảng cách theo bội số 4px. Thẻ cách nhau 16px, lề nội dung trang 28–36px.
+- Panel có viền mảnh 1px. Thẻ bệnh nhân dùng đúng thẻ CS:GO của theme: **thanh đáy 5px theo màu rủi ro, ánh màu dâng lên từ đáy thẻ**, di chuột thì sáng lên.
+- Khoảng cách theo bội số 4px. Thẻ cách nhau 16px; nội dung rộng tối đa 1320px, lề 40px (16px trên điện thoại).
 - Icon vẽ bằng SVG nét 1,8px trên lưới 24px, cùng một phong cách. Không dùng emoji.
 
 ### d) Chuyển động và khả năng tiếp cận
 
-- Cảnh báo mới: nền lime nhạt + tag `MỚI` trong vài giây rồi mờ dần. Đây là **một** chuyển động duy nhất, không nhấp nháy liên tục.
+- Cảnh báo mới (bác sĩ, điều dưỡng — chỉ bệnh nhân được phân công):
+  - **Rủi ro nguy kịch** → overlay toàn màn hình kiểu "NEW ITEM" của theme: tên bệnh nhân, xác suất nguy kịch cỡ lớn trên vầng sáng đỏ, giờ dữ liệu, NEWS2; nút **Xem bệnh nhân**, **Xác nhận** (chỉ Bác sĩ), **Để sau**. Nhiều cảnh báo đến cùng lúc thì xếp hàng ("còn n cảnh báo chờ", **Bỏ qua tất cả**). Esc đóng overlay.
+  - **Bất thường** → toast góc dưới phải (viền đáy tím), tự ẩn sau 20 giây, không che màn hình.
+  - Admin nhận toast khi phát hiện drift cần báo và khi huấn luyện lại xong.
+  - Âm báo tổng hợp (Web Audio, không dùng tệp có bản quyền): nguy kịch, bất thường, drift, huấn luyện lại kêu khác nhau. Nút **Âm báo bật/tắt** trên header, nhớ lựa chọn trên trình duyệt; không lưu được thì nút ghi rõ chỉ áp dụng phiên hiện tại. Âm chỉ phát sau thao tác đầu tiên của người dùng (quy định của trình duyệt) và tự dừng khi tab ẩn.
+- Trong bảng cảnh báo: hàng mới có nền vàng nhạt + tag `MỚI` trong vài giây rồi mờ dần, không nhấp nháy liên tục.
 - Badge đổi mức rủi ro: chuyển màu mượt khi nhận prediction mới qua WebSocket.
 - Tôn trọng `prefers-reduced-motion`: tắt mọi chuyển động khi người dùng bật tùy chọn giảm chuyển động.
-- `focus-visible`: viền lime 2px, cách phần tử 3px, cho điều hướng bằng bàn phím.
+- `focus-visible`: viền vàng `#e4b85c` 2px, cách phần tử 3px, cho điều hướng bằng bàn phím.
 - Vùng bấm tối thiểu 32–44px. Mọi biểu đồ có `role="img"` và `aria-label` mô tả nội dung.
 
 ## 2.8.3. Kiến trúc thông tin và điều hướng
@@ -97,17 +108,17 @@ flowchart LR
     Users --- Models[Giám sát mô hình<br/>UC09, UC10]
 ```
 
-| Vai trò | Mục trên sidebar | Route | API chính |
+| Vai trò | Mục trên header | Route | API chính |
 |---|---|---|---|
 | Bác sĩ, Điều dưỡng | Bệnh nhân | `/patients`, `/patients/:id` | `GET /patients`, `/patients/{id}`, `/timeline`, `/alerts` |
 | | Cảnh báo (badge số cảnh báo mở) | `/alerts` | `GET /alerts`, `/alerts/open-count`; Bác sĩ: `POST /alerts/{id}/acknowledge`, `/resolve` |
-| Admin | Quản trị: 4 tab | `/admin/users`, `/admin/assignments`, `/admin/thresholds`, `/admin/models` | `/users`, `/admin/*` |
-| Mọi vai trò | Khối tài khoản cuối sidebar + đăng xuất | — | `GET /auth/me`; đăng xuất = xóa token phía client (UC02) |
+| Admin | Người dùng, Phân công, Ngưỡng cảnh báo, Giám sát mô hình | `/admin/users`, `/admin/assignments`, `/admin/thresholds`, `/admin/models` | `/users`, `/admin/*` |
+| Mọi vai trò | Nút âm báo, tên + vai trò, nút đăng xuất ở góc phải header | — | `GET /auth/me`; đăng xuất = xóa token phía client (UC02) |
 
 Nguyên tắc:
 - Route được chặn theo vai trò đúng bảng phân quyền ở mục 2.2. Admin **không** có mục Bệnh nhân vì không theo dõi bệnh nhân; Admin chỉ quản lý phân công.
 - Bác sĩ và Điều dưỡng chỉ thấy bệnh nhân được phân công. Việc lọc do backend thực hiện, frontend không tự lọc thay.
-- Trạng thái kết nối WebSocket luôn hiển thị ở góc phải tiêu đề trang (`Realtime · đã kết nối` / `Đang kết nối lại…`).
+- Trạng thái kết nối WebSocket luôn hiển thị cạnh các điều khiển dưới tiêu đề trang (`Realtime · đã kết nối` / `Đang kết nối lại…`).
 
 ## 2.8.4. Thiết kế chi tiết các màn hình
 
@@ -120,7 +131,7 @@ Nguyên tắc:
 - **Bố cục**: chia đôi màn hình.
   - Nửa trái giới thiệu hệ thống bằng một câu nêu giá trị cốt lõi ("Cảnh báo sớm nguy kịch trong 4 giờ tới") và 3 badge rủi ro.
   - Nửa phải là form email/mật khẩu.
-- **Tương tác**: ô đang nhập có viền focus lime; có nút hiện/ẩn mật khẩu.
+- **Tương tác**: ô đang nhập có viền focus vàng; có nút hiện/ẩn mật khẩu.
 - **Báo lỗi**: hiển thị **ngay dưới nút Đăng nhập**, không dùng toast ở góc màn hình. Người dùng thấy lỗi ở đúng chỗ đang thao tác, và trình đọc màn hình đọc được theo thứ tự form.
 - **Nội dung lỗi**: cùng một thông báo cho sai email, sai mật khẩu và tài khoản bị khóa ("Email hoặc mật khẩu không đúng"), để không lộ tài khoản nào tồn tại. Cách này khớp với API `POST /auth/login` trả 401.
 
@@ -178,7 +189,7 @@ Nguyên tắc:
 
 - **Bố cục**: bảng cảnh báo của mọi bệnh nhân được phân công, mới nhất lên đầu. Các cột: Loại, Bệnh nhân, Thời điểm (kèm giờ dữ liệu), NEWS2, Điểm (xác suất nguy kịch hoặc điểm bất thường, có nhãn), Trạng thái, Thao tác.
 - **Bộ lọc**: theo trạng thái (Mở / Đã xác nhận / Đã xử lý / Tất cả, kèm số lượng) và theo loại (Rủi ro / Bất thường).
-- **Cảnh báo mới** vào qua WebSocket: hàng có nền lime nhạt và tag `MỚI` trong vài giây. Badge số cảnh báo mở trên sidebar cập nhật cùng lúc.
+- **Cảnh báo mới** vào qua WebSocket: hàng có nền vàng nhạt và tag `MỚI` trong vài giây, đồng thời hiện overlay/toast như mục 2.8.2d. Badge số cảnh báo mở trên header cập nhật cùng lúc.
 - **Phân quyền thao tác**: Bác sĩ có nút Xác nhận / Đã xử lý trên từng hàng. Điều dưỡng xem cùng danh sách nhưng không có cột Thao tác. Khi một bác sĩ đổi trạng thái, những người cùng phụ trách thấy trạng thái mới ngay (sự kiện `alert_update`).
 - **Email cảnh báo (UC11)** không có màn hình riêng; email chứa đường dẫn mở thẳng trang chi tiết bệnh nhân.
 
@@ -188,8 +199,8 @@ Nguyên tắc:
 
 *Hình 2.8.6 — Tab Người dùng.*
 
-- Sidebar của Admin chỉ có nhóm **Quản trị** với 4 mục; mỗi trang quản trị có thêm thanh tab để chuyển nhanh.
-- Bảng tài khoản: họ tên, email (mono), vai trò, trạng thái (công tắc Hoạt động / Đã khóa), số bệnh nhân phụ trách, nút Sửa. Nút **Thêm tài khoản** là hành động chính (lime).
+- Header của Admin chỉ có 4 mục quản trị (không có mục Bệnh nhân); mục đang mở có gạch chân vàng.
+- Bảng tài khoản: họ tên, email (mono), vai trò, trạng thái (công tắc Hoạt động / Đã khóa), số bệnh nhân phụ trách, nút Sửa. Nút **Thêm tài khoản** là hành động chính (nút xanh lá).
 - Không xóa cứng tài khoản: khóa tài khoản để giữ lịch sử người xác nhận/xử lý cảnh báo. Admin không thể tự khóa hoặc tự bỏ quyền Quản trị của mình (API trả 409).
 
 ### f) Quản trị · Phân công (UC13) — Admin

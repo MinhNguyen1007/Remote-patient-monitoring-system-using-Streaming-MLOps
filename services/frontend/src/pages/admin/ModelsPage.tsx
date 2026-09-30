@@ -10,7 +10,6 @@ import { useAsync } from '@/hooks/useAsync';
 import { dateTime, vn } from '@/lib/format';
 import type { ModelVersion, RetrainStatus } from '@/types/api';
 
-import { AdminTabs } from './AdminTabs';
 
 const TERMINAL = new Set(['success', 'failed']);
 const POLL_MS = 3000;
@@ -33,7 +32,7 @@ const MODEL_INFO: Record<string, { title: string; family: string; metrics: [stri
 };
 
 function ChampionTag() {
-  return <span className="mono bg-primary px-2 py-0.5 text-[11px] font-semibold tracking-[1px] text-primary-foreground">CHAMPION</span>;
+  return <span className="border border-[#dec98980] bg-[#dec9891f] px-2 py-0.5 text-[11px] tracking-[1px] text-gold">CHAMPION</span>;
 }
 
 function ChampionCard({ version, tau }: { version: ModelVersion | undefined; tau: string }) {
@@ -55,8 +54,8 @@ function ChampionCard({ version, tau }: { version: ModelVersion | undefined; tau
           const percent = key.endsWith('false_positive_rate');
           return (
             <div key={key} className="flex flex-col gap-0.5">
-              <span className="mono text-[10.5px] tracking-[1.2px] text-muted-foreground">{label}</span>
-              <span className="mono text-[22px] font-semibold tracking-[-0.5px]">{value === undefined ? '—' : percent ? `${vn(value * 100, 1)}%` : vn(value, 3)}</span>
+              <span className="text-[12px] text-[#c2c8cd]">{label}</span>
+              <span className="mono text-[22px] font-medium">{value === undefined ? '—' : percent ? `${vn(value * 100, 1)}%` : vn(value, 3)}</span>
               {reference && metrics[reference] !== undefined && <span className="mono text-[11.5px] text-muted-foreground">persistence {vn(metrics[reference], 3)}</span>}
             </div>
           );
@@ -102,7 +101,7 @@ function RetrainControl({ onFinished }: { onFinished: () => void }) {
         <div className="flex items-center gap-3 border border-border bg-card px-3.5 py-2.5" role="status" aria-live="polite">
           {running ? <RefreshCw size={16} color="var(--primary)" className="motion-safe:animate-spin" /> : run.state === 'success' ? <CircleCheck size={16} color="var(--risk-normal)" /> : <X size={16} color="var(--risk-critical)" />}
           <div className="flex flex-col leading-tight">
-            <span className="text-[13px] font-semibold">{running ? 'Đang huấn luyện lại…' : run.state === 'success' ? 'Huấn luyện lại xong' : 'Huấn luyện lại thất bại'}</span>
+            <span className="text-[13px] font-medium">{running ? 'Đang huấn luyện lại…' : run.state === 'success' ? 'Huấn luyện lại xong' : 'Huấn luyện lại thất bại'}</span>
             <span className="mono text-[11.5px] text-muted-foreground">{run.dag_run_id} · {run.state}</span>
             {!running && run.results?.map((v) => (
               <span key={v.id} className="mono text-[11.5px]">{v.model_name} v{v.mlflow_version} · {GATE_LABEL[v.gate_status] ?? v.gate_status}</span>
@@ -143,7 +142,6 @@ export function ModelsPage() {
   return (
     <>
       <PageHeader eyebrow="Quản trị hệ thống · UC09 · UC10" title="Giám sát mô hình" actions={<RetrainControl onFinished={reloadAll} />} />
-      <AdminTabs />
       {models.error ? (
         <StateMessage tone="error">{models.error.message}</StateMessage>
       ) : (
@@ -181,15 +179,15 @@ export function ModelsPage() {
               return (
                 <tr key={v.id}>
                   <td className="td mono text-[13px]">{v.model_name}</td>
-                  <td className="td mono font-semibold">v{v.mlflow_version}</td>
+                  <td className="td mono font-medium">v{v.mlflow_version}</td>
                   <td className="td">
-                    <span className="inline-flex items-center gap-1.5 font-semibold">
+                    <span className="inline-flex items-center gap-1.5 font-medium">
                       {v.gate_status === 'PROMOTED' ? <CircleCheck size={15} color="var(--risk-normal)" /> : <X size={15} color="var(--risk-critical)" />}
                       {v.gate_status === 'PROMOTED' ? 'Promoted' : 'Từ chối'}
                     </span>
                     {v.gate_reasons && <div className="mt-1 max-w-[280px] text-[11.5px] leading-snug text-muted-foreground">{v.gate_reasons}</div>}
                   </td>
-                  <td className="td"><span className="inline-flex h-[22px] items-center border border-border bg-secondary px-2 text-[11.5px] font-semibold">{v.trigger}</span></td>
+                  <td className="td"><span className="inline-flex h-[22px] items-center border border-border bg-secondary px-2 text-[11.5px] font-medium">{v.trigger}</span></td>
                   <td className="td mono text-[12.5px] whitespace-nowrap">{summary}</td>
                   <td className="td mono text-[12.5px] text-muted-foreground">{dateTime(v.trained_at)}</td>
                   <td className="td">{v.is_champion && <ChampionTag />}</td>

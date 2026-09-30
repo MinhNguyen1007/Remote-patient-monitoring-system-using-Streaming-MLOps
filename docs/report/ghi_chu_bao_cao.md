@@ -54,7 +54,7 @@ Còn thiếu (cần người dùng cung cấp): thông tin hành chính trang b�
 | Frontend | React 19.2, TypeScript 7.0, Vite 8.2, Tailwind CSS 4.3, Base UI 1.8 + CVA, React Router 7.18, Vitest 5 + Testing Library |
 | Giám sát | Prometheus 2.54.1 (`/metrics` của backend), Grafana 11.1.4 |
 | Triển khai | Docker Compose (profile `app`: backend :8000, frontend nginx :3000, stream-consumer, stream-producer) |
-| Thiết kế giao diện | Claude Design canvas (mockup 9 artboard), design system dựa trên skill `csgo-case-opening-design` (dark theme, góc vuông) |
+| Thiết kế giao diện | Claude Design canvas (mockup 9 artboard); từ 2026-09-30 dùng theme "CS:GO classic" của bộ `truanayangi-ui` (nền xám xanh, panel trong mờ, góc vuông, overlay + âm báo tổng hợp cho cảnh báo mới) |
 
 ## 3.2 Dữ liệu
 
@@ -181,9 +181,9 @@ Còn thiếu (cần người dùng cung cấp): thông tin hành chính trang b�
   | `ml` | 64 |
   | `streaming` | 27 |
   | `backend` (DB thật) | 34 |
-  | `frontend` (Vitest) | 23 |
+  | `frontend` (Vitest) | 31 |
   | `tests/e2e` (hệ thống thật, Giai đoạn H) | 10 |
-  | **Tổng** | **257** |
+  | **Tổng** | **265** |
 
 - **Cần bổ sung**: ảnh chụp giao diện thật sau khi người dùng đăng nhập (Claude không tự nhập mật khẩu).
 

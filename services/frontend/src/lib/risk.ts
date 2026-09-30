@@ -8,8 +8,8 @@ export const RISK_META: Record<RiskLevel, { label: string; color: string; icon: 
 };
 
 export const ALERT_STATUS_META: Record<AlertStatus, { label: string; color: string }> = {
-  OPEN: { label: 'Mở', color: 'var(--primary)' },
-  ACKNOWLEDGED: { label: 'Đã xác nhận', color: 'var(--series-2)' },
+  OPEN: { label: 'Mở', color: 'var(--gold)' },
+  ACKNOWLEDGED: { label: 'Đã xác nhận', color: '#86b6ef' },
   RESOLVED: { label: 'Đã xử lý', color: 'var(--muted-foreground)' },
 };
 

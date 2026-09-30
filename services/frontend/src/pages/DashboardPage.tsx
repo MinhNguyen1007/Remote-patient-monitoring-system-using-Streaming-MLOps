@@ -53,31 +53,34 @@ export function DashboardPage() {
   return (
     <>
       <PageHeader
-        eyebrow={`Bệnh nhân được phân công · ${counts.ALL}`}
         title="Theo dõi bệnh nhân"
-        actions={
+        eyebrow={
           <>
-            <RealtimeIndicator />
-            <Segmented
-              label="Lọc theo mức rủi ro"
-              value={filter}
-              onChange={setFilter}
-              options={[
-                { value: 'ALL', label: 'Tất cả', count: counts.ALL },
-                { value: 'CRITICAL', label: 'Nguy kịch', count: counts.CRITICAL },
-                { value: 'WARNING', label: 'Cảnh báo', count: counts.WARNING },
-              ]}
-            />
+            Bạn phụ trách <strong>{counts.ALL}</strong> bệnh nhân · <strong>{counts.CRITICAL}</strong> nguy kịch ·{' '}
+            <strong>{counts.WARNING}</strong> cảnh báo trong 4 giờ tới
           </>
         }
       />
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <label className="flex h-[38px] w-[320px] items-center gap-2 border border-input bg-background px-3 focus-within:outline-2 focus-within:outline-offset-3 focus-within:outline-primary">
-          <Search aria-hidden size={16} color="var(--muted-foreground)" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tìm theo mã bệnh nhân" aria-label="Tìm theo mã bệnh nhân" className="h-full grow bg-transparent outline-none" />
+      <div className="page-controls">
+        <label className="field w-[320px] max-w-full">
+          <Search aria-hidden size={16} color="#abb8c2" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tìm theo mã bệnh nhân" aria-label="Tìm theo mã bệnh nhân" />
         </label>
-        <span className="text-[13px] text-muted-foreground">Sắp xếp: rủi ro dự báo cao nhất lên đầu</span>
+        <div className="flex flex-wrap items-center gap-4">
+          <RealtimeIndicator />
+          <Segmented
+            label="Lọc theo mức rủi ro"
+            value={filter}
+            onChange={setFilter}
+            options={[
+              { value: 'ALL', label: 'Tất cả', count: counts.ALL },
+              { value: 'CRITICAL', label: 'Nguy kịch', count: counts.CRITICAL },
+              { value: 'WARNING', label: 'Cảnh báo', count: counts.WARNING },
+            ]}
+          />
+        </div>
       </div>
+      <p className="-mt-2 m-0 text-[12px] text-muted-foreground">Sắp xếp: rủi ro dự báo cao nhất lên đầu</p>
       {error ? (
         <StateMessage tone="error">Không tải được danh sách bệnh nhân: {error.message}</StateMessage>
       ) : loading && !patients ? (

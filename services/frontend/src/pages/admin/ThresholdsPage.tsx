@@ -6,13 +6,13 @@ import { Button } from '@/components/ui/button';
 import { useAsync } from '@/hooks/useAsync';
 import { dateTime, vn } from '@/lib/format';
 
-import { AdminTabs, fieldClass } from './AdminTabs';
+import { fieldClass } from './fields';
 
 function Field({ label, hint, children, last = false }: { label: string; hint: string; children: ReactNode; last?: boolean }) {
   return (
     <div className={`grid grid-cols-1 gap-6 py-5 md:grid-cols-[300px_minmax(0,1fr)] ${last ? '' : 'border-b border-border'}`}>
       <div className="flex flex-col gap-1">
-        <span className="font-bold">{label}</span>
+        <span className="font-normal">{label}</span>
         <span className="text-[12.5px] text-pretty text-muted-foreground">{hint}</span>
       </div>
       {children}
@@ -71,19 +71,18 @@ export function ThresholdsPage() {
           </>
         }
       />
-      <AdminTabs />
       {settings.error && <StateMessage tone="error">{settings.error.message}</StateMessage>}
       {message && <StateMessage tone={message.tone === 'error' ? 'error' : 'muted'}>{message.text}</StateMessage>}
       <section className="card px-6 py-1">
         <Field label="Ngưỡng rủi ro nguy kịch (τ_critical)" hint="Bệnh nhân được gắn mức Nguy kịch và tạo cảnh báo khi xác suất nguy kịch trong 4 giờ tới ≥ ngưỡng.">
           <fieldset className="m-0 flex flex-col gap-2.5 border-0 p-0">
             <legend className="sr-only">Chọn cách đặt ngưỡng rủi ro</legend>
-            <label className={`flex cursor-pointer items-center gap-3 border px-3.5 py-3 ${useChampion ? 'border-primary bg-primary/5' : 'border-border'}`}>
+            <label className={`flex cursor-pointer items-center gap-3 border px-3.5 py-3 ${useChampion ? 'border-gold bg-[#dec98912]' : 'border-border'}`}>
               <input type="radio" name="tau-mode" checked={useChampion} onChange={() => setUseChampion(true)} className="size-4 accent-[var(--primary)]" />
-              <span className="font-semibold">Dùng ngưỡng khuyến nghị của model champion</span>
-              <span className="mono ml-auto font-semibold">{championTau != null ? vn(championTau) : 'không đọc được'}</span>
+              <span className="font-medium">Dùng ngưỡng khuyến nghị của model champion</span>
+              <span className="mono ml-auto font-medium">{championTau != null ? vn(championTau) : 'không đọc được'}</span>
             </label>
-            <label className={`flex cursor-pointer flex-wrap items-center gap-3 border px-3.5 py-3 ${!useChampion ? 'border-primary bg-primary/5' : 'border-border'}`}>
+            <label className={`flex cursor-pointer flex-wrap items-center gap-3 border px-3.5 py-3 ${!useChampion ? 'border-gold bg-[#dec98912]' : 'border-border'}`}>
               <input type="radio" name="tau-mode" checked={!useChampion} onChange={() => setUseChampion(false)} className="size-4 accent-[var(--primary)]" />
               <span>Tự đặt ngưỡng</span>
               <input
