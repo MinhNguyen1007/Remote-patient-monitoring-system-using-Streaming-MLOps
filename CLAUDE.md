@@ -180,9 +180,10 @@
     - Biểu đồ: tâm trương `#86b6ef` → `#199e70` (validate_palette.js trên nền `#1b2731` đạt 5/5).
     - Lỗi tìm ra khi soát ảnh: toast nằm dưới nền mờ của overlay modal rồi tự ẩn → đã dừng đồng hồ khi overlay mở, có test chứng minh bắt được lỗi. Frontend 31 test (tổng 265).
     - Đã kiểm trực quan bằng Chrome headless trên stack local (đăng nhập, dashboard, chi tiết, cảnh báo, admin, overlay + toast qua dữ liệu phát lại thật, điện thoại 390 px).
-    - **Ảnh `images/*.png` (README + báo cáo) là giao diện cũ** — cần chụp lại cả 9 ảnh (Claude chụp được bằng Chrome headless + JWT từ API, không cần người dùng đăng nhập).
+    - Ảnh `images/*.png` đã chụp lại cả 9 theo giao diện mới + `10_alert_overlay.png` (Chrome headless + JWT lấy qua API, không gõ mật khẩu vào trang; script mẫu trong `services/frontend/CLAUDE.md`).
+  - **Rà soát tài liệu cho người đọc (2026-09-30, trừ báo cáo/bài báo)**: README (Bắt đầu nhanh sai thứ tự vì `--profile app` đã tự bật producer, lệnh cài thiếu requirements streaming/backend, GroupKFold trên train ∪ validation, ghi nguồn truanayangi-ui ở README + NOTICE), 02_8 (bỏ 5 chi tiết chỉ có trên mockup), 02_9, 02_10, 02_4, 01, e2e/deploy README. Hình `docs/report/figures/so_do_tong_quat.png` giữ nguyên (thuộc báo cáo); README ghi cả 2 số đo thời gian xử lý để không mâu thuẫn với hình.
   - **Việc còn lại** (người dùng bảo tạm bỏ qua mục 1 và file access key):
-    1. **Chụp lại `images/3_patient_detail.png`** — cần người dùng tự đăng nhập. Ảnh cũ còn lỗi "Chưa đủ 16 giờ" ở bệnh nhân giờ 88; hiển thị ở `README.md` và `bao_cao_do_an.md` dòng 886. Chụp xong thì xoá mục 6 trong `docs/report/README.md` "Còn thiếu".
+    1. ~~Chụp lại `images/3_patient_detail.png`~~ — xong 2026-09-30 (chụp lại toàn bộ).
     2. **Thông tin hành chính trang bìa** — người dùng bảo tạm bỏ qua (danh sách ở `docs/report/README.md` mục "Còn thiếu").
 - **Quyết định đã chốt sau rà soát 2026-09-10** (người dùng đã duyệt):
   - Model rủi ro là **dự báo** mức NEWS2 cao nhất trong 4 giờ tới, không phân loại tức thời. Phân loại tức thời bị rò rỉ nhãn vì nhãn là hàm tất định của đặc trưng. Model phải thắng baseline persistence.
