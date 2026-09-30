@@ -100,7 +100,27 @@ cmd_setup() {
   remote "mkdir -p $REPO_DIR/ml/data/processed"
   scp "${SSH_OPTS[@]}" "$ROOT"/ml/data/processed/{hourly.parquet,stream_replay.parquet,summary.json} \
     "ubuntu@$(eip_ip):$REPO_DIR/ml/data/processed/"
-  remote "cd $REPO_DIR && bash deploy/aws/server-setup.sh $(site)"
+  remote "cd $REPO_DIR && bash deploy/aws/server-setup.sh prepare $(site)"
+  cmd_promote
+  remote "cd $REPO_DIR && bash deploy/aws/server-setup.sh start"
+}
+
+# Chuyển đúng artifact champion từ MLflow máy phát triển (SOURCE_MLFLOW) lên MLflow server qua SSH tunnel —
+# model chạy ở production là model đã được đánh giá, không train lại trên server (rpm_ml/pipelines/promote.py)
+SOURCE_MLFLOW="${SOURCE_MLFLOW:-http://localhost:5000}"
+TUNNEL_PORT="${TUNNEL_PORT:-15000}"
+cmd_promote() {
+  need_instance; allow_my_ip
+  curl -sf "$SOURCE_MLFLOW/health" >/dev/null || die "MLflow nguồn $SOURCE_MLFLOW không chạy (docker compose up -d mlflow)"
+  local python="$ROOT/.venv/Scripts/python"; [ -x "$python" ] || python="$ROOT/.venv/bin/python"
+  log "Mở tunnel localhost:$TUNNEL_PORT → MLflow server"
+  ssh "${SSH_OPTS[@]}" -N -o ExitOnForwardFailure=yes -L "$TUNNEL_PORT:127.0.0.1:5000" "ubuntu@$(eip_ip)" &
+  local tunnel=$! status=0
+  for _ in $(seq 1 30); do curl -sf "http://localhost:$TUNNEL_PORT/health" >/dev/null && break; sleep 1; done
+  log "Promote champion $SOURCE_MLFLOW → server"
+  "$python" -m rpm_ml.pipelines.promote --source "$SOURCE_MLFLOW" --target "http://localhost:$TUNNEL_PORT" || status=$?
+  kill "$tunnel" 2>/dev/null || true
+  return "$status"
 }
 
 cmd_update() {  # sau khi push code mới lên GitHub
@@ -177,7 +197,8 @@ usage() {
   cat <<EOF
 Cách dùng: $0 <lệnh>   (AWS_PROFILE=$AWS_PROFILE, region $AWS_REGION)
   provision        tạo key pair, security group, máy EC2, Elastic IP (một lần)
-  setup            cài hệ thống lên máy: code, dữ liệu, build image, train model, tài khoản demo (một lần, ~40 phút)
+  setup            cài hệ thống lên máy: code, dữ liệu, build image, promote model, tài khoản demo (một lần, ~30 phút)
+  promote          chuyển model champion từ MLflow máy này lên MLflow server (không train lại)
   start | stop     bật / tắt máy (tắt khi không demo để tiết kiệm credit)
   status           trạng thái máy, địa chỉ, credit còn lại
   replay [--drift] phát lại dữ liệu 20 bệnh nhân từ đầu (--drift: demo drift → retrain)
@@ -192,7 +213,7 @@ EOF
 
 command="${1:-}"; shift || true
 case "$command" in
-  provision|setup|update|start|stop|status|replay|tunnel|secrets|ssh|destroy) "cmd_$command" "$@" ;;
+  provision|setup|promote|update|start|stop|status|replay|tunnel|secrets|ssh|destroy) "cmd_$command" "$@" ;;
   ssh-rules) cmd_ssh_rules "$@" ;;
   *) usage ;;
 esac
