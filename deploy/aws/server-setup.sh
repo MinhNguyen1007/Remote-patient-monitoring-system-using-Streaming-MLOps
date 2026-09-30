@@ -30,7 +30,9 @@ set_env COMPOSE_PROFILES "app"
 set_env SITE_ADDRESS "$SITE_ADDRESS"
 set_env BACKEND_CORS_ORIGINS "https://$SITE_ADDRESS"
 set_env FRONTEND_BASE_URL "https://$SITE_ADDRESS"
-set -a; . ./.env; set +a
+# Không `source` .env: có giá trị chứa dấu cách (ADMIN_FULL_NAME) — docker compose đọc được, bash thì không
+envget() { grep -m1 "^$1=" .env | cut -d= -f2-; }
+POSTGRES_USER=$(envget POSTGRES_USER); POSTGRES_DB=$(envget POSTGRES_DB)
 
 log "Build image (lần đầu ~25 phút trên m7i-flex.large)"
 docker compose build
@@ -58,4 +60,4 @@ log "Phát lại dữ liệu + tạo tài khoản demo"
 bash deploy/aws/server-replay.sh
 
 log "Xong: https://$SITE_ADDRESS"
-echo "Admin: $ADMIN_EMAIL / $ADMIN_PASSWORD   (xem lại: rpm-aws.sh secrets)"
+echo "Admin: $(envget ADMIN_EMAIL) / $(envget ADMIN_PASSWORD)   (xem lại: rpm-aws.sh secrets)"

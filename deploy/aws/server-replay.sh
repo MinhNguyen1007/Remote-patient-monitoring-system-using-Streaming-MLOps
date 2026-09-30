@@ -4,7 +4,9 @@
 #   bash deploy/aws/server-replay.sh [--drift]    --drift: bật drift mô phỏng để demo vòng lặp drift → retrain
 set -euo pipefail
 cd "$(dirname "$0")/../.."
-set -a; . ./.env; set +a
+# Không `source` .env: có giá trị chứa dấu cách (ADMIN_FULL_NAME) — docker compose đọc được, bash thì không
+envget() { grep -m1 "^$1=" .env | cut -d= -f2-; }
+POSTGRES_USER=$(envget POSTGRES_USER); POSTGRES_DB=$(envget POSTGRES_DB)
 PRODUCER=rpm_stream_producer_run
 
 until curl -sf http://127.0.0.1:8000/health >/dev/null; do sleep 3; done   # backend đã chạy xong alembic
