@@ -107,14 +107,14 @@
     - Ngưỡng drift **hiệu chỉnh theo từng đặc trưng** (sàn 0,25, tỷ lệ báo nhầm ≈ 5%/lần kiểm tra), thay cho "max PSI ≥ 0,25". Lý do: với cửa sổ ~20 bệnh nhân, ngưỡng chung gắn cờ 93% cửa sổ không drift. Ngưỡng log thành `drift_thresholds.json` cạnh `reference_stats.json` mỗi lần train/retrain; champion v2 được bổ sung bằng `drift_detect.py backfill-thresholds`.
     - `drift_check` chạy **2 phút/lần** (= 24 giờ dữ liệu ở tốc độ mặc định). Cửa sổ phải đủ 24 nhịp và ≥ 200 bản ghi; không có dữ liệu mới thì bỏ qua.
     - Thông báo Admin qua Kafka topic `mlops-events` → backend (email + WebSocket); email chỉ khi bắt đầu đợt drift mới hoặc đã kích hoạt retrain.
-  - Code: `rpm_ml` drift/detect, pipelines/retrain, pipelines/policy, data/stream_data, storage/db, storage/events; `training/train_risk.py`/`train_anomaly.py` tách thành `train_risk_model`/`train_anomaly_model` dùng chung. DAG ở `infra/airflow/dags/`. Image `infra/Dockerfile.airflow` (Airflow 2.9.3-python3.11 + venv `/opt/rpm-venv`, bỏ shap/pytest vì shap 0.51 cần numpy ≥ 2). Backend: migration `0002`, listener tự tạo topic trước khi subscribe. Frontend: tab Giám sát mô hình tự làm mới, hiện lý do gate.
+  - Code: `rpm_ml` drift/detect, pipelines/retrain, pipelines/policy, data/stream_data, storage/db, storage/events; `training/train_risk.py`/`train_anomaly.py` tách thành `train_risk_model`/`train_anomaly_model` dùng chung. DAG ở `infra/airflow/dags/`. Image `infra/Dockerfile.airflow` (Airflow 2.9.3-python3.11 + venv `/opt/rpm-venv`, bỏ shap/pytest vì DAG không cần). Backend: migration `0002`, listener tự tạo topic trước khi subscribe. Frontend: tab Giám sát mô hình tự làm mới, hiện lý do gate.
   - Test: common 99, ml 61, streaming 27, backend 34, frontend 23 (tổng 244).
   - **Kết quả chạy thật**:
     - phát lại sạch → 2 lần kiểm tra, không drift;
     - `--drift` → drift SpO2 → tự retrain → risk v3 **từ chối** (Macro F1 0,612 < 0,623), anomaly v4 promote (bằng điểm v3, do lúc đó chưa có dữ liệu stream mới — đã sửa bằng điều kiện 24 nhịp);
     - chạy lại → bị chặn bởi cooldown 1 giờ, không gửi email lặp;
     - UC10 qua API → risk v4 từ chối (Macro F1 0,631 nhưng Recall CRITICAL 0,759 < 0,790), anomaly v5 từ chối (AUROC 0,853 < 0,864).
-  - **Champion hiện tại**: `risk_classifier` v2, `anomaly_detector` **v4**. `ml/reports/` đã sinh lại.
+  - Champion lúc đó: `risk_classifier` v2, `anomaly_detector` v4 (registry mất ngày 2026-09-30, xem mục phiên 2026-09-30). `ml/reports/` đã sinh lại.
   - Nếu bật lại mà các lần drift bị chặn, kiểm tra cooldown 1 giờ tính từ lần retrain gần nhất.
 - **Tổ chức lại toàn bộ repo (2026-09-11, người dùng yêu cầu — thấy cấu trúc cũ rối)**: `services/{backend,frontend,streaming}`, `packages/common`, `ml/src/rpm_ml/{data,models,training,evaluation,drift,pipelines,storage}`, `rpm_streaming/{producer,consumer,kafka,storage}`, dataset chuyển vào `ml/data/raw/`, script chạy dạng `python -m`. Chi tiết ở mục "Cấu trúc thư mục" bên dưới và `README.md` (viết lại).
   - Đã kiểm chứng: 244 test qua; 4 image build lại và chạy trong Docker; model anomaly log bằng code mới nạp được trong container consumer (không cài `rpm_ml`); DAG `drift_check` và bước `build` của retrain chạy trong container.
@@ -155,14 +155,21 @@
   - `README.md` viết lại hoàn toàn cho người đọc ngoài dự án (bài toán, tính năng, kiến trúc, ảnh giao diện, quickstart Docker, bảng kết quả, cấu trúc, test, hạn chế, trích dẫn MIMIC-III). `LICENSE` = MIT nguyên văn (GitHub phải nhận đúng `spdx_id: MIT`, nên **không nối thêm gì vào cuối file đó**); ghi chú dữ liệu/NEWS2/logo nằm ở `NOTICE`.
   - `images/3_patient_detail_v2.png` (đặt sai tên) đã `git mv` đè lên `images/2_patient_list.png`.
   - **Repo trên GitHub chưa có description và topics** — người dùng tự đặt trong Settings, hoặc bảo Claude làm khi đã `gh auth login`.
-- **⏸ Tạm dừng 2026-09-13 (người dùng: "mai làm tiếp") — ĐÂY LÀ TRẠNG THÁI HIỆN HÀNH.**
-  - Cây làm việc **sạch**, mọi thứ đã commit và đẩy tới `origin/main` (commit `5c43890`, local = remote). **Docker Desktop đang tắt hẳn**, không container nào chạy; volume vẫn giữ nguyên (`rpm_db`, MLflow registry, Airflow DB, Kafka).
-  - Bật lại: `docker compose up -d postgres zookeeper kafka mlflow prometheus grafana`, rồi `docker compose up -d airflow-webserver airflow-scheduler`, rồi `docker compose --profile app up -d`.
-  - DB đang giữ dữ liệu của lần phát lại `--drift` gần nhất. Trước khi demo/đo mới: dừng consumer rồi `python -m rpm_streaming.storage.reset_demo --yes`.
-  - **Việc tiếp theo khi mở lại phiên** (xếp theo thứ tự nên làm):
-    1. **Chụp lại `images/3_patient_detail.png`** — cần người dùng tự đăng nhập (quy tắc an toàn không cho Claude nhập mật khẩu vào trang web). Ảnh hiện tại còn lỗi cũ: bệnh nhân giờ thứ 88, dải bất thường đầy đủ, nhưng thẻ "Diễn biến bất thường" vẫn ghi "Chưa đủ 16 giờ" (lỗi đã sửa trong code từ 2026-09-12). Ảnh này đang hiển thị ở **mục "Giao diện" của `README.md` trên repo public** và ở `bao_cao_do_an.md` dòng 886 → chụp lại một lần là sửa được cả hai. Cách làm: bật hạ tầng + profile `app`, chạy producer cho tới khi có bệnh nhân qua giờ 16, mở http://localhost:3000, đăng nhập rồi vào màn hình chi tiết.
-    2. **Đặt description và topics cho repo GitHub** (hiện đang trống). Người dùng tự đặt trong Settings, hoặc chạy `gh auth login` một lần rồi bảo Claude làm bằng `gh repo edit`.
-    3. **Thông tin hành chính trang bìa báo cáo** vẫn chặn ở người dùng: tên môn học, mã lớp, học vị + họ tên giảng viên hướng dẫn, danh sách thành viên nhóm, logo trường. Danh sách đủ ở `docs/report/README.md` mục "Còn thiếu". Có rồi thì điền vào `bao_cao_do_an.md` + `bai_bao.md` và chạy `python docs/report/tools/check_report.py`.
+- Tạm dừng 2026-09-13 sau khi đẩy repo lên GitHub (mốc lịch sử; trạng thái hiện hành ở mục 2026-09-30 ngay dưới).
+- **Phiên 2026-09-30 — rà soát "còn thiếu gì" rồi làm các việc không cần thông tin hành chính. ĐÂY LÀ TRẠNG THÁI HIỆN HÀNH.**
+  - **Dữ liệu Docker cũ đã mất hẳn** (phát hiện khi bật lại): Docker Desktop tạo ổ dữ liệu mới (`D:\Docker_Data\DockerDesktopWSL\disk\docker_data.vhdx`), không còn image, volume, MLflow registry, `rpm_db`, Airflow DB nào của trước. Đã dựng lại toàn bộ:
+    - build lại 5 image, `alembic upgrade head`, seed demo;
+    - train lại 2 model → `risk_classifier` **v1** và `anomaly_detector` **v1** là `champion`. Metric test **tái lập đúng từng số** so với v2/v4 cũ (Macro F1 0,623, Recall CRITICAL 0,790, AUROC 0,836; LSTM-AE AUROC 0,864, P 0,727, R 0,167).
+    - Lịch sử version cũ (risk v1–v4, anomaly v1–v5, run h = 1) **chỉ còn trong `ml/reports/` và tài liệu**, không còn trên MLflow. `ml/reports/` và `tests/e2e/reports/` **giữ bản cũ trong git, đừng sinh lại** trừ khi chấp nhận mất các dòng lịch sử đó (sinh lại chỉ lệch số version + mất lịch sử; SHAP và metric giống hệt).
+    - E2E trên hệ thống mới: 9 qua, 1 bỏ qua (`test_3_model_reload` cần ≥ 2 version trong registry).
+  - **Lỗi thật tìm ra**: `ml/requirements.txt` ghim `shap==0.51.0` (cần numpy ≥ 2) cùng `numpy==1.26.4` → `pip install` trên máy sạch báo `ResolutionImpossible`. Đã ghim `shap==0.49.1`; sinh lại `ml/reports/` với bản này thì phần SHAP không đổi.
+  - **CI**: `.github/workflows/ci.yml` (common + ml + streaming, backend trên TimescaleDB service container, frontend typecheck/test/build), badge ở `README.md`. Test cần `ml/data/processed/` tự bỏ qua trên CI. **Xanh** từ commit `d6db237`.
+    - Lần chạy đầu đỏ vì `test_drift.py::test_calibrated_thresholds_…` phụ thuộc CPU: `GroupKFold` (sklearn 1.3.2) sắp nhóm bằng `np.argsort` không ổn định, numpy 1.26 dùng sắp xếp AVX-512 khi CPU có → fold khác giữa máy (có AVX-512) và runner. Đã sửa test (lấy 5/8 đợt mỗi lần lặp). Muốn tái hiện lỗi Linux trên máy: chạy test trong image `rpm-airflow` (có sẵn thư viện ML, chỉ cần `pip install pytest`).
+  - Đã xoá 2 tệp `.docx` build cũ và thư mục rỗng `docs/report/images/`.
+  - **Việc còn lại**:
+    1. **Chụp lại `images/3_patient_detail.png`** — cần người dùng tự đăng nhập. Ảnh cũ còn lỗi "Chưa đủ 16 giờ" ở bệnh nhân giờ 88; hiển thị ở `README.md` và `bao_cao_do_an.md` dòng 886. Chụp xong thì xoá mục 6 trong `docs/report/README.md` "Còn thiếu".
+    2. **Description + topics repo GitHub** — cần `gh auth login` (chưa đăng nhập) rồi `gh repo edit`.
+    3. **Thông tin hành chính trang bìa** — người dùng bảo tạm bỏ qua (danh sách ở `docs/report/README.md` mục "Còn thiếu").
 - **Quyết định đã chốt sau rà soát 2026-09-10** (người dùng đã duyệt):
   - Model rủi ro là **dự báo** mức NEWS2 cao nhất trong 4 giờ tới, không phân loại tức thời. Phân loại tức thời bị rò rỉ nhãn vì nhãn là hàm tất định của đặc trưng. Model phải thắng baseline persistence.
   - Drift → **tự động** kích hoạt retrain; quality gate chặn model kém; Admin vẫn retrain thủ công được. (Ngưỡng drift đổi thành ngưỡng hiệu chỉnh theo từng đặc trưng ngày 2026-09-11, xem Giai đoạn G.)
