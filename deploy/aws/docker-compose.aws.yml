@@ -1,0 +1,73 @@
+# Ghi đè docker-compose.yml khi chạy trên EC2 — xem deploy/aws/README.md.
+#   docker compose -f docker-compose.yml -f deploy/aws/docker-compose.aws.yml up -d
+# (server đặt sẵn COMPOSE_FILE + COMPOSE_PROFILES trong .env nên chỉ cần `docker compose up -d`)
+#
+# Chỉ Caddy mở cổng ra Internet (80/443, HTTPS tự động). Mọi cổng khác chỉ nghe trên 127.0.0.1 của server:
+# Airflow, MLflow, Grafana, Prometheus xem qua SSH tunnel (deploy/aws/rpm-aws.sh tunnel).
+
+services:
+  caddy:
+    image: caddy:2.11.4-alpine
+    container_name: rpm_caddy
+    profiles: ["app"]
+    restart: unless-stopped
+    depends_on:
+      - frontend
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS}
+    volumes:
+      - ./deploy/aws/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+  frontend:
+    ports: !reset []
+
+  # Không tự chạy cùng `docker compose up -d`: server-replay.sh xoá dữ liệu cũ rồi mới khởi động producer
+  stream-producer:
+    profiles: !override ["replay"]
+
+  backend:
+    ports: !override
+      - "127.0.0.1:8000:8000"
+
+  postgres:
+    ports: !override
+      - "127.0.0.1:5432:5432"
+
+  kafka:
+    ports: !override
+      - "127.0.0.1:29092:29092"
+
+  mlflow:
+    ports: !override
+      - "127.0.0.1:5000:5000"
+    # Mặc định 4 worker ≈ 2 GB RAM; 2 worker đủ cho 1 consumer + Airflow và để dư RAM cho lúc retrain
+    command:
+      - sh
+      - -c
+      - >-
+        exec mlflow server
+        --backend-store-uri postgresql+psycopg2://$${POSTGRES_USER}:$${POSTGRES_PASSWORD}@$${POSTGRES_HOST}:$${POSTGRES_PORT}/mlflow_db
+        --serve-artifacts --artifacts-destination /mlflow/artifacts --default-artifact-root mlflow-artifacts:/
+        --allowed-hosts "mlflow,mlflow:*,localhost,localhost:*,127.0.0.1,127.0.0.1:*"
+        --host 0.0.0.0 --port 5000 --workers 2
+
+  airflow-webserver:
+    ports: !override
+      - "127.0.0.1:8080:8080"
+
+  prometheus:
+    ports: !override
+      - "127.0.0.1:9090:9090"
+
+  grafana:
+    ports: !override
+      - "127.0.0.1:3001:3000"
+
+volumes:
+  caddy_data:
+  caddy_config:

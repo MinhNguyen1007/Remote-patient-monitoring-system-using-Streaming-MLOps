@@ -1,0 +1,3 @@
+# Script shell chạy trên Linux (server EC2, container) và Git Bash: luôn giữ LF, kể cả khi core.autocrlf=true
+*.sh text eol=lf
+deploy/aws/Caddyfile text eol=lf

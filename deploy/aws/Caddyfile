@@ -1,0 +1,12 @@
+# SITE_ADDRESS = <ip-nối-bằng-gạch-ngang>.sslip.io (đặt trong .env trên server); Caddy tự xin chứng chỉ Let's Encrypt.
+# Frontend (nginx) đã chuyển /api — cả REST lẫn WebSocket — tới backend trong mạng docker.
+# Không bật access log: WebSocket mang JWT trong query string (/api/ws?token=...).
+{$SITE_ADDRESS} {
+	encode zstd gzip
+	reverse_proxy frontend:80
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+	}
+}
