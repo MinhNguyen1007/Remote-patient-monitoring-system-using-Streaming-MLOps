@@ -99,6 +99,10 @@ def test_calibrated_thresholds_respect_floor_and_target_false_positive_rate(monk
 
     monkeypatch.setattr(drift, "CALIBRATION_REPEATS", 20)
     monkeypatch.setattr(drift, "MIN_WINDOW_RECORDS", 100)
+    # Mỗi fold giữ lại chỉ 8 đợt ICU: lấy 5/8 để mỗi lần lặp là một cửa sổ khác. Nếu lấy đủ cả 8 thì 20 lần lặp trùng
+    # nhau, tỷ lệ gắn cờ nhảy theo bậc ~1,5% và đạt 5% hay không tùy cách GroupKFold chia fold — mà thứ tự các nhóm
+    # cùng kích thước lại khác nhau giữa CPU có/không AVX-512 (np.argsort không ổn định), nên test từng trượt trên CI.
+    monkeypatch.setattr(drift, "CALIBRATION_STAYS", 5)
     dev = pd.concat(_stays([40 + 7 * (i % 9) for i in range(40)], seed=3), ignore_index=True)
     calibration = calibrate_thresholds(dev, seed=1)
     thresholds = calibration["thresholds"]
