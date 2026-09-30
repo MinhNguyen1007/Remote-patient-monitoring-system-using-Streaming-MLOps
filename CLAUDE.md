@@ -154,7 +154,7 @@
     - Hash của mọi commit đã đổi. Nhánh `backup-truoc-khi-day-github` (local) giữ lịch sử gốc trước khi viết lại; `refs/original/` cũng còn. **Đừng đẩy nhánh backup lên remote.**
   - `README.md` viết lại hoàn toàn cho người đọc ngoài dự án (bài toán, tính năng, kiến trúc, ảnh giao diện, quickstart Docker, bảng kết quả, cấu trúc, test, hạn chế, trích dẫn MIMIC-III). `LICENSE` = MIT nguyên văn (GitHub phải nhận đúng `spdx_id: MIT`, nên **không nối thêm gì vào cuối file đó**); ghi chú dữ liệu/NEWS2/logo nằm ở `NOTICE`.
   - `images/3_patient_detail_v2.png` (đặt sai tên) đã `git mv` đè lên `images/2_patient_list.png`.
-  - **Repo trên GitHub chưa có description và topics** — người dùng tự đặt trong Settings, hoặc bảo Claude làm khi đã `gh auth login`.
+  - Description + 20 topics của repo GitHub: đặt ngày 2026-09-30 (xem mục phiên 2026-09-30).
 - Tạm dừng 2026-09-13 sau khi đẩy repo lên GitHub (mốc lịch sử; trạng thái hiện hành ở mục 2026-09-30 ngay dưới).
 - **Phiên 2026-09-30 — rà soát "còn thiếu gì" rồi làm các việc không cần thông tin hành chính. ĐÂY LÀ TRẠNG THÁI HIỆN HÀNH.**
   - **Dữ liệu Docker cũ đã mất hẳn** (phát hiện khi bật lại): Docker Desktop tạo ổ dữ liệu mới (`D:\Docker_Data\DockerDesktopWSL\disk\docker_data.vhdx`), không còn image, volume, MLflow registry, `rpm_db`, Airflow DB nào của trước. Đã dựng lại toàn bộ:
@@ -173,10 +173,11 @@
     - Server hiện có `risk_classifier` v1 + `anomaly_detector` v1 = đúng 2 champion của máy phát triển (τ 0,22). Đã kiểm chứng: HTTPS hợp lệ, HTTP → HTTPS, cổng nội bộ đóng từ ngoài, đăng nhập API, phân quyền (bs.an thấy 10/20), WebSocket `wss://` nhận `prediction`, consumer nạp đúng version, Airflow đọc được artifact drift.
     - Bốn lỗi tìm ra khi deploy (đã sửa): Git Bash đổi `/dev/sda1` thành đường dẫn Windows khi gọi `aws.exe` (`MSYS_NO_PATHCONV=1`); `aws.exe` in CRLF; `source .env` hỏng vì `ADMIN_FULL_NAME` có dấu cách; `promote` ban đầu dùng URI `models:/` và `MlflowClient(uri)` — cả hai lấy registry theo URI **toàn cục**, không theo URI truyền vào (test đã được làm chặt để bắt lỗi này).
     - ⚠ Người dùng để file `rpm-deployer_accessKeys.csv` ở gốc repo — đã thêm `*accessKeys*.csv` vào `.gitignore`; nên chuyển file đó ra ngoài repo.
-  - **Việc còn lại**:
+  - **Repo GitHub**: đã đặt description (tiếng Anh) + 20 topics bằng `gh repo edit`. `gh` chưa `auth login`; token lấy từ Git Credential Manager (`git credential fill`, scope `repo`) truyền qua `GH_TOKEN`, không in ra. Không đặt Website vì EC2 phần lớn thời gian tắt.
+  - Rà soát tài liệu sau các thay đổi trong ngày: số test 254 → **257** (ml 61 → 64 do `test_promote.py`) ở README (badge + bảng), `bao_cao_do_an.md` 4.5, `ghi_chu_bao_cao.md`, `ml/CLAUDE.md`; README thêm mục "Triển khai lên AWS", `deploy/aws/` + `.github/workflows/` vào cấu trúc và bảng tài liệu.
+  - **Việc còn lại** (người dùng bảo tạm bỏ qua mục 1 và file access key):
     1. **Chụp lại `images/3_patient_detail.png`** — cần người dùng tự đăng nhập. Ảnh cũ còn lỗi "Chưa đủ 16 giờ" ở bệnh nhân giờ 88; hiển thị ở `README.md` và `bao_cao_do_an.md` dòng 886. Chụp xong thì xoá mục 6 trong `docs/report/README.md` "Còn thiếu".
-    2. **Description + topics repo GitHub** — cần `gh auth login` (chưa đăng nhập) rồi `gh repo edit`.
-    3. **Thông tin hành chính trang bìa** — người dùng bảo tạm bỏ qua (danh sách ở `docs/report/README.md` mục "Còn thiếu").
+    2. **Thông tin hành chính trang bìa** — người dùng bảo tạm bỏ qua (danh sách ở `docs/report/README.md` mục "Còn thiếu").
 - **Quyết định đã chốt sau rà soát 2026-09-10** (người dùng đã duyệt):
   - Model rủi ro là **dự báo** mức NEWS2 cao nhất trong 4 giờ tới, không phân loại tức thời. Phân loại tức thời bị rò rỉ nhãn vì nhãn là hàm tất định của đặc trưng. Model phải thắng baseline persistence.
   - Drift → **tự động** kích hoạt retrain; quality gate chặn model kém; Admin vẫn retrain thủ công được. (Ngưỡng drift đổi thành ngưỡng hiệu chỉnh theo từng đặc trưng ngày 2026-09-11, xem Giai đoạn G.)
@@ -217,6 +218,8 @@ packages/common/        rpm_common — đặc trưng dùng chung cho ml/ và ser
 infra/                  Dockerfile MLflow/Airflow, DAG Airflow (infra/airflow/dags), Prometheus/Grafana
                         (dashboard provisioning sẵn), init Postgres, smoke_test.py
 tests/e2e/              Test tích hợp & phi chức năng trên hệ thống thật — tests/e2e/README.md (Giai đoạn H)
+deploy/aws/             Triển khai 1 máy EC2 — deploy/aws/README.md (rpm-aws.sh, ghi đè compose, Caddy, script server)
+.github/workflows/      CI (ci.yml): common + ml + streaming, backend trên TimescaleDB service, frontend typecheck/test/build
 docs/                   design/ (thiết kế mục 1–2), report/ (ghi chú viết báo cáo)
 ```
 
@@ -264,7 +267,7 @@ cd tests/e2e && ..\..\.venv\Scripts\python -m pytest -q && cd ..\..
 .venv\Scripts\python -m rpm_ml.data.preprocess            # → ml/data/processed/
 .venv\Scripts\python -m rpm_ml.training.train_risk        # mô hình rủi ro
 .venv\Scripts\python -m rpm_ml.training.train_anomaly     # LSTM-Autoencoder
-.venv\Scripts\python -m rpm_ml.evaluation.report          # bảng/hình báo cáo → ml/reports/
+.venv\Scripts\python -m rpm_ml.evaluation.report          # bảng/hình báo cáo → ml/reports/ (ĐỪNG chạy lại: xem phiên 2026-09-30)
 
 # Schema DB và chạy backend/streaming trên host (POSTGRES_HOST=localhost KAFKA_BOOTSTRAP_SERVERS=localhost:29092)
 cd services/backend && POSTGRES_HOST=localhost ../../.venv/Scripts/python -m alembic upgrade head && cd ../..
@@ -272,4 +275,11 @@ cd services/backend && ../../.venv/Scripts/python -m uvicorn app.main:app --relo
 KAFKA_BOOTSTRAP_SERVERS=localhost:29092 MLFLOW_TRACKING_URI=http://localhost:5000 POSTGRES_HOST=localhost .venv/Scripts/python -m rpm_streaming.consumer
 KAFKA_BOOTSTRAP_SERVERS=localhost:29092 .venv/Scripts/python -m rpm_streaming.producer --seconds-per-hour 1
 cd services/frontend && npm run dev
+
+# Deploy AWS (Git Bash, profile AWS CLI "rpm" — xem deploy/aws/README.md)
+deploy/aws/rpm-aws.sh start | stop | status              # bật/tắt EC2 (TẮT sau khi demo)
+deploy/aws/rpm-aws.sh replay [--drift]                   # phát lại dữ liệu từ đầu trên server
+deploy/aws/rpm-aws.sh promote                            # champion MLflow máy này → MLflow server (cần MLflow local chạy)
+deploy/aws/rpm-aws.sh update                             # sau khi push: git pull + build + up trên server
+deploy/aws/rpm-aws.sh tunnel | secrets | ssh
 ```

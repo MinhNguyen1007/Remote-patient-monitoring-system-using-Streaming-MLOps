@@ -178,12 +178,12 @@ Còn thiếu (cần người dùng cung cấp): thông tin hành chính trang b�
   | Module | Số test |
   |---|---|
   | `common` | 99 |
-  | `ml` | 61 |
+  | `ml` | 64 |
   | `streaming` | 27 |
   | `backend` (DB thật) | 34 |
   | `frontend` (Vitest) | 23 |
   | `tests/e2e` (hệ thống thật, Giai đoạn H) | 10 |
-  | **Tổng** | **254** |
+  | **Tổng** | **257** |
 
 - **Cần bổ sung**: ảnh chụp giao diện thật sau khi người dùng đăng nhập (Claude không tự nhập mật khẩu).
 

@@ -18,7 +18,7 @@ kèm vòng lặp MLOps tự phát hiện drift, huấn luyện lại và chỉ t
 [![MLflow](https://img.shields.io/badge/MLflow-3.11-0194E2?logo=mlflow&logoColor=white)](https://mlflow.org/)
 [![Airflow](https://img.shields.io/badge/Airflow-2.9-017CEE?logo=apacheairflow&logoColor=white)](https://airflow.apache.org/)
 [![Docker Compose](https://img.shields.io/badge/Docker%20Compose-2496ED?logo=docker&logoColor=white)](https://docs.docker.com/compose/)
-[![Tests](https://img.shields.io/badge/tests-254%20passing-success)](#kiểm-thử)
+[![Tests](https://img.shields.io/badge/tests-257%20passing-success)](#kiểm-thử)
 
 </div>
 
@@ -182,6 +182,14 @@ Mở http://localhost:3000 và đăng nhập; cảnh báo sẽ hiện dần theo
 
 Dừng hệ thống: `docker compose --profile app down` (thêm `-v` nếu muốn xoá luôn dữ liệu trong volume).
 
+### Triển khai lên AWS
+
+Một máy EC2 `m7i-flex.large` chạy nguyên `docker-compose.yml`, thêm Caddy làm cổng HTTPS; chỉ 80/443 mở ra Internet,
+các giao diện quản trị xem qua SSH tunnel. Model **không train lại trên server** mà được promote nguyên artifact từ
+MLflow máy phát triển (`rpm_ml.pipelines.promote`). Mọi thao tác gói trong `deploy/aws/rpm-aws.sh`
+(`provision`, `setup`, `start`/`stop`, `replay`, `tunnel`, `promote`) — hướng dẫn và chi phí ở
+[`deploy/aws/README.md`](deploy/aws/README.md).
+
 ## Kết quả
 
 Mọi số liệu dưới đây đo trên **tập test chia theo bệnh nhân** (15 bệnh nhân chưa từng xuất hiện lúc
@@ -236,6 +244,8 @@ docs/design/              10 tài liệu thiết kế: chức năng, use case, a
                           DFD, ERD, giao diện, giải thuật, test
 docs/report/              Báo cáo đồ án + bài báo (Markdown) và script bảo trì hình/bảng/trích dẫn
 docker-compose.yml        Toàn bộ hệ thống; service ứng dụng nằm trong profile "app"
+deploy/aws/               Triển khai lên một máy EC2: ghi đè compose, Caddy (HTTPS), script rpm-aws.sh
+.github/workflows/        CI: test mọi package + build frontend ở mỗi lần push
 ```
 
 Bên trong hai package Python chính, mã chia theo chức năng:
@@ -274,12 +284,12 @@ Lệnh đầy đủ, kèm biến môi trường cho từng lệnh, ở mục "L�
 
 ## Kiểm thử
 
-254 test, tất cả chạy trên phụ thuộc thật — không mock Kafka, không mock database, không mock MLflow.
+257 test, tất cả chạy trên phụ thuộc thật — không mock Kafka, không mock database, không mock MLflow.
 
 | Bộ test | Số test | Phạm vi |
 |---|---|---|
 | `packages/common` | 99 | Làm sạch, lưới giờ, NEWS2, đặc trưng và **tính nhân quả** (đặc trưng tại `t` không phụ thuộc dữ liệu sau `t`) |
-| `ml` | 61 | Tiền xử lý, chia nhóm, hai mô hình, metric, quality gate, drift |
+| `ml` | 64 | Tiền xử lý, chia nhóm, hai mô hình, metric, quality gate, drift, promote model giữa hai registry |
 | `services/streaming` | 27 | Producer, consumer, **đồng nhất train/serving từng giờ trên dữ liệu thật** |
 | `services/backend` | 34 | 25 route, phân quyền theo phân công, chuyển trạng thái cảnh báo; chạy trên TimescaleDB thật |
 | `services/frontend` | 23 | Component, cập nhật realtime, chặn route theo vai trò |
@@ -312,6 +322,7 @@ MIMIC-III không nằm trong git nên vài test cần `ml/data/processed/` tự 
 | Kết quả mô hình đầy đủ (bảng theo lớp, ma trận nhầm lẫn, SHAP) | [`ml/reports/evaluation.md`](ml/reports/evaluation.md) |
 | Báo cáo đồ án và bài báo | [`docs/report/bao_cao_do_an.md`](docs/report/bao_cao_do_an.md), [`docs/report/bai_bao.md`](docs/report/bai_bao.md) |
 | Nguồn số liệu cho báo cáo và danh sách hạn chế | [`docs/report/ghi_chu_bao_cao.md`](docs/report/ghi_chu_bao_cao.md) |
+| Triển khai AWS (kiến trúc, chi phí, bảo mật, lệnh vận hành) | [`deploy/aws/README.md`](deploy/aws/README.md) |
 | Quy ước từng module | `CLAUDE.md` ở gốc và trong `ml/`, `services/*/` |
 
 ## Hạn chế đã biết

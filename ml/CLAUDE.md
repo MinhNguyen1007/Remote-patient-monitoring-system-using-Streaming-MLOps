@@ -31,10 +31,11 @@ src/rpm_ml/                 Package cài bằng `pip install -e ml` (chạy mọ
   pipelines/
     retrain.py              Các bước DAG retrain_pipeline: build / risk / anomaly / publish
     policy.py               Chỉ thư viện chuẩn (file DAG import trực tiếp): chống vòng lặp 1 giờ, nhánh task, quy tắc email
+    promote.py              Chép đúng artifact champion sang registry khác (deploy AWS), so hash; không train lại
   storage/
     db.py                   SQL vào drift_reports, model_versions (schema do Alembic ở services/backend quản lý)
     events.py               Publish sự kiện lên Kafka topic mlops-events (backend gửi email/WebSocket cho Admin)
-tests/                      pytest (61 test), import theo `rpm_ml.<...>`
+tests/                      pytest (64 test), import theo `rpm_ml.<...>`
 data/raw/                   Dataset MIMIC-III Demo gốc (không nằm trong git — tải theo README.md)
 data/processed/             Đầu ra của preprocess (không nằm trong git)
 splits/                     Danh sách subject_id của 4 nhóm train/validation/test/stream (commit vào git)

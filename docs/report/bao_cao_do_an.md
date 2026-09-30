@@ -866,12 +866,12 @@ Hai kết quả này xác nhận rằng thứ tự "ghi cơ sở dữ liệu tr�
 | Thành phần | Số test |
 |---|---|
 | `packages/common` (đặc trưng dùng chung) | 99 |
-| `ml` (dữ liệu, mô hình, gate, drift) | 61 |
+| `ml` (dữ liệu, mô hình, gate, drift, chuyển mô hình giữa hai kho) | 64 |
 | `services/streaming` | 27 |
 | `services/backend` (cơ sở dữ liệu thật) | 34 |
 | `services/frontend` (Vitest) | 23 |
 | `tests/e2e` (hệ thống thật) | 10 |
-| **Tổng** | **254** |
+| **Tổng** | **257** |
 
 ### 4.5.6. Giao diện hệ thống
 
