@@ -3,6 +3,8 @@
 #   deploy/aws/rpm-aws.sh <lệnh>
 # Dùng AWS CLI với profile $AWS_PROFILE (mặc định "rpm" = IAM user riêng, KHÔNG dùng key root).
 set -euo pipefail
+# Git Bash tự đổi đối số dạng /dev/sda1 thành đường dẫn Windows trước khi gọi aws.exe → tắt; file:// dùng winpath
+export MSYS_NO_PATHCONV=1
 
 export AWS_PROFILE="${AWS_PROFILE:-rpm}"
 export AWS_REGION="${AWS_REGION:-ap-southeast-1}"
