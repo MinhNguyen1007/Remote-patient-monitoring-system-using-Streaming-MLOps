@@ -37,6 +37,8 @@ Giai đoạn H chạy integration/E2E toàn hệ thống, kiểm thử phi chứ
 | Dữ liệu stream cho retrain (`rpm_ml.data.stream_data`) | • Dựng lại từ giá trị đo chưa điền trùng `hourly.parquet` (đặc trưng lẫn nhãn) trên dữ liệu thật.<br>• Mới phát một phần: nhãn h = 4 chỉ có ở giờ đã "chín".<br>• Chỉ giữ phần stream đã phát, từ chối bệnh nhân trùng nhóm khác. | pytest (dữ liệu thật) |
 | Sự kiện MLOps ở backend | • `drift_report` chỉ tới Admin đang hoạt động (WebSocket + email), không tới bác sĩ.<br>• `notify_admin = false` không gửi email; đọc lại sự kiện cũ không gửi trùng (`notification_logs.drift_report_id`).<br>• `retrain_completed` chỉ đẩy WebSocket; trạng thái retrain trả kèm kết quả gate. | pytest + httpx TestClient (DB `rpm_test` thật) |
 | Quality gate (`evaluate_gate`) | • Đủ các tổ hợp: trượt ngưỡng tuyệt đối, thua baseline persistence, kém champion, đạt tất cả.<br>• Lần đầu chưa có champion. | pytest |
+| Promote model giữa hai registry (`rpm_ml.pipelines.promote`) | • Chép đúng artifact (so hash từng tệp), params/metric/tag, `drift_thresholds.json`, tag truy vết nguồn; alias `champion` + `challenger` ở đích.<br>• Chạy lại không tạo version mới.<br>• Không phụ thuộc tracking/registry URI toàn cục (đặt URI toàn cục sang registry thứ ba vẫn đúng). | pytest (2 registry SQLite tạm) |
+| Cảnh báo mới trên giao diện (`AlertReveal`, `lib/alertReveal.ts`) | • Chỉ cảnh báo `OPEN` tới Bác sĩ/Điều dưỡng; drift cần báo và retrain xong chỉ tới Admin.<br>• Nguy kịch → overlay, xếp hàng, "Để sau" sang cảnh báo kế; Điều dưỡng không có nút Xác nhận; bất thường → toast.<br>• Toast không tự ẩn khi overlay đang mở (overlay là modal, toast nằm dưới lớp nền mờ).<br>• Lựa chọn tắt âm được nhớ; trình duyệt chặn lưu trữ thì báo rõ và mặc định bật âm. | Vitest + Testing Library (WebSocket giả) |
 
 ## 2.10.2. Integration Test
 
@@ -87,4 +89,5 @@ Tham chiếu: baseline persistence (h = 4) trên tập `test` đạt Macro F1 0,
 - Dùng một tập con nhỏ (5–10 bệnh nhân) trích từ MIMIC-III Demo làm fixture cố định cho unit/integration test — test chạy nhanh, không phụ thuộc tải toàn bộ dataset.
 - Chia theo `subject_id` giống lúc train (mục 2.9.1c), tránh rò rỉ dữ liệu giữa fixture train/test nội bộ.
 - Test hạ tầng (Kafka, Postgres) chạy bằng container tạm thời (testcontainers), tự dọn dẹp sau mỗi lần chạy.
-- Frontend: Vitest cho logic giao diện (badge theo mức rủi ro, chặn route theo role, hiển thị theo phân công), kết hợp kiểm thử thủ công theo kịch bản từng use case.
+- Frontend: Vitest cho logic giao diện (badge theo mức rủi ro, chặn route theo role, hiển thị theo phân công, overlay/toast và âm báo cảnh báo mới), kết hợp kiểm tra trực quan bằng ảnh chụp Chrome headless trên hệ thống chạy thật (có cả khung điện thoại 390 px).
+- **CI** (GitHub Actions, `.github/workflows/ci.yml`): mỗi lần push chạy toàn bộ unit test Python, test backend trên TimescaleDB dựng bằng service container, và `typecheck` + test + build của frontend. Bộ E2E (2.10.2, 2.10.4) cần cả Kafka, MLflow và model thật nên chỉ chạy trên máy phát triển.

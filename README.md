@@ -61,6 +61,8 @@ theo dõi nhiều giường cùng lúc và điểm cảnh báo sớm thủ công
 - FastAPI: 25 route theo 13 use case, JWT 3 vai trò (Admin / Bác sĩ / Điều dưỡng), phân quyền theo **phân công bệnh nhân** (trả `403` nếu ngoài danh sách phụ trách).
 - Realtime: Kafka listener → WebSocket chỉ đẩy tới người được phân công; email cảnh báo không gửi trùng nhờ bảng `notification_logs`.
 - React dashboard: 8 màn hình, chặn route theo vai trò, WebSocket tự nối lại, cập nhật tại chỗ không cần tải lại trang.
+- Cảnh báo mới nổi bật ngay trên màn hình: rủi ro nguy kịch mở overlay toàn trang (xếp hàng nếu nhiều cảnh báo, bác sĩ
+  xác nhận ngay tại đó), bất thường hiện toast; kèm âm báo tổng hợp, tắt được và nhớ lựa chọn.
 
 **MLOps**
 
@@ -68,6 +70,7 @@ theo dõi nhiều giường cùng lúc và điểm cảnh báo sớm thủ công
 - Quality gate: ngưỡng tuyệt đối **+ phải thắng baseline persistence + không kém champion hiện tại** trên cùng tập test.
 - Consumer tự phát hiện champion đổi và nạp lại model mà không cần khởi động lại.
 - Prometheus + Grafana giám sát backend; Admin nhận thông báo drift/retrain qua WebSocket và email.
+- Triển khai: promote **đúng artifact** model đã đánh giá sang registry production (so hash từng file), không train lại.
 
 **Kỷ luật ML**
 
@@ -106,17 +109,18 @@ Airflow ──► Kafka: mlops-events ──► FastAPI ──► WebSocket + em
 |---|---|
 | Streaming | Apache Kafka 7.6 (Confluent), client `confluent-kafka` 2.15 |
 | Cơ sở dữ liệu | PostgreSQL 16 + TimescaleDB 2.30 (hypertable `vital_records`, `predictions`), SQLAlchemy 2.0, Alembic |
-| Học máy | scikit-learn 1.3 (Random Forest, Logistic Regression), XGBoost 3.0, TensorFlow 2.21 / Keras 3.13 (LSTM-AE), SHAP, SciPy |
+| Học máy | scikit-learn 1.3 (Random Forest, Logistic Regression), XGBoost 3.0, TensorFlow 2.21 / Keras 3.13 (LSTM-AE), SHAP 0.49, SciPy |
 | MLOps | MLflow 3.11, Apache Airflow 2.9 (LocalExecutor) |
 | Backend | FastAPI 0.135, Uvicorn, Pydantic 2.12, PyJWT + bcrypt, WebSocket |
-| Frontend | React 19, TypeScript 7, Vite 8, Tailwind CSS 4, Base UI + CVA, React Router 7 |
+| Frontend | React 19, TypeScript 7, Vite 8, Tailwind CSS 4, Base UI + CVA, React Router 7; theme "CS:GO classic" (bộ giao diện truanayangi-ui), âm báo Web Audio |
 | Giám sát | Prometheus 2.54, Grafana 11 |
-| Triển khai | Docker Compose |
+| Triển khai | Docker Compose (máy cá nhân); AWS EC2 + Caddy HTTPS (bản demo online) |
+| CI | GitHub Actions (test mọi package, build frontend) |
 
 ## Giao diện
 
-Dark theme, góc vuông, màu ngữ nghĩa lâm sàng (xanh / vàng / đỏ theo mức rủi ro).
-Ảnh chụp từ hệ thống đang chạy thật với 20 bệnh nhân.
+Theme "CS:GO classic": nền xám xanh, panel trong mờ, góc vuông, số liệu nhấn vàng; màu ngữ nghĩa lâm sàng
+(xanh / vàng / đỏ theo mức rủi ro, luôn kèm chữ + icon). Ảnh chụp từ hệ thống đang chạy thật với 20 bệnh nhân.
 
 | Danh sách bệnh nhân | Chi tiết bệnh nhân |
 |---|---|
@@ -127,6 +131,11 @@ Dark theme, góc vuông, màu ngữ nghĩa lâm sàng (xanh / vàng / đỏ theo
 |---|---|
 | <img src="images/4_alerts.png" alt="Trung tâm cảnh báo" width="430"> | <img src="images/9_admin_models.png" alt="Giám sát mô hình" width="430"> |
 | Chuyển trạng thái `OPEN → ACKNOWLEDGED → RESOLVED`, đẩy ngay tới các phiên khác | Version, chỉ số, lý do quality gate chấp nhận hoặc từ chối, báo cáo drift |
+
+| Cảnh báo nguy kịch mới |
+|---|
+| <img src="images/10_alert_overlay.png" alt="Overlay cảnh báo nguy kịch mới" width="870"> |
+| Hiện ngay khi consumer mở cảnh báo, chỉ với người được phân công; nhiều cảnh báo thì xếp hàng. Bất thường, drift và retrain hiện toast góc dưới |
 
 <details>
 <summary>Xem thêm 5 màn hình khác</summary>
@@ -143,26 +152,50 @@ Dark theme, góc vuông, màu ngữ nghĩa lâm sàng (xanh / vàng / đỏ theo
 
 ## Bắt đầu nhanh
 
-**Yêu cầu**: Docker Desktop (cấp cho Docker ≥ 8 GB RAM) và Git. Không cần cài Python/Node để chạy demo.
+**Yêu cầu**: Docker Desktop (cấp cho Docker ≥ 8 GB RAM), Git, và Python 3.11 — Python chỉ dùng **một lần** để
+tiền xử lý dữ liệu và huấn luyện 2 model, vì repo không chứa dữ liệu lẫn model. Bộ dữ liệu MIMIC-III Demo tải miễn
+phí, không cần đăng ký (hướng dẫn ở [`ml/README.md`](ml/README.md)) vào `ml/data/raw/`.
+
+**1. Hạ tầng nền**
 
 ```bash
 git clone https://github.com/MinhNguyen1007/Remote-patient-monitoring-system-using-Streaming-MLOps.git
 cd Remote-patient-monitoring-system-using-Streaming-MLOps
 cp .env.example .env            # rồi thay mọi giá trị "changeme" bằng mật khẩu thật
-
-docker compose up -d postgres zookeeper kafka mlflow prometheus grafana   # hạ tầng nền
-docker compose up -d airflow-webserver airflow-scheduler                  # DAG drift_check + retrain_pipeline
-docker compose --profile app up -d                                        # backend, frontend, stream-consumer
+docker compose up -d postgres zookeeper kafka mlflow prometheus grafana
 ```
 
-Tạo tài khoản demo rồi bắt đầu phát lại dữ liệu:
+**2. Dữ liệu và model** (chạy trên máy, ghi model vào MLflow vừa bật):
 
 ```bash
-docker compose exec backend python -m app.seed --demo     # bs.an, bs.binh, dd.cuong — mật khẩu demo12345
-docker compose --profile app run --rm stream-producer     # thêm --drift để mô phỏng drift → retrain
+python -m venv .venv
+.venv/Scripts/python -m pip install -e packages/common -e ml -e services/streaming -r ml/requirements.txt -r services/streaming/requirements.txt
+export MLFLOW_TRACKING_URI=http://localhost:5000
+.venv/Scripts/python -m rpm_ml.data.preprocess          # ml/data/raw → ml/data/processed (có tập phát lại)
+.venv/Scripts/python -m rpm_ml.training.train_risk      # ~1 phút
+.venv/Scripts/python -m rpm_ml.training.train_anomaly   # ~5–10 phút
 ```
 
-Mở http://localhost:3000 và đăng nhập; cảnh báo sẽ hiện dần theo nhịp phát lại.
+**3. Ứng dụng** — `--profile app` bật backend, frontend, stream consumer **và producer**, producer bắt đầu phát lại
+20 bệnh nhân ngay (≈ 30 phút cho đủ 365 nhịp). Lần build image Airflow đầu tiên mất khoảng 10 phút.
+
+```bash
+docker compose up -d airflow-webserver airflow-scheduler   # DAG drift_check + retrain_pipeline
+docker compose --profile app up -d
+# đợi ~30 giây cho đủ 20 bệnh nhân vào DB, rồi tạo tài khoản demo và phân công bệnh nhân cho họ:
+docker compose exec backend python -m app.seed --demo      # bs.an, bs.binh, dd.cuong — mật khẩu demo12345
+```
+
+Mở http://localhost:3000 và đăng nhập; cảnh báo sẽ hiện dần theo nhịp phát lại. Muốn phát lại từ đầu (hoặc bật
+drift mô phỏng để xem vòng lặp drift → retrain):
+
+```bash
+docker compose stop stream-producer stream-consumer
+docker compose run --rm --no-deps --entrypoint python stream-consumer -m rpm_streaming.storage.reset_demo --yes
+docker compose --profile app up -d stream-consumer
+docker compose --profile app run -d --rm stream-producer --drift   # bỏ --drift để phát lại bình thường
+docker compose exec backend python -m app.seed --demo      # reset xoá cả phân công: chạy lại sau ~30 giây
+```
 
 | Giao diện | Địa chỉ | Đăng nhập |
 |---|---|---|
@@ -174,11 +207,9 @@ Mở http://localhost:3000 và đăng nhập; cảnh báo sẽ hiện dần theo
 | Prometheus | http://localhost:9090 | — |
 
 > [!NOTE]
-> **Model và dữ liệu không nằm trong repo.** Lần chạy đầu, MLflow registry còn trống nên consumer
-> chưa có champion để nạp. Muốn huấn luyện lại từ đầu: tải MIMIC-III Demo theo hướng dẫn ở
-> [`ml/README.md`](ml/README.md) rồi chạy `rpm_ml.data.preprocess` → `rpm_ml.training.train_risk` →
-> `rpm_ml.training.train_anomaly` (xem [Phát triển trên máy](#phát-triển-trên-máy)).
-> Lần build image Airflow đầu tiên mất khoảng 10 phút.
+> **Model và dữ liệu không nằm trong repo.** Nếu bỏ qua bước 2, MLflow registry trống và consumer không có
+> champion để nạp. Model train lại trên máy khác CPU có thể lệch nhẹ τ và metric so với bảng Kết quả bên dưới
+> (xem [Hạn chế đã biết](#hạn-chế-đã-biết)); bản online dùng đúng model trong bảng nhờ promote artifact.
 
 Dừng hệ thống: `docker compose --profile app down` (thêm `-v` nếu muốn xoá luôn dữ liệu trong volume).
 
@@ -202,7 +233,7 @@ huấn luyện); chi tiết đầy đủ ở [`ml/reports/evaluation.md`](ml/rep
 | **Random Forest (champion)** | **0,623** | **0,790** | 0,391 | 0,836 |
 | Baseline persistence | 0,547 | 0,308 | — | — |
 
-Chọn mô hình bằng GroupKFold trên tập train (Macro F1): Random Forest 0,622 › Logistic Regression
+Chọn mô hình bằng GroupKFold theo bệnh nhân trên train ∪ validation (63 bệnh nhân, Macro F1): Random Forest 0,622 › Logistic Regression
 0,618 › XGBoost 0,608 › persistence 0,565. Đặc trưng quan trọng nhất theo SHAP cho lớp CRITICAL:
 `news2_max_6h`, `news2_score`, `respiratory_rate_mean_6h`, `heart_rate`. Kiểm chứng nhãn proxy: tỷ lệ
 giờ CRITICAL là **19,1 %** ở đợt ICU tử vong tại viện so với **3,6 %** ở đợt sống sót (AUROC mức đợt 0,718).
@@ -221,7 +252,7 @@ Trên dữ liệu thật (không tiêm), tỷ lệ gắn cờ tăng đúng theo 
 | Chỉ số | Giá trị | Ngưỡng thiết kế |
 |---|---|---|
 | Độ trễ đầu–cuối (producer → WebSocket của client), p95 | **1,30 – 1,62 s** qua 3 lần chạy | < 2 s |
-| Thời gian xử lý mỗi message | 130 – 190 ms (đặc trưng ~45 ms, RF ~12 ms, LSTM-AE ~64 ms) | — |
+| Thời gian xử lý mỗi message (đặc trưng + Random Forest + LSTM-AE) | 130 – 190 ms ở lần đo đầu (Giai đoạn D, như trong hình kiến trúc); log consumer 2026-09-30: trung vị ~115 ms, p90 ~135 ms (3.668 message) | — |
 | Cảnh báo sinh ra trên số giờ dự báo CRITICAL | 28 / 507 | chống bão cảnh báo |
 | Giết cứng consumer giữa chừng rồi bật lại | đủ bản ghi, **0 giờ trùng** | at-least-once + idempotent |
 
@@ -262,7 +293,8 @@ Mỗi thư mục lớn có một `CLAUDE.md` ghi quy ước và lệnh riêng c�
 
 ```bash
 python -m venv .venv
-.venv/Scripts/python -m pip install -e packages/common -e ml -e services/streaming -r ml/requirements.txt
+.venv/Scripts/python -m pip install -e packages/common -e ml -e services/streaming \
+    -r ml/requirements.txt -r services/streaming/requirements.txt -r services/backend/requirements.txt
 ```
 
 Script chạy dưới dạng module. Trên host, các service dùng cổng đã publish ra ngoài
@@ -356,9 +388,11 @@ phép Open Data Commons ODbL v1.0. Dữ liệu **không nằm trong repo**; xem 
 > *Circulation*, 101(23), e215–e220.
 
 Thang điểm cảnh báo sớm dựa trên **NEWS2** (Royal College of Physicians, 2017), bản rút gọn 5 thông số.
-Logo công nghệ trong hình lấy từ [Simple Icons](https://simpleicons.org) (CC0).
+Logo công nghệ trong hình lấy từ [Simple Icons](https://simpleicons.org) (CC0). Giao diện dùng theme "CS:GO classic"
+của bộ giao diện truanayangi-ui, dựng lại theo phong cách của dự án [truanayangi](https://github.com/truanayangi-com/truanayangi)
+(Trưa Nay Ăn Gì); âm báo là âm tổng hợp, không dùng tệp âm thanh của bên thứ ba.
 
 ## Giấy phép
 
-Mã nguồn phát hành theo [giấy phép MIT](LICENSE). Dữ liệu MIMIC-III, thang điểm NEWS2 và logo công nghệ
-có giấy phép riêng, không thuộc phạm vi MIT — xem [`NOTICE`](NOTICE).
+Mã nguồn phát hành theo [giấy phép MIT](LICENSE). Dữ liệu MIMIC-III, thang điểm NEWS2, logo công nghệ và phong cách
+giao diện lấy cảm hứng từ bên thứ ba có giấy phép/ghi nguồn riêng, không thuộc phạm vi MIT — xem [`NOTICE`](NOTICE).

@@ -39,6 +39,8 @@ Máy tắt: ≈ $0,3/ngày. Mỗi giờ demo: ≈ $0,13. Chạy 24/7 cả tháng
 
 1. AWS Console → **IAM → Users → Create user**, tên `rpm-deployer`, *không* cần quyền truy cập Console.
 2. **Attach policies directly** → chọn `AmazonEC2FullAccess` → Create user.
+   Tuỳ chọn, để `rpm-aws.sh status` hiện được credit còn lại: thêm inline policy chỉ đọc
+   `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["freetier:GetAccountPlanState","freetier:GetFreeTierUsage"],"Resource":"*"}]}`.
 3. Mở user vừa tạo → **Security credentials → Create access key** → *Command Line Interface (CLI)* → lưu Access key ID
    và Secret access key.
 4. Trên máy mình, trong terminal (không dán key vào chat):

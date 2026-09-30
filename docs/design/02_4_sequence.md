@@ -42,6 +42,7 @@ sequenceDiagram
 ```
 
 Ghi chú hiện thực:
+- Frontend nhận `alert` (từ 2026-09-30, mục 2.8.2d): cảnh báo rủi ro nguy kịch mở overlay toàn màn hình (xếp hàng nếu nhiều, Bác sĩ xác nhận ngay tại đó → `POST /alerts/{id}/acknowledge` → backend đẩy `alert_update`), cảnh báo bất thường hiện toast; cả hai kèm âm báo tổng hợp. Sơ đồ dừng ở bước đẩy WebSocket vì phần hiển thị không đổi luồng dữ liệu.
 - **Quyết định cảnh báo nằm trước khi ghi DB**, và vital_record + prediction + alert được ghi trong **một transaction duy nhất** (`repository.save_hour`). Sơ đồ trước 2026-09-12 vẽ hai lần ghi DB riêng và đặt bước quyết định sau khi publish prediction — đã sửa cho khớp `services/streaming/src/rpm_streaming/consumer/main.py`.
 - **Model Service** là module chạy bên trong consumer, không phải service riêng.
   - Khi khởi động, nó nạp `models:/risk_classifier@champion` và `models:/anomaly_detector@champion` từ MLflow.

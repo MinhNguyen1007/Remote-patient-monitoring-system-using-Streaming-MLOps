@@ -36,7 +36,18 @@ Các tệp SVG trong docs/report/figures/logos/ lấy từ Simple Icons
 docs/report/figures/logos/NGUON.md. Logo là thương hiệu của các chủ sở
 hữu tương ứng và chỉ dùng để minh hoạ kiến trúc hệ thống.
 
-4. Mục đích sử dụng
+4. Phong cách giao diện
+-----------------------
+Giao diện dùng theme "CS:GO classic" của bộ giao diện truanayangi-ui
+(services/frontend/src/truanayangi-ui/). Phần mã đó viết lại theo phong
+cách của dự án truanayangi (Trưa Nay Ăn Gì,
+https://github.com/truanayangi-com/truanayangi — Nagi / nagisanzenin và
+cộng sự; repo gốc không có tệp giấy phép). Không chép hình ảnh, logo, ảnh
+nền hay tệp âm thanh nào của dự án đó hoặc của Valve: âm báo là âm tổng
+hợp bằng Web Audio. Bảng màu độ hiếm là màu phẩm cấp vật phẩm của trò chơi
+Counter-Strike (Valve Corporation), chỉ dùng như một quy ước màu.
+
+5. Mục đích sử dụng
 -------------------
 Đây là đồ án học tập. Phần mềm chỉ dùng cho mục đích học tập và nghiên
 cứu, KHÔNG dùng cho chẩn đoán, điều trị hay bất kỳ quyết định lâm sàng

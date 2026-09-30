@@ -27,7 +27,7 @@ cd tests/e2e && ../../.venv/Scripts/python -m pytest -q
 > notification_logs, patient_assignments). Giữ nguyên users, model_versions, alert_settings, drift_reports.
 > Đừng chạy khi đang muốn giữ dữ liệu của một lần demo.
 
-Toàn bộ mất khoảng 7 phút, phần lớn là phép đo độ trễ (phát lại ở tốc độ thật) và việc khởi động lại consumer
+Toàn bộ mất khoảng 6 phút (5 phút 24 giây ở lần chạy 2026-09-30), phần lớn là phép đo độ trễ (phát lại ở tốc độ thật) và việc khởi động lại consumer
 (mỗi lần nạp TensorFlow + 2 model mất ~15 giây).
 
 ## Các module (chạy đúng theo thứ tự số)
@@ -38,7 +38,7 @@ Thứ tự có ý nghĩa: con trỏ giờ phát lại dùng chung cả phiên, v
 |---|---|---|
 | `test_1_streaming_pipeline.py` | 2.10.2 dòng 1 | vitals → vital_record + prediction + `predictions-stream`; nhiều giờ CRITICAL liên tiếp chỉ 1 cảnh báo + `alerts-stream`; giờ trùng bị bỏ qua |
 | `test_2_realtime_events.py` | 2.10.2 dòng 2, 3 | prediction/alert chỉ tới WebSocket của người được phân công; `notification_logs` đúng người nhận; đăng nhập sai → 401, token sai → WebSocket đóng; `alert_update` khi xác nhận/xử lý |
-| `test_3_model_reload.py` | 2.10.2 dòng 6 | đổi alias `champion` trên MLflow → consumer nạp version mới, prediction ghi đúng version, cờ champion trong `model_versions` đi theo |
+| `test_3_model_reload.py` | 2.10.2 dòng 6 | đổi alias `champion` trên MLflow → consumer nạp version mới, prediction ghi đúng version, cờ champion trong `model_versions` đi theo. Cần registry có ≥ 2 version `risk_classifier`; chỉ có 1 (vd registry mới dựng lại) thì test tự bỏ qua kèm lý do |
 | `test_4_fault_tolerance.py` | 2.10.4 dòng 2, 3 | giết cứng consumer giữa chừng; tắt backend lúc đang replay rồi bật lại |
 | `test_5_latency.py` | 2.10.4 dòng 1 | độ trễ đầu–cuối producer → WebSocket, 20 bệnh nhân, tốc độ mặc định; ngưỡng p95 < 2 giây |
 

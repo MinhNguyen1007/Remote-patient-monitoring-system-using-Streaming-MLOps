@@ -146,11 +146,11 @@ Nguyên tắc:
 - **Nội dung thẻ**, theo thứ tự đọc:
   1. Mã bệnh nhân, tuổi, giới, giờ dữ liệu hiện tại.
   2. **Badge rủi ro dự báo 4 giờ tới** kèm xác suất — thông tin quan trọng nhất, đặt góc phải trên.
-  3. 4 vitals mới nhất: HR, SpO₂, RR, huyết áp, chữ mono cỡ lớn.
+  3. 4 vitals mới nhất: HR, SpO₂, RR, huyết áp, số cỡ lớn (số tabular để thẳng cột).
   4. **Dải rủi ro 12 giờ qua**: 12 ô màu, cho thấy bệnh nhân đang xấu đi hay ổn định lại mà không cần mở chi tiết.
   5. **NEWS2 hiện tại** (màu trung tính) và **trạng thái bất thường**. Bệnh nhân vào ICU chưa đủ 16 giờ hiển thị "Chưa đủ 16 giờ" thay vì để trống khó hiểu.
   6. Số cảnh báo đang mở và thời gian cập nhật.
-- **Viền dưới 3px** theo màu rủi ro giúp quét nhanh cả lưới thẻ.
+- **Thanh đáy 5px và ánh màu dâng lên từ đáy thẻ** theo màu rủi ro (thẻ CS:GO) giúp quét nhanh cả lưới thẻ.
 - **Bộ lọc** Tất cả / Nguy kịch / Cảnh báo kèm số lượng; ô tìm theo mã bệnh nhân.
 - **Realtime**: mỗi prediction mới qua WebSocket cập nhật đúng thẻ tương ứng. Badge đổi mức có chuyển màu và thẻ được sắp lại vị trí.
 
@@ -177,7 +177,7 @@ Nguyên tắc:
   - **Dải Rủi ro 4 giờ tới**: mỗi ô là mức rủi ro dự báo tại giờ đó, cho thấy thời điểm bệnh nhân chuyển từ Bình thường sang Cảnh báo rồi Nguy kịch.
   - **Hover**: crosshair dọc qua mọi dải và tooltip tổng hợp mọi chỉ số, mức rủi ro, NEWS2, điểm bất thường tại giờ đó.
 - **Cảnh báo của bệnh nhân**: đặt **dưới biểu đồ**, theo đúng quan hệ `UC07 <<include>> UC05` (xem vitals trước khi xác nhận). Mỗi cảnh báo hiển thị loại, trạng thái, giờ dữ liệu và chi tiết. Thao tác chỉ dành cho Bác sĩ:
-  - `Mở` → nút **Xác nhận**, kèm nút mở vitals đúng giờ phát sinh cảnh báo;
+  - `Mở` → nút **Xác nhận** (giờ dữ liệu phát sinh cảnh báo ghi ngay trên thẻ, đối chiếu với trục giờ của biểu đồ phía trên);
   - `Đã xác nhận` → ô **ghi chú xử lý** (bắt buộc) + nút **Đã xử lý**;
   - `Đã xử lý` → hiển thị ghi chú và người xử lý.
 
@@ -200,7 +200,7 @@ Nguyên tắc:
 *Hình 2.8.6 — Tab Người dùng.*
 
 - Header của Admin chỉ có 4 mục quản trị (không có mục Bệnh nhân); mục đang mở có gạch chân vàng.
-- Bảng tài khoản: họ tên, email (mono), vai trò, trạng thái (công tắc Hoạt động / Đã khóa), số bệnh nhân phụ trách, nút Sửa. Nút **Thêm tài khoản** là hành động chính (nút xanh lá).
+- Bảng tài khoản: họ tên, email, vai trò (đổi trực tiếp bằng ô chọn trên dòng), trạng thái (công tắc Hoạt động / Đã khóa), số bệnh nhân phụ trách. Nút **Thêm tài khoản** là hành động chính (nút xanh lá), mở hộp thoại tạo tài khoản.
 - Không xóa cứng tài khoản: khóa tài khoản để giữ lịch sử người xác nhận/xử lý cảnh báo. Admin không thể tự khóa hoặc tự bỏ quyền Quản trị của mình (API trả 409).
 
 ### f) Quản trị · Phân công (UC13) — Admin
@@ -211,7 +211,7 @@ Nguyên tắc:
 
 - Bố cục master–detail:
   - cột trái: danh sách bệnh nhân kèm số người phụ trách. Bệnh nhân **chưa có người phụ trách** được làm nổi bật bằng màu cảnh báo, vì cảnh báo của họ sẽ không gửi tới ai;
-  - cột phải: bệnh nhân đang chọn, mức rủi ro hiện tại, danh sách người đang phụ trách (nút Gỡ) và ô thêm người phụ trách.
+  - cột phải: bệnh nhân đang chọn (tuổi, giới, mã MIMIC), danh sách người đang phụ trách (nút Gỡ) và ô thêm người phụ trách.
 - Ô chọn chỉ liệt kê tài khoản Bác sĩ / Điều dưỡng đang hoạt động, đúng ràng buộc API (gán cho Admin → 422, gán trùng → 409).
 
 ### g) Quản trị · Ngưỡng cảnh báo (UC08) — Admin
@@ -226,7 +226,7 @@ Nguyên tắc:
   - Hoặc tự đặt ngưỡng. Cách này tránh việc Admin phải nhớ và nhập lại ngưỡng mỗi khi champion đổi.
 - **τ_anomaly** kèm diễn giải "≈ 1% cửa sổ bình thường bị gắn cờ nhầm".
 - **Thời gian chờ** ghi rõ đơn vị là giờ dữ liệu, không phải giờ đồng hồ (mục 2.9.6).
-- **Lịch sử thay đổi**: mỗi lần lưu tạo một bản ghi mới, kèm người sửa và thời điểm. Thay đổi có hiệu lực với stream consumer trong vòng 30 giây.
+- **Lịch sử thay đổi**: mỗi lần lưu tạo một bản ghi mới trong bảng `alert_settings` (không ghi đè), nên lịch sử còn nguyên trong CSDL; giao diện hiển thị bản ghi hiện hành (ai cập nhật, lúc nào, giá trị đang hiệu lực). Thay đổi có hiệu lực với stream consumer trong vòng 30 giây.
 
 ### h) Quản trị · Giám sát mô hình (UC09, UC10) — Admin
 
@@ -237,10 +237,10 @@ Nguyên tắc:
 - **Hai thẻ champion** (dự báo rủi ro, phát hiện bất thường): version, họ mô hình, ngưỡng, và metric chính trên tập test. Mô hình rủi ro luôn kèm **baseline persistence**: model chỉ có giá trị khi thắng baseline này.
 - **Biểu đồ drift**:
   - đường max PSI của mỗi lần kiểm tra, với 2 đường ngưỡng có nhãn (0,10 lệch trung bình; 0,25 lệch đáng kể);
-  - điểm vượt 0,25 tô đỏ, có chú thích "Kích hoạt retrain tự động";
-  - nút mở chi tiết PSI/KS từng đặc trưng.
-  - Số liệu drift trên mockup chỉ để minh họa, vì DAG `drift_check` thuộc Giai đoạn G.
-- **Bảng version**: mọi version kể cả bị từ chối, kèm kết quả quality gate, nguồn kích hoạt (INITIAL/DRIFT/MANUAL), metric và **lý do** từ chối. Ví dụ đúng lịch sử thật: v1 bị từ chối vì Recall CRITICAL 0,730 < 0,80.
+  - điểm vượt sàn 0,25 tô đỏ;
+  - rê chuột lên một lần kiểm tra: tooltip ghi có drift hay không, đã kích hoạt retrain hay chưa, và PSI của từng đặc trưng vượt ngưỡng riêng của nó.
+  - Số liệu drift trên mockup chỉ để minh họa; giao diện thật vẽ từ bảng `drift_reports` do DAG `drift_check` ghi.
+- **Bảng version**: mọi version kể cả bị từ chối, kèm kết quả quality gate, nguồn kích hoạt (INITIAL/DRIFT/MANUAL), metric và **lý do** từ chối. Ví dụ trên mockup lấy từ lịch sử huấn luyện thật: v1 bị từ chối vì Recall CRITICAL 0,730 < 0,80.
 - **Kích hoạt huấn luyện lại** (UC10):
   - bấm nút → nhận `dag_run_id` → khối trạng thái cạnh nút cập nhật định kỳ (queued / running / success / failed) cho tới khi có kết quả promote hay từ chối;
   - giao diện không giữ một request chờ lâu.
@@ -260,6 +260,6 @@ Mọi biểu đồ tuân theo hướng dẫn `dataviz`:
 
 ## 2.8.6. Ghi chú hiện thực
 
-- Mockup là tài liệu tham chiếu bắt buộc khi lập trình frontend (Giai đoạn F): lấy đúng token màu, font, kích thước và cấu tạo component từ `docs/design/mockups/build_mockups.py`.
+- Mockup là tài liệu tham chiếu cho **bố cục và cấu tạo component** (Giai đoạn F). Màu, chữ và hình khối lấy theo theme CS:GO ở mục 2.8.2 (quy ước chi tiết: `services/frontend/CLAUDE.md`), không lấy theo token lime trong `build_mockups.py`.
 - Sửa mockup: chỉnh `build_mockups.py`, chạy `python docs/design/mockups/build_mockups.py --png` để sinh lại artboard và ảnh trong `png/`, rồi cập nhật canvas.
-- Ảnh trong mục này có kích thước 1440px chiều ngang, dùng trực tiếp được cho báo cáo Word (mục 6).
+- Ảnh chụp giao diện thật (theme hiện hành) nằm ở `images/` của repo, chụp ngày 2026-09-30 từ hệ thống chạy thật với 20 bệnh nhân.

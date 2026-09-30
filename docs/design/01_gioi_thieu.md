@@ -19,7 +19,7 @@ Xây dựng một **hệ thống giám sát bệnh nhân từ xa** có khả nă
 
 ## 1.3. Phạm vi đề tài
 
-- **Trong phạm vi**: toàn bộ pipeline từ mô phỏng nguồn dữ liệu (replay dữ liệu ICU thật từ bộ dữ liệu công khai MIMIC-III Clinical Database Demo) → streaming (Kafka) → suy luận mô hình → lưu trữ (PostgreSQL/TimescaleDB) → API & thời gian thực (FastAPI, WebSocket) → giao diện web (React) → vòng lặp MLOps (MLflow, drift detection, Airflow retrain). Triển khai bằng Docker Compose trên môi trường cục bộ.
+- **Trong phạm vi**: toàn bộ pipeline từ mô phỏng nguồn dữ liệu (replay dữ liệu ICU thật từ bộ dữ liệu công khai MIMIC-III Clinical Database Demo) → streaming (Kafka) → suy luận mô hình → lưu trữ (PostgreSQL/TimescaleDB) → API & thời gian thực (FastAPI, WebSocket) → giao diện web (React) → vòng lặp MLOps (MLflow, drift detection, Airflow retrain). Triển khai bằng Docker Compose trên môi trường cục bộ; bản demo online chạy cùng cấu hình đó trên một máy AWS EC2 (`deploy/aws/`).
 - **Ngoài phạm vi** (đề cập ở mục Hướng phát triển): triển khai production nhiều máy / dịch vụ cloud có quản lý (bản demo đã chạy trên **một** máy AWS EC2 bằng chính Docker Compose — `deploy/aws/`, bổ sung 2026-09-30), tích hợp thiết bị IoT y tế thật, các quy định pháp lý về dữ liệu y tế (HIPAA/GDPR) ở mức triển khai sản xuất thực tế.
 
 ## 1.4. Đối tượng người dùng

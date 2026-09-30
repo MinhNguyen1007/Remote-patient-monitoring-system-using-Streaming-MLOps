@@ -256,7 +256,7 @@ docker compose --profile app up -d                          # backend :8000, fro
 
 # Môi trường Python (một lần, từ gốc repo); cài package nội bộ không cần mạng: thêm --no-build-isolation --no-deps
 python -m venv .venv
-.venv\Scripts\python -m pip install -e packages/common -e ml -e services/streaming -r ml/requirements.txt
+.venv\Scripts\python -m pip install -e packages/common -e ml -e services/streaming -r ml/requirements.txt -r services/streaming/requirements.txt -r services/backend/requirements.txt
 
 # Test (từ gốc repo; backend cần postgres đang chạy, tự tạo DB rpm_test)
 cd packages/common && ..\..\.venv\Scripts\python -m pytest -q && cd ..\..

@@ -117,7 +117,7 @@ Theo yêu cầu "chưa biết thì không ghi", những thông tin dưới đây
 3. **Bài báo** chỉ có một tác giả và một email; nếu làm nhóm hoặc muốn ghi tên giảng viên hướng dẫn làm đồng tác giả (như tệp mẫu) thì cần bổ sung.
 4. **Hai mục "LÀM VIỆC NHÓM" và "TỰ ĐÁNH GIÁ"** của mẫu đã được **bỏ khỏi** báo cáo vì không biết đồ án làm một mình hay theo nhóm. Nếu môn học yêu cầu thì thêm lại.
 5. **Logo trường** ở trang bìa — mẫu có, repo chưa có ảnh này.
-6. **Một ảnh giao diện cần chụp lại** (cần đăng nhập, Claude không tự nhập mật khẩu được):
+6. ~~**Một ảnh giao diện cần chụp lại**~~ — **xong 2026-09-30**: cả 9 ảnh trong `images/` đã chụp lại theo giao diện mới (theme CS:GO classic) bằng Chrome headless, JWT lấy qua API nên không cần nhập mật khẩu vào trang; thêm `images/10_alert_overlay.png`. Mô tả cũ giữ lại bên dưới để tra cứu:
    `images/3_patient_detail.png` — bản đang dùng ở báo cáo và ở mục "Giao diện" của `README.md` gốc vẫn còn lỗi cũ: bệnh nhân ở giờ thứ 88, dải bất thường đầy đủ, nhưng thẻ "Diễn biến bất thường" ghi "Chưa đủ 16 giờ". Lỗi đã sửa trong code, chỉ thiếu ảnh mới.
    (`images/2_patient_list.png` đã được thay bằng bản chụp lại sau khi sửa lỗi, ngày 2026-09-13.)
 
