@@ -156,7 +156,7 @@
   - `images/3_patient_detail_v2.png` (đặt sai tên) đã `git mv` đè lên `images/2_patient_list.png`.
   - Description + 20 topics của repo GitHub: đặt ngày 2026-09-30 (xem mục phiên 2026-09-30).
 - Tạm dừng 2026-09-13 sau khi đẩy repo lên GitHub (mốc lịch sử; trạng thái hiện hành ở mục 2026-09-30 ngay dưới).
-- **Phiên 2026-09-30 — rà soát "còn thiếu gì" rồi làm các việc không cần thông tin hành chính. ĐÂY LÀ TRẠNG THÁI HIỆN HÀNH.**
+- **Phiên 2026-09-30 — rà soát "còn thiếu gì" rồi làm các việc không cần thông tin hành chính** (trạng thái hiện hành: mục ⏸ Tạm dừng 2026-09-30 tối bên dưới).
   - **Dữ liệu Docker cũ đã mất hẳn** (phát hiện khi bật lại): Docker Desktop tạo ổ dữ liệu mới (`D:\Docker_Data\DockerDesktopWSL\disk\docker_data.vhdx`), không còn image, volume, MLflow registry, `rpm_db`, Airflow DB nào của trước. Đã dựng lại toàn bộ:
     - build lại 5 image, `alembic upgrade head`, seed demo;
     - train lại 2 model → `risk_classifier` **v1** và `anomaly_detector` **v1** là `champion`. Metric test **tái lập đúng từng số** so với v2/v4 cũ (Macro F1 0,623, Recall CRITICAL 0,790, AUROC 0,836; LSTM-AE AUROC 0,864, P 0,727, R 0,167).
@@ -185,6 +185,18 @@
   - **Việc còn lại** (người dùng bảo tạm bỏ qua mục 1 và file access key):
     1. ~~Chụp lại `images/3_patient_detail.png`~~ — xong 2026-09-30 (chụp lại toàn bộ).
     2. **Thông tin hành chính trang bìa** — người dùng bảo tạm bỏ qua (danh sách ở `docs/report/README.md` mục "Còn thiếu").
+- **⏸ Tạm dừng 2026-09-30 tối (người dùng: "mai lại tiếp tục") — ĐÂY LÀ TRẠNG THÁI HIỆN HÀNH.**
+  - Cây làm việc sạch, mọi thứ đã commit và đẩy tới `origin/main`. **EC2 đã tắt** (`rpm-aws.sh start` để bật lại, rồi `replay`). **Container trên máy đã `stop`** (volume giữ nguyên: rpm_db, MLflow registry có 2 champion v1, Airflow DB). Bật lại: `docker compose --profile app start` hoặc các lệnh `up -d` ở mục Lệnh hay dùng.
+  - **Việc còn treo — đã trình bày cho người dùng, chờ họ chọn** (từ câu hỏi "có điều gì bất thường hay khúc mắc bỏ qua không"):
+    1. Server: DAG `drift_check` + `retrain_pipeline` đang bật → `replay --drift` sẽ tự train lại trên CPU EC2, model mới qua gate thì thành champion ≠ model trong báo cáo. Tạm dừng DAG retrain trên server hay ghi rõ khi trình bày?
+    2. Tài khoản demo (`demo12345`) trên web công khai có quyền ghi (xác nhận/xử lý cảnh báo). Đổi mật khẩu demo trên server hay chạy `replay` trước mỗi buổi?
+    3. Code chưa tất định: GroupKFold (sklearn 1.3.2) phụ thuộc CPU — mới ghi hạn chế + promote; sửa triệt để phải train lại và cập nhật số liệu rủi ro trong báo cáo.
+    4. `tests/e2e/test_3_model_reload.py` luôn bị bỏ qua vì registry chỉ còn 1 version → cho test tự đăng ký version tạm.
+    5. Git local còn nhánh `backup-truoc-khi-day-github` + `refs/original` (chứa tệp mẫu của người khác) — **chỉ xoá khi người dùng xác nhận**; đừng `git push --all`.
+    6. `rpm-deployer_accessKeys.csv` ở gốc repo (gitignored) — người dùng bảo tạm bỏ qua.
+    7. CI: nâng `actions/checkout`, `actions/setup-python`, `actions/setup-node` (cảnh báo Node 20; `ubuntu-latest` → Ubuntu 26 từ 2026-10-19).
+    8. Thông tin hành chính trang bìa báo cáo — người dùng bảo tạm bỏ qua.
+  - Tài khoản: Admin online `admin@rpm.local` + mật khẩu ngẫu nhiên (`rpm-aws.sh secrets`); Admin local `admin@rpm.local` / `admin12345`; demo `bs.an`, `bs.binh`, `dd.cuong` @rpm.local / `demo12345`.
 - **Quyết định đã chốt sau rà soát 2026-09-10** (người dùng đã duyệt):
   - Model rủi ro là **dự báo** mức NEWS2 cao nhất trong 4 giờ tới, không phân loại tức thời. Phân loại tức thời bị rò rỉ nhãn vì nhãn là hàm tất định của đặc trưng. Model phải thắng baseline persistence.
   - Drift → **tự động** kích hoạt retrain; quality gate chặn model kém; Admin vẫn retrain thủ công được. (Ngưỡng drift đổi thành ngưỡng hiệu chỉnh theo từng đặc trưng ngày 2026-09-11, xem Giai đoạn G.)
