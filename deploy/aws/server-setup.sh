@@ -42,7 +42,7 @@ prepare() {
 
   log "Build image (lần đầu ~25 phút trên m7i-flex.large)"
   docker compose build
-  docker builder prune -af >/dev/null
+  docker image prune -f >/dev/null  # giữ cache build: lần sau chỉ build lại phần đổi
 
   log "Hạ tầng nền"
   docker compose up -d --wait postgres

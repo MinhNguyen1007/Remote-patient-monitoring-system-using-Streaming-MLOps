@@ -125,7 +125,7 @@ cmd_promote() {
 
 cmd_update() {  # sau khi push code mới lên GitHub
   need_instance; allow_my_ip
-  remote "cd $REPO_DIR && git pull --ff-only && docker compose build && docker builder prune -af >/dev/null && docker compose up -d"
+  remote "cd $REPO_DIR && git pull --ff-only && docker compose build && docker image prune -f >/dev/null && docker compose up -d"
 }
 
 cmd_start() {
