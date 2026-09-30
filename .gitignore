@@ -57,3 +57,7 @@ docs/report/.*.pandoc.md
 docs/report/BaoCao_GiaoDichDinhLuong.md
 docs/report/Mau_Bai_bao_Project_NLP.md
 images/Ve_So_Do/
+
+# Access key AWS tải từ Console — không bao giờ commit
+*accessKeys*.csv
+*_credentials.csv

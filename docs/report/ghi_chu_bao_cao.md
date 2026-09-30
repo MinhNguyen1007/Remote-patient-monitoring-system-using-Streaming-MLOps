@@ -232,6 +232,7 @@ Bộ `tests/e2e/` (10 test, ~6 phút) chạy trên hệ thống thật — Kafka
 14. **Gate "không kém champion" cho qua khi bằng điểm**: anomaly v4 được promote dù thực chất trùng v3. Đã giảm khả năng này bằng điều kiện cửa sổ đủ 24 nhịp; quy tắc gate giữ nguyên theo thiết kế.
 15. **Độ trễ đo trên một máy, một consumer.** p95 1,6 giây là số của 20 bệnh nhân trên một máy Windows chạy đồng thời cả Kafka, TimescaleDB, MLflow, consumer và backend trong Docker Desktop. Độ trễ gần như tuyến tính theo số bệnh nhân mỗi nhịp vì consumer xử lý tuần tự (~70 ms/message): khoảng 28 bệnh nhân/nhịp là chạm ngưỡng 2 giây. Muốn nhiều hơn thì tăng số partition và chạy nhiều consumer cùng group — kiến trúc đã sẵn sàng (3 partition, key = mã bệnh nhân) nhưng **chưa đo thử**.
 16. **Bộ E2E dùng ngưỡng rủi ro nhân tạo.** Để kiểm tra luồng cảnh báo một cách tất định, test hạ `risk_critical_threshold` xuống 1e-6 (mọi giờ thành CRITICAL) thay vì chờ giờ thật vượt ngưỡng; phần chống trùng và chống bão cảnh báo vẫn là logic thật, nhưng tần suất cảnh báo trong test không phản ánh tần suất thật (xem mục c).
+17. **Huấn luyện không tái lập được giữa các CPU** (phát hiện 2026-09-30 khi deploy AWS). Train lại `risk_classifier` trên EC2 (Xeon Sapphire Rapids) ra τ 0,23, Macro F1 0,629, Recall CRITICAL 0,768; máy phát triển (Skylake-X) ra τ 0,22, 0,623, 0,790 — cùng code, dữ liệu, seed. Nguyên nhân: `GroupKFold` (sklearn 1.3.2) sắp nhóm theo kích thước bằng `np.argsort` không ổn định, numpy 1.26 chọn cài đặt sắp xếp theo SIMD của CPU → các bệnh nhân cùng số giờ vào fold khác nhau → τ khác. LSTM-AE không bị ảnh hưởng (AUROC 0,864 ở cả hai). Xử lý: **promote đúng artifact** từ registry phát triển lên registry production (`rpm_ml.pipelines.promote`, so hash từng file), không train lại khi deploy — model đang chạy chính là model trong báo cáo (báo cáo 5.1.2 mục 16). Cùng nguyên nhân từng làm 1 test drift trượt trên CI.
 
 ## 4. Kết luận và hướng phát triển (ý chính)
 
@@ -243,7 +244,7 @@ Bộ `tests/e2e/` (10 test, ~6 phút) chạy trên hệ thống thật — Kafka
   - thêm 2 thông số NEWS2 còn thiếu (oxy bổ sung, mức ý thức);
   - hiệu chỉnh xác suất (calibration);
   - bất thường theo từng kênh để giải thích được;
-  - triển khai cloud (AWS/GCP);
+  - triển khai cloud nhiều máy hoặc dịch vụ có quản lý (hiện chạy một máy EC2 + Docker Compose, xem `deploy/aws/`);
   - SMTP thật hoặc push notification;
   - nâng cấp giao diện;
   - xác thực đa yếu tố.

@@ -50,7 +50,9 @@ def _champion(client: MlflowClient, name: str, alias: str):
 
 
 def promote_model(source_uri: str, target_uri: str, name: str, alias: str = "champion") -> dict:
-    source, target = MlflowClient(source_uri), MlflowClient(target_uri)
+    # registry_uri tường minh: MlflowClient(uri) vẫn dùng registry URI toàn cục nếu đã được đặt
+    source = MlflowClient(tracking_uri=source_uri, registry_uri=source_uri)
+    target = MlflowClient(tracking_uri=target_uri, registry_uri=target_uri)
     version = source.get_model_version_by_alias(name, alias)
     source_version = str(version.version)  # MLflow 3 trả int, tag phải là chuỗi
     run = source.get_run(version.run_id)
@@ -61,8 +63,10 @@ def promote_model(source_uri: str, target_uri: str, name: str, alias: str = "cha
                 "target_version": str(existing.version)}
 
     with tempfile.TemporaryDirectory() as tmp:
+        # Không dùng URI "models:/…": MLflow tra registry theo URI toàn cục, không theo tracking_uri truyền vào
         model_dir = Path(mlflow.artifacts.download_artifacts(
-            artifact_uri=f"models:/{name}/{source_version}", dst_path=f"{tmp}/model", tracking_uri=source_uri))
+            artifact_uri=source.get_model_version_download_uri(name, source_version),
+            dst_path=f"{tmp}/model", tracking_uri=source_uri))
         run_dir = Path(tmp) / "run"
         run_dir.mkdir()
         if source.list_artifacts(run.info.run_id):
@@ -100,7 +104,8 @@ def promote_model(source_uri: str, target_uri: str, name: str, alias: str = "cha
             target.set_model_version_tag(name, new_version, key, value)
 
         check_dir = Path(mlflow.artifacts.download_artifacts(
-            artifact_uri=f"models:/{name}/{new_version}", dst_path=f"{tmp}/check", tracking_uri=target_uri))
+            artifact_uri=target.get_model_version_download_uri(name, new_version),
+            dst_path=f"{tmp}/check", tracking_uri=target_uri))
         hashes = file_hashes(model_dir)
         result = {"model": name, "source_version": source_version, "target_version": new_version,
                   "run_id": run_id, "files": len(hashes)}

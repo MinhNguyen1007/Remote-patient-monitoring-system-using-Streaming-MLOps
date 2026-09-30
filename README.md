@@ -324,7 +324,10 @@ Công khai vì đây là đồ án học tập và những điều này ảnh h�
 - **Tập test đã dùng 2 lần** cho cả hai mô hình, và ngưỡng quality gate được hiệu chỉnh **sau khi xem kết quả test lần đầu** (Recall CRITICAL 0,80 → 0,75 cho mô hình rủi ro; P/R → AUROC cho mô hình bất thường). Lý do ghi ở `docs/design/02_10_thiet_ke_test.md` mục 2.10.3.
 - **Recall của mô hình bất thường thấp** (0,167 tại τ = 0,99): đổi lại tỷ lệ gắn cờ nhầm chỉ 0,7 %, phù hợp bối cảnh chống mệt mỏi cảnh báo, nhưng vẫn là hạn chế thật.
 - **Streaming là phát lại**, không phải thiết bị đo thật: không có mất gói, nhiễu cảm biến hay lệch đồng hồ như môi trường thực tế.
-- Danh sách đầy đủ 16 hạn chế: [`docs/report/ghi_chu_bao_cao.md`](docs/report/ghi_chu_bao_cao.md) mục 3.5.
+- **Huấn luyện lại trên CPU khác không ra đúng cùng model** (GroupKFold của sklearn 1.3.2 dùng sắp xếp không ổn định,
+  phụ thuộc tập lệnh SIMD). Vì vậy bản deploy **chuyển nguyên artifact** model đã đánh giá sang registry production
+  (`rpm_ml.pipelines.promote`) thay vì train lại.
+- Danh sách đầy đủ 17 hạn chế: [`docs/report/ghi_chu_bao_cao.md`](docs/report/ghi_chu_bao_cao.md) mục 3.5.
 
 ## Dữ liệu & trích dẫn
 

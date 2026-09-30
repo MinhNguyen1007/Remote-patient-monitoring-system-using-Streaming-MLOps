@@ -15,7 +15,7 @@ SSH tunnel (chỉ IP của bạn) ──► Airflow :8080 · MLflow :5000 · Gra
 |---|---|
 | `rpm-aws.sh` | Chạy trên máy bạn: tạo hạ tầng, cài đặt, bật/tắt, tunnel, phát lại dữ liệu |
 | `cloud-init.sh` | User data của EC2: Docker Engine + Compose plugin, swap 4 GB, giới hạn log |
-| `server-setup.sh` | Chạy trên server: sinh `.env` với mật khẩu ngẫu nhiên, build image, train 2 model, khởi động |
+| `server-setup.sh` | Chạy trên server, 2 pha: `prepare` (sinh `.env` mật khẩu ngẫu nhiên, build image, bật hạ tầng) và `start` (bật toàn bộ + phát lại) |
 | `server-replay.sh` | Chạy trên server: xoá dữ liệu phát lại cũ, phát lại 20 bệnh nhân, phân công lại tài khoản demo |
 | `docker-compose.aws.yml` | Ghi đè compose: chỉ Caddy mở 80/443, mọi cổng khác chỉ nghe `127.0.0.1`; MLflow 2 worker |
 | `Caddyfile` | Reverse proxy HTTPS tới frontend |
@@ -53,13 +53,27 @@ Máy tắt: ≈ $0,3/ngày. Mỗi giờ demo: ≈ $0,13. Chạy 24/7 cả tháng
 
 ```bash
 deploy/aws/rpm-aws.sh provision   # ~2 phút: key pair (~/.ssh/rpm-aws.pem), security group, EC2, Elastic IP
-deploy/aws/rpm-aws.sh setup       # ~40 phút: build image, train 2 model, phát lại dữ liệu, tài khoản demo
+deploy/aws/rpm-aws.sh setup       # ~30 phút: build image → promote 2 model → phát lại dữ liệu, tài khoản demo
 deploy/aws/rpm-aws.sh secrets     # mật khẩu Admin / Airflow / Grafana (sinh ngẫu nhiên trên server)
 ```
 
 `setup` lấy code từ GitHub, nên **push code trước**. Dữ liệu `ml/data/processed/*.parquet` (MIMIC-III Demo, không nằm
-trong git) được chép từ máy bạn lên. Hai model được train lại trên server: cùng dữ liệu, cùng seed nên metric trùng
-khớp số liệu trong báo cáo (đã kiểm chứng ngày 2026-09-30).
+trong git) được chép từ máy bạn lên.
+
+### Model: promote, không train lại
+
+`setup` **không huấn luyện model trên server**. Bước `promote` mở SSH tunnel tới MLflow server rồi chạy
+`python -m rpm_ml.pipelines.promote` trên máy bạn: chép đúng artifact của version mang alias `champion` ở MLflow máy
+bạn (cùng params, metric, tag, `reference_stats.json`, `drift_thresholds.json`), so hash từng file, rồi mới gán alias
+`champion` ở server. Vì vậy **MLflow + 2 champion trên máy bạn phải đang chạy** (`docker compose up -d postgres mlflow`).
+
+Lý do (đúng thông lệ "build once, deploy many"): model chạy production phải là model đã được đánh giá. Train lại trên
+EC2 đã được thử ngày 2026-09-30 và cho `risk_classifier` τ 0,23 thay vì 0,22 (Macro F1 0,629 / Recall CRITICAL 0,768
+thay vì 0,623 / 0,790): `GroupKFold` của sklearn 1.3.2 sắp nhóm bằng phép sắp xếp không ổn định, kết quả đổi theo tập
+lệnh SIMD của CPU. Retrain trên server vẫn diễn ra qua Airflow (drift hoặc Admin bấm) và vẫn phải qua quality gate.
+
+Khi champion trên máy bạn đổi (train/retrain mới): `deploy/aws/rpm-aws.sh promote` — chạy lại an toàn, version đã
+chuyển thì bỏ qua.
 
 ## Dùng hằng ngày
 
