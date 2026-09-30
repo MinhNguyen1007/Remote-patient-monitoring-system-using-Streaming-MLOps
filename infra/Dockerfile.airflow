@@ -13,7 +13,7 @@ RUN python -m venv /opt/rpm-venv \
     && chown -R airflow: /opt/rpm-venv /opt/rpm /opt/airflow/rpm_runs
 USER airflow
 
-# Bỏ shap (chỉ rpm_ml.evaluation.report dùng; bản 0.51 khai báo cần numpy>=2, xung đột với numpy 1.26 đã ghim) và pytest
+# Bỏ shap (chỉ rpm_ml.evaluation.report dùng, DAG không cần) và pytest cho image gọn hơn
 COPY --chown=airflow ml/requirements.txt /opt/rpm/ml/requirements.txt
 RUN grep -vE '^(shap|pytest)==' /opt/rpm/ml/requirements.txt > /tmp/requirements-dag.txt \
     && /opt/rpm-venv/bin/pip install --no-cache-dir -r /tmp/requirements-dag.txt \

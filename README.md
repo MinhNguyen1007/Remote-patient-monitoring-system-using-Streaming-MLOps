@@ -8,6 +8,7 @@ Phát hiện sớm bệnh nhân ICU chuyển nặng: dữ liệu sinh hiệu ch�
 dự báo rủi ro 4 giờ tới và chấm điểm bất thường, cảnh báo đẩy realtime tới đúng người phụ trách —
 kèm vòng lặp MLOps tự phát hiện drift, huấn luyện lại và chỉ thay model khi vượt quality gate.
 
+[![CI](https://github.com/MinhNguyen1007/Remote-patient-monitoring-system-using-Streaming-MLOps/actions/workflows/ci.yml/badge.svg)](https://github.com/MinhNguyen1007/Remote-patient-monitoring-system-using-Streaming-MLOps/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.135-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
@@ -296,6 +297,10 @@ cd tests/e2e           && ../../.venv/Scripts/python -m pytest -q   # ~6 phút, 
 
 Bộ E2E tự khởi động stream consumer và backend dưới dạng tiến trình con nên có thể giết rồi bật lại
 để kiểm tra khả năng chịu lỗi — xem [`tests/e2e/README.md`](tests/e2e/README.md).
+
+**CI** ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) chạy mọi bộ trừ `tests/e2e` ở mỗi lần push:
+backend dùng TimescaleDB dựng bằng service container; frontend còn chạy thêm `typecheck` và `build`. Dữ liệu
+MIMIC-III không nằm trong git nên vài test cần `ml/data/processed/` tự bỏ qua trên CI.
 
 ## Tài liệu
 

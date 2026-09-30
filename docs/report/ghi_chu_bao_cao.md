@@ -48,7 +48,7 @@ Còn thiếu (cần người dùng cung cấp): thông tin hành chính trang b�
 |---|---|
 | Streaming | Apache Kafka (Confluent `cp-kafka` 7.6.1, Zookeeper 7.6.1), client `confluent-kafka` 2.15.1 |
 | Cơ sở dữ liệu | PostgreSQL 16 + TimescaleDB 2.30.0 (hypertable `vital_records`, `predictions`), SQLAlchemy 2.0.49, Alembic 1.15.1 |
-| Học máy | scikit-learn 1.3.2 (Random Forest, Logistic Regression), XGBoost 3.0.0, TensorFlow 2.21.0 / Keras 3.13.1 (LSTM-Autoencoder), SHAP 0.51.0, SciPy 1.16.2 |
+| Học máy | scikit-learn 1.3.2 (Random Forest, Logistic Regression), XGBoost 3.0.0, TensorFlow 2.21.0 / Keras 3.13.1 (LSTM-Autoencoder), SHAP 0.49.1, SciPy 1.16.2 |
 | MLOps | MLflow 3.11.1 (tracking + registry, alias `champion`/`challenger`), Apache Airflow 2.9.3 (LocalExecutor, image riêng Python 3.11 + venv ML), DAG `drift_check` (2 phút/lần) và `retrain_pipeline` |
 | Backend | FastAPI 0.135.3, Uvicorn 0.34.0, Pydantic 2.12.5, PyJWT 2.12.1 + bcrypt 4.2.1, WebSocket |
 | Frontend | React 19.2, TypeScript 7.0, Vite 8.2, Tailwind CSS 4.3, Base UI 1.8 + CVA, React Router 7.18, Vitest 5 + Testing Library |

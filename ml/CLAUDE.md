@@ -104,8 +104,9 @@ cd ml && ..\.venv\Scripts\python -m pytest -q && cd ..
 ```
 
 Image Airflow (`infra/Dockerfile.airflow`) cài `ml/requirements.txt` trừ `shap`, `pytest` vào venv riêng và cài `rpm_ml` dạng
-editable ở `/opt/rpm/ml`: `shap 0.51` khai báo cần numpy ≥ 2, xung đột với numpy 1.26 đã ghim (máy phát triển chạy được nhờ
-venv dùng chung site-packages). Sửa code trong `ml/src` hoặc `packages/common` thì phải build lại image
+editable ở `/opt/rpm/ml` (DAG không cần shap). `shap` ghim ở **0.49.1** — bản mới nhất còn chạy với numpy 1.x; từ
+0.50 shap đòi numpy ≥ 2, xung đột với numpy 1.26 đã ghim (từng ghim 0.51, chỉ cài được nhờ venv dùng chung site-packages;
+đổi xuống 0.49.1 ngày 2026-09-30, SHAP trong `ml/reports/` không đổi). Sửa code trong `ml/src` hoặc `packages/common` thì phải build lại image
 (`docker compose build airflow-scheduler`).
 
 Máy phát triển hiện tại tạo venv bằng `--system-site-packages` để dùng lại thư viện đã cài sẵn (mạng chậm); phiên bản trong
